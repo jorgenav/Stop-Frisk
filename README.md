@@ -1,7 +1,7 @@
 # Stop-Frisk
 Data mining project with NYC Stop&amp;Frisk data
 
-A collaborative data mining project with Nathaly Cardenas, Ivan Artalejo and Hugo Fernandez.
+A collaborative data mining project with Nathaly Cardenas (nathalyacm), Ivan Artalejo (iartalejo) and Hugo Fernandez.
 
 Different approaches in order to give answers to some questions regarding data about stop and frisk detentions in NYC.
 
