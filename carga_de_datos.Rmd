@@ -1,0 +1,17 @@
+---
+title: "Data mining project with NYC Stop&Frisk data"
+author: ""
+date: ""
+output: pdf_document
+---
+## Carga de datos del Proyecto
+
+```{r}
+SQFdata <- read.csv("2014 SQF_web.csv")
+
+dim(SQFdata)
+```
+
+```{r}
+summary(SQFdata)
+```
