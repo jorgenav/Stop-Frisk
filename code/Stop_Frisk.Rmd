@@ -1,0 +1,310 @@
+---
+title: "Stop_Frisk"
+author: "Jorge Navarro Garcia"
+date: "16 de febrero de 2017"
+output: pdf_document
+---
+```{r}
+# library(knitr)
+library(magrittr)
+library(dplyr)
+library(ggplot2)
+```
+
+\section{Lectura de datos y análisis exploratorio de variables}
+
+```{r Load data}
+dat_raw <- read.csv("data/2014 SQF_web.csv", header=TRUE)
+
+dim(dat_raw)
+summary(dat_raw)
+
+
+dat_modif <- dat_raw
+
+
+myfunc_date <- function(x){
+    if(nchar(x)==7){x <- paste('0', x,sep='')}
+    return(as.character(as.Date(as.character(x), format ="%m%d%Y")))
+}
+dat_modif$datestop <- sapply(dat_modif$datestop,myfunc_date)
+
+myfunc_time <- function(x){
+    if(nchar(x)==3){x <- paste('0', as.character(x),sep='')}
+    if(nchar(x)==2){x <- paste('0', '0', as.character(x),sep='')}
+    if(nchar(x)==1){x <- paste('0', '0', '0', as.character(x),sep='')}
+    return(as.character(strptime(x, format ='%H%M'),format='%H:%M'))
+}
+dat_modif$timestop <- sapply(dat_modif$timestop,myfunc_time)
+
+dat_modif$city <- factor(dat_modif$city, levels = seq(1,5),
+                         labels = c('Manhattan','Brooklyn','Bronx','Queens','Staten Island'))
+dat_modif$sex <- factor(dat_modif$sex, levels = c(0, 1),labels = c('F','M'))
+dat_modif$race <- factor(dat_modif$race, levels = seq(1,6),
+                         labels = c('Black','Black Hispanic','White Hispanic','White','Asian','Indian/Native'))
+
+# dob = Date of birth -> No es interesante, pocos datos
+dat_modif %>% group_by(dob==12311900) %>%
+    summarise(n=n())
+
+# COLOR DE PELO -> labels???
+# dat_modif$haircolr <- factor(dat_modif$haircolr, levels = seq(1,11), labels=c())
+
+dat_modif$build <- factor(dat_modif$build, levels = seq(1, 4), labels = c('Heavy', 'Muscular', 'Medium', 'Thin'))
+dat_modif$frisked <- factor(dat_modif$frisked, levels = c(0,1), labels = c('False','True'))
+dat_modif$forceuse <- factor(dat_modif$forceuse, levels = seq(1,6),
+                             labels = c('defense of other','defense of self','overcome resistence','other','suspected flight'))
+dat_modif$inout <- factor(dat_modif$inout, levels = c(0,1), labels = c('Outside','Inside'))
+dat_modif$arstmade <- factor(dat_modif$arstmade, levels = c(0,1), labels = c('False','True'))
+dat_modif$ac_proxm <- factor(dat_modif$ac_proxm, levels = c(0, 1), labels = c('False','True'))
+dat_modif$ac_evasv <- factor(dat_modif$ac_evasv, levels = c(0, 1), labels = c('False','True'))
+dat_modif$ac_assoc <- factor(dat_modif$ac_assoc, levels = c(0, 1), labels = c('False','True'))
+dat_modif$ac_incid <- factor(dat_modif$ac_incid, levels = c(0, 1), labels = c('False','True'))
+dat_modif$ac_time <- factor(dat_modif$ac_time, levels = c(0, 1), labels = c('False','True'))
+dat_modif$ac_rept <- factor(dat_modif$ac_rept, levels = c(0, 1), labels = c('False','True'))
+dat_modif$cs_descr <- factor(dat_modif$cs_descr, levels = c(0, 1), labels = c('False','True'))
+dat_modif$cs_cloth <- factor(dat_modif$cs_cloth, levels = c(0, 1), labels = c('False','True'))
+
+
+
+table(dat_modif$age)
+
+ggplot(aes(age), data = dat_modif) +
+    geom_histogram() +
+    xlim(0,100)
+
+
+
+
+hist(dat_modif$age)
+
+summary(dat_modif$age)
+
+```
+
+\section{División de datos en train y test}
+
+```{r Data split}
+set.seed(999)
+# Split the data into training and test sets (30% held out for testing)
+n_train=round(0.7*dim(dat_modif))[1]
+n_test=dim(dat_modif)-n_train
+
+# indices_train sera las filas utilizadas para entrenamiento e indices_test las
+# filas utilizadas para test del modelo
+indices=1:dim(dat_modif)[1]
+indices_train = sample(indices,n_train)
+indices_test = indices[-indices_train]
+
+SF_train = dat_modif[indices_train,]
+SF_test = dat_modif[indices_test,]
+```
+
+
+\section{Regresión simple}
+
+```{r Simple regression}
+
+reg_simp <- lm(perstop ~ race, data = dat_modif)
+
+summary(reg_simp)
+
+
+dat_modif %>% group_by(race) %>%
+    summarise(n())
+
+ggplot(aes(x=race,y=perstop),data=dat_modif) +
+    geom_point() +
+    labs(title='Regresión lineal', x='Raza', y='Tiempo de parada')
+
+anova(reg_simp)
+```
+
+\section{Regresión múltiple}
+
+Se analizan las variables dependientes o respuesta *perobs* y *perstop* con respecto a las siguientes variables independientes: *sex*, *race*, *age*, *haircolor*, *build*, *ac_proxm*, *ac_evasv*, *ac_assoc*, *ac_incid*, *ac_time*, *ac_rept*, *cs_descr*, *cs_cloth*.
+
+\subsection{Variable respuesta: \emph{perobs}}
+
+```{r Multiple regression-perobs}
+
+# Variables respuesta: perobs y perstop
+
+# Variables a observar (xenófobas): sex, race, age, haircolr, build, ac_proxm,
+# ac_evasv, ac_assoc, ac_incid, ac_time, ac_rept, cs_descr, cs_cloth
+
+dat_modif %>% group_by(sex) %>%
+    summarise(n())
+
+table(dat_modif$age)
+
+dat_modif %>% group_by(haircolr) %>%
+    summarise(n())
+
+dat_modif %>% group_by(build) %>%
+    summarise(n())
+
+summary(dat_modif$sex)
+summary(dat_modif$race)
+summary(dat_modif$age)
+summary(dat_modif$haircolr)
+summary(dat_modif$build)
+summary(dat_modif$ac_proxm)
+summary(dat_modif$ac_evasv)
+summary(dat_modif$ac_assoc)
+summary(dat_modif$ac_incid)
+summary(dat_modif$ac_time)
+summary(dat_modif$ac_rept)
+summary(dat_modif$cs_descr)
+summary(dat_modif$cs_cloth)
+
+            
+            
+            
+reg_mult_obs <- lm(perobs ~ sex + race + age + haircolr +
+                        build + ac_proxm + ac_evasv +
+                        ac_assoc + ac_incid + ac_time +
+                        ac_rept + cs_descr + cs_cloth, data = dat_modif)
+
+summary(reg_mult_obs)
+
+# Se elimina cs_cloth por ser el p-valor más alto
+reg_mult_obs <- lm(perobs ~ sex + race + age + haircolr + 
+                        build + ac_proxm + ac_evasv + 
+                        ac_assoc + ac_incid + ac_time + 
+                        ac_rept + cs_descr, data = dat_modif)
+
+
+summary(reg_mult_obs)
+
+# Se elimina sex por ser el p-valor más alto
+reg_mult_obs <- lm(perobs ~ race + age + haircolr + build + 
+                        ac_proxm + ac_evasv + ac_assoc + 
+                        ac_incid + ac_time + ac_rept + 
+                        cs_descr, data = dat_modif)
+
+
+summary(reg_mult_obs)
+
+# Se elimina race por ser el p-valor más alto
+reg_mult_obs <- lm(perobs ~ age + haircolr + build + 
+                        ac_proxm + ac_evasv + ac_assoc + 
+                        ac_incid + ac_time + ac_rept + 
+                        cs_descr, data = dat_modif)
+
+
+summary(reg_mult_obs)
+
+# Se elimina build por ser el p-valor más alto
+reg_mult_obs <- lm(perobs ~ age + haircolr + ac_proxm + 
+                        ac_evasv + ac_assoc + ac_incid + 
+                        ac_time + ac_rept + cs_descr,
+                        data = dat_modif)
+
+
+summary(reg_mult_obs)
+
+# Se elimina ac_time por ser el p-valor más alto
+reg_mult_obs <- lm(perobs ~ age + haircolr + ac_proxm + 
+                        ac_evasv + ac_assoc + ac_incid + 
+                        ac_rept + cs_descr,
+                        data = dat_modif)
+
+
+summary(reg_mult_obs)
+
+# Se elimina cs_descr por ser el p-valor más alto
+reg_mult_obs <- lm(perobs ~ age + haircolr + ac_proxm + 
+                        ac_evasv + ac_assoc + ac_incid + 
+                        ac_rept, data = dat_modif)
+
+
+summary(reg_mult_obs)
+```
+
+\subsection{Variable respuesta: \emph{perstop}}
+
+```{r Multiple regression-perstop}
+
+# Variables respuesta: perobs y perstop
+
+# Variables a observar: sex, race, age, haircolor, build, contrabn, pistol,
+# riflshot, asltweap, knifcuti, machgun, othrweap, ac_proxm, ac_evasv, ac_assoc,
+# ac_cgdir, ac_incid, ac_time, ac_stsnd, ac_rept, ac_inves, ac_other, pf_hands,
+# pf_wall, pf_grnd, pf_drwep, pf_ptwep, pf_baton, pf_hcuff, pf_pepsp, pf_other,
+# cs_objcs, cs_descr, cs_casng, cs_lkout, cs_cloth, cs_drgtr, cs_furtv, cs_vcrim,
+# cs_bulge, cs_other
+
+# Variables a observar (xenófobas): sex, race, age, haircolr, build, ac_proxm,
+# ac_evasv, ac_assoc, ac_incid, ac_time, ac_rept, cs_descr, cs_cloth
+
+
+
+
+
+reg_mult_stop <- lm(perstop ~ sex + race + age + haircolr +
+                        build + ac_proxm + ac_evasv +
+                        ac_assoc + ac_incid + ac_time +
+                        ac_rept + cs_descr + cs_cloth, data = dat_modif)
+
+summary(reg_mult_stop)
+
+# Se elimina build por ser el p-valor más alto
+reg_mult_stop <- lm(perstop ~ sex + race + age + haircolr + 
+                        ac_proxm + ac_evasv + ac_assoc + 
+                        ac_incid + ac_time + ac_rept +
+                        cs_descr + cs_cloth, data = dat_modif)
+
+
+summary(reg_mult_stop)
+
+
+# Se elimina ac_assoc por ser el p-valor más alto
+reg_mult_stop <- lm(perstop ~ sex + race + age + haircolr + 
+                        ac_proxm + ac_evasv + ac_incid +
+                        ac_time + ac_rept + cs_descr + 
+                        cs_cloth, data = dat_modif)
+
+
+summary(reg_mult_stop)
+
+
+# Se elimina ac_time por ser el p-valor más alto
+reg_mult_stop <- lm(perstop ~ sex + race + age + haircolr + 
+                        ac_proxm + ac_evasv + ac_incid +
+                        ac_rept + cs_descr + cs_cloth, data = dat_modif)
+
+
+summary(reg_mult_stop)
+```
+
+```{r}
+summary(reg_mult_obs)
+
+summary(reg_mult_stop)
+```
+
+
+\section{Árboles de decisión}
+
+    ```{r Decision trees}
+
+# Criterios de poda -> Nº de observaciones del nodo: Si el nodo presenta pocas observaciones se poda (no se construye)
+                  # -> Valor de 'confusión' (mirar apuntes en libreta)
+
+library(party)
+
+tree1 <- ctree(arstmade ~ sex + race + age + haircolr + build + ac_proxm + ac_evasv + ac_assoc + ac_incid + ac_time + ac_rept + cs_descr + cs_cloth, data=SF_train)
+
+
+## Prediction of test data
+pred <- predict(tree1, SF_test)
+N.test <- length(pred)
+
+confusion.table <- table(pred, SF_test$arstmade)
+colnames(confusion.table) <- c(paste("Actual",levels(dat_modif$arstmade)[1]), levels(dat_modif$arstmade)[2])
+rownames(confusion.table) <- c(paste("Predicted",levels(dat_modif$arstmade)[1]), levels(dat_modif$arstmade)[2])
+print(xtable(confusion.table, caption='Confusion Table for Decision Tree'), caption.placement = 'top', type="html", html.table.attributes='border=1 align="center" bgcolor="pink"')
+
+```
+
