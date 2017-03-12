@@ -9,9 +9,12 @@ output: pdf_document
 library(magrittr)
 library(dplyr)
 library(ggplot2)
+library(DMwR2)
 ```
 
 \section{Lectura de datos y análisis exploratorio de variables}
+
+\subsection{Lectura}
 
 ```{r Load data}
 dat_raw <- read.csv("data/2014 SQF_web.csv", header=TRUE)
@@ -19,16 +22,23 @@ dat_raw <- read.csv("data/2014 SQF_web.csv", header=TRUE)
 dim(dat_raw)
 summary(dat_raw)
 
-
 dat_modif <- dat_raw
+```
 
+\subsection{Limpieza de datos}
 
+```{r Clean data}
+
+# Limpiar fechas
 myfunc_date <- function(x){
     if(nchar(x)==7){x <- paste('0', x,sep='')}
     return(as.character(as.Date(as.character(x), format ="%m%d%Y")))
 }
 dat_modif$datestop <- sapply(dat_modif$datestop,myfunc_date)
+dat_modif$dob <- sapply(dat_modif$dob,myfunc_date)
 
+
+# Limpiar horas
 myfunc_time <- function(x){
     if(nchar(x)==3){x <- paste('0', as.character(x),sep='')}
     if(nchar(x)==2){x <- paste('0', '0', as.character(x),sep='')}
@@ -37,23 +47,20 @@ myfunc_time <- function(x){
 }
 dat_modif$timestop <- sapply(dat_modif$timestop,myfunc_time)
 
+
+
+# Factorización de variables
 dat_modif$city <- factor(dat_modif$city, levels = seq(1,5),
                          labels = c('Manhattan','Brooklyn','Bronx','Queens','Staten Island'))
 dat_modif$sex <- factor(dat_modif$sex, levels = c(0, 1),labels = c('F','M'))
 dat_modif$race <- factor(dat_modif$race, levels = seq(1,6),
                          labels = c('Black','Black Hispanic','White Hispanic','White','Asian','Indian/Native'))
-
-# dob = Date of birth -> No es interesante, pocos datos
-dat_modif %>% group_by(dob==12311900) %>%
-    summarise(n=n())
-
-# COLOR DE PELO -> labels???
-# dat_modif$haircolr <- factor(dat_modif$haircolr, levels = seq(1,11), labels=c())
-
 dat_modif$build <- factor(dat_modif$build, levels = seq(1, 4), labels = c('Heavy', 'Muscular', 'Medium', 'Thin'))
 dat_modif$frisked <- factor(dat_modif$frisked, levels = c(0,1), labels = c('False','True'))
+dat_modif$searched <- factor(dat_modif$searched, levels = c(0,1), labels = c('False','True'))
 dat_modif$forceuse <- factor(dat_modif$forceuse, levels = seq(1,6),
-                             labels = c('defense of other','defense of self','overcome resistence','other','suspected flight'))
+                             labels = c('defense of other','defense of self',
+                                        'overcome resistence','other','suspected flight','suspected weapon'))
 dat_modif$inout <- factor(dat_modif$inout, levels = c(0,1), labels = c('Outside','Inside'))
 dat_modif$arstmade <- factor(dat_modif$arstmade, levels = c(0,1), labels = c('False','True'))
 dat_modif$ac_proxm <- factor(dat_modif$ac_proxm, levels = c(0, 1), labels = c('False','True'))
@@ -66,12 +73,96 @@ dat_modif$cs_descr <- factor(dat_modif$cs_descr, levels = c(0, 1), labels = c('F
 dat_modif$cs_cloth <- factor(dat_modif$cs_cloth, levels = c(0, 1), labels = c('False','True'))
 
 
+# dob = Date of birth -> No es interesante, pocos datos
+dat_modif %>% group_by(dob==12311900) %>%
+    summarise(n=n())
 
+# COLOR DE PELO -> labels???
+# dat_modif$haircolr <- factor(dat_modif$haircolr, levels = seq(1,11), labels=c())
+
+```
+
+\subsection{Unión de variables}
+
+Habría que comprobar para todos los casos si hay diferencia según cada una de las variables. Por ejemplo, si se realizan más detenciones según el tipo de arma portada o el tipo de fuerza empleada.
+
+```{r Variables join}
+# Posesión de armas
+dat_modif <- dat_modif %>% 
+    mutate(weap = pistol | riflshot | asltweap | knifcuti | machgun | othrweap) %>%
+    select(-(pistol:othrweap))
+
+# Fuerza física
+dat_modif <- dat_modif %>% 
+    mutate(phys = pf_hands | pf_wall | pf_grnd | pf_drwep | pf_ptwep | pf_baton | pf_hcuff | pf_pepsp | pf_other) %>%
+    select(-(pf_hands:pf_other))
+
+dat_modif %>% group_by(is.na(phys)) %>%
+    summarise(n())
+
+dat_modif %>% group_by(is.na(weap)) %>%
+    summarise(n())
+
+head(dat_modif)
+
+```
+
+\subsection{Análisis exploratorio de variables}
+
+```{r Exploratory data analysis}
+
+# Condado
+dat_modif %>% ggplot() +
+    geom_bar(aes(x=city))
+
+dat_modif %>% filter(perstop < 40) %>%
+    ggplot(mapping = aes(x = perstop, colour = city)) +
+    geom_freqpoly() +
+    theme_minimal() +
+    scale_x_continuous(breaks = seq(0,40,5),labels = seq(0,40,5))
+
+# Sexo
+dat_modif %>% ggplot() +
+    geom_bar(aes(x=sex))
+
+# Race
+dat_modif %>% ggplot() +
+    geom_bar(aes(x=race))
+
+dat_modif %>% filter(perstop < 40) %>%
+    ggplot(mapping = aes(x = perstop, colour = race)) +
+    geom_freqpoly() +
+    theme_minimal() +
+    scale_x_continuous(breaks = seq(0,40,5),labels = seq(0,40,5))
+
+
+# Frisked
+dat_modif %>% ggplot() +
+    geom_bar(aes(x=frisked)) +
+    facet_wrap(~race)
+
+# Searched
+dat_modif %>% ggplot() +
+    geom_bar(aes(x=searched))
+
+# Edad
 table(dat_modif$age)
 
+dat_modif$age[dat_modif$age < 10 | dat_modif$age > 100] <- NA
+
+dat_modif %>% filter(age > 79 & age < 100)
+
+dat_modif %>% filter(dob != '1900-12-31') %>%
+    select(age, dob) %>%
+    mutate(a_d = 2014-as.numeric(as.character(as.Date(dob, format='%Y-%m-%d'), format='%Y'))) %>%
+    filter(a_d %>% is_in(c(a_d-1,a_d+1)) & a_d > 50)
+
 ggplot(aes(age), data = dat_modif) +
-    geom_histogram() +
-    xlim(0,100)
+    geom_histogram(binwidth = 1.5) +
+    scale_x_continuous(breaks = seq(0,100,20),labels = seq(0,100,20)) #+
+    # scale_x_continuous(breaks = c(0,10,20,30,40,50,60,70,80,90,100),
+    #                    labels = c(0,10,20,30,40,50,60,70,80,90,100)) +
+    # xlim(0,100)
 
 
 
@@ -80,6 +171,16 @@ hist(dat_modif$age)
 
 summary(dat_modif$age)
 
+```
+
+\subsection{Datos faltantes}
+
+```{r Unknown values}
+dat_modif %>% group_by(Completos = complete.cases(dat_modif)) %>%
+    summarise('Nº de casos' = n())
+
+# Find rows with too many NAs -> 0.2 = 20% de campos con NAs
+length(manyNAs(dat_modif))
 ```
 
 \section{División de datos en train y test}
@@ -109,6 +210,7 @@ reg_simp <- lm(perstop ~ race, data = dat_modif)
 
 summary(reg_simp)
 
+plot(reg_simp)
 
 dat_modif %>% group_by(race) %>%
     summarise(n())
@@ -116,6 +218,15 @@ dat_modif %>% group_by(race) %>%
 ggplot(aes(x=race,y=perstop),data=dat_modif) +
     geom_point() +
     labs(title='Regresión lineal', x='Raza', y='Tiempo de parada')
+
+ggplot(aes(perstop),data=dat_modif) +
+    geom_histogram() +
+    facet_wrap(~race) +
+    labs(title='Regresión lineal', x='Tiempo de parada', y='Frecuencia')
+
+
+ggplot(algae, aes(x=mxPH)) + geom_histogram(binwidth=0.5) + facet_wrap(~ season)
+
 
 anova(reg_simp)
 ```
@@ -284,6 +395,12 @@ summary(reg_mult_obs)
 summary(reg_mult_stop)
 ```
 
+\section{Regresión logística}
+
+```{r Logistic regression}
+
+```
+
 
 \section{Árboles de decisión}
 
@@ -304,7 +421,7 @@ N.test <- length(pred)
 confusion.table <- table(pred, SF_test$arstmade)
 colnames(confusion.table) <- c(paste("Actual",levels(dat_modif$arstmade)[1]), levels(dat_modif$arstmade)[2])
 rownames(confusion.table) <- c(paste("Predicted",levels(dat_modif$arstmade)[1]), levels(dat_modif$arstmade)[2])
-print(xtable(confusion.table, caption='Confusion Table for Decision Tree'), caption.placement = 'top', type="html", html.table.attributes='border=1 align="center" bgcolor="pink"')
+# print(xtable(confusion.table, caption='Confusion Table for Decision Tree'), caption.placement = 'top', type="html", html.table.attributes='border=1 align="center" bgcolor="pink"')
 
 ```
 
