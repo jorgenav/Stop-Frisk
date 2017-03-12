@@ -18,7 +18,3 @@ SQFdata <- read.csv("2014.csv")
 
 dim(SQFdata)
 ```
-
-```{r}
-summary(SQFdata)
-```
