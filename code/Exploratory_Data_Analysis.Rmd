@@ -1,0 +1,27 @@
+---
+title: "Data mining project with NYC Stop&Frisk data"
+author: "iartalejo"
+date: ""
+output: html_document
+---
+# Análisis Exploratorio de Datos
+
+```{r}
+#summary(SQFdata)
+```
+## Data Quality Report
+```{r}
+#install.packages("dataQualityR")
+library("dataQualityR")
+drq.num <- paste("./dqr_num.csv", sep = "")
+drq.cat <- paste("./dqr_cat.csv", sep = "")
+checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
+DQR.num <- read.csv("dqr_num.csv")
+DQR.cat <- read.csv("dqr_cat.csv")
+```
+
+## Checking distribution for missing data
+```{r}
+#install.packages("MissingDataGUI")
+library("MissingDataGUI")
+```
