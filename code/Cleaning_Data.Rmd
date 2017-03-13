@@ -10,14 +10,15 @@ output: html_document
 #install.packages("lubridate")
 library(lubridate)
 
+# Variable datestop
 myfunc_date <- function(x){
     if(nchar(x)==7){x <- paste('0', x,sep='')}
     return(as.character(as.Date(as.character(x), format ="%m%d%Y")))
   }
 SQFdata$datestop <- sapply(SQFdata$datestop,myfunc_date)
-# Convert Strings to Dates
-SQFdata$datestop <- ymd(SQFdata$datestop)
+SQFdata$datestop <- ymd(SQFdata$datestop)  #Convert Strings to Dates
 
+# Variable timestop
 myfunc_time <- function(x){
     if(nchar(x)==3){x <- paste('0', as.character(x),sep='')}
     if(nchar(x)==2){x <- paste('0', '0', as.character(x),sep='')}
@@ -25,11 +26,13 @@ myfunc_time <- function(x){
     return(as.character(strptime(x, format ='%H%M'),format='%H:%M'))
   }
 SQFdata$timestop <- sapply(SQFdata$timestop,myfunc_time)
-# Convert Strings to Times
-SQFdata$timestop <- hm(SQFdata$timestop)
+SQFdata$timestop <- hm(SQFdata$timestop)  #Convert Strings to Times
+
+# Variable dob
+SQFdata$dob <- mdy(SQFdata$dob)  #Convert to Dates
 ```
 
-# Unificación valores
+## Unificación valores
 ```{r}
 # Corrección perstop
 SQFdata$perstop = as.integer(SQFdata$perstop)
@@ -55,9 +58,8 @@ SQFdata$knifcuti[which(SQFdata$knifcuti == "1")] <- "Y"
 SQFdata$knifcuti <- factor(SQFdata$knifcuti, levels = c('Y','N'))
 
 # Corregir NAs y unificar valores en machgun
-#SQFdata$machgun[which(SQFdata$machgun == " ")] <- NA
-#SQFdata$machgun[which(SQFdata$machgun == "1")] <- "Y"
-#SQFdata$machgun <- factor(SQFdata$machgun, levels = c('Y','N'))
+SQFdata$machgun[which(SQFdata$machgun == " ")] <- NA
+SQFdata$machgun <- factor(SQFdata$machgun, levels = c('N'))
 
 # Corregir NAs y unificar valores en othrweap
 SQFdata$othrweap[which(SQFdata$othrweap == " ")] <- NA
@@ -282,9 +284,70 @@ SQFdata$rf_bulg <- factor(SQFdata$rf_bulg, levels = c('Y','N'))
 # Corregir NAs y unificar valores en othfeatr
 SQFdata$othfeatr[which(SQFdata$othfeatr == " ")] <- NA
 
+# Corregir NAs y unificar valores en addrnum
+SQFdata$addrnum[which(SQFdata$addrnum == " ")] <- NA
+
+# Corregir NAs y unificar valores en adtlrept
+SQFdata$adtlrept[which(SQFdata$adtlrept == " ")] <- NA
+
+# Corregir NAs y unificar valores en age
+SQFdata$age[which(SQFdata$age == "**")] <- NA
+SQFdata$age = as.integer(sub("([[:space:]])","",SQFdata$age))
+
+# Corregir NAs y unificar valores en arstoffn
+SQFdata$arstoffn[which(SQFdata$arstoffn == " ")] <- NA
+
+# Corregir NAs y unificar valores en crossst
+SQFdata$crossst[which(SQFdata$crossst == " ")] <- NA
+
+# Corregir NAs y unificar valores en forceuse
+SQFdata$forceuse[which(SQFdata$forceuse == " ")] <- NA
+
+# Corregir NAs y unificar valores en officrid
+SQFdata$officrid[which(SQFdata$officrid == " ")] <- NA
+
+# Corregir NAs y unificar valores en offshld
+SQFdata$offshld[which(SQFdata$offshld == " ")] <- NA
+
+# Corregir NAs y unificar valores en offverb
+SQFdata$offverb[which(SQFdata$offverb == " ")] <- NA
+
+# Corregir NAs y unificar valores en othfeatr
+SQFdata$othfeatr[which(SQFdata$othfeatr == " ")] <- NA
+
+# Corregir NAs y unificar valores en premname
+SQFdata$premname[which(SQFdata$premname == " ")] <- NA
+
+# Corregir NAs y unificar valores en sector
+SQFdata$sector[which(SQFdata$sector == " ")] <- NA
+
+# Corregir NAs y unificar valores en stinter
+SQFdata$stinter[which(SQFdata$stinter == " ")] <- NA
+
+# Corregir NAs y unificar valores en stname
+SQFdata$stname[which(SQFdata$stname == " ")] <- NA
+
+# Corregir NAs y unificar valores en sumoffen
+SQFdata$sumoffen[which(SQFdata$sumoffen == " ")] <- NA
+
+# Corrección pct
+SQFdata$pct <- factor(SQFdata$pct)
+
+# Corrección addrpct
+SQFdata$addrpct <- factor(SQFdata$addrpct)
+
+# Corrección beat
+SQFdata$beat <- factor(SQFdata$beat)
+
+# Corrección post
+SQFdata$post <- factor(SQFdata$post)
+
+# Corrección detailCM
+SQFdata$detailCM <- factor(SQFdata$detailCM)
+
 ```
 
 ```{r}
-summary(SQFdata)
+#summary(SQFdata)
 ```
 
