@@ -801,11 +801,11 @@ SQFdata$lineCM[which(is.na(SQFdata$lineCM))]
 # perstop
 # Variable respuesta
 
-SQFdata %>% group_by(searched) %>%
+SQFdata %>% group_by(perstop) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-SQFdata$searched[which(is.na(SQFdata$searched))]
+SQFdata$perstop[which(is.na(SQFdata$perstop))]
 
 # arstmade
 # Variable respuesta
