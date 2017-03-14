@@ -24,4 +24,5 @@ DQR.cat <- read.csv("dqr_cat.csv")
 ```{r}
 #install.packages("MissingDataGUI")
 library("MissingDataGUI")
+MissingDataGUI(SQFdata)
 ```
