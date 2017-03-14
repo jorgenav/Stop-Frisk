@@ -11,12 +11,7 @@ output: html_document
 library(lubridate)
 
 # Variable datestop
-myfunc_date <- function(x){
-    if(nchar(x)==7){x <- paste('0', x,sep='')}
-    return(as.character(as.Date(as.character(x), format ="%m%d%Y")))
-  }
-SQFdata$datestop <- sapply(SQFdata$datestop,myfunc_date)
-SQFdata$datestop <- ymd(SQFdata$datestop)  #Convert Strings to Dates
+SQFdata$datestop <- mdy(SQFdata$datestop)  #Convert Strings to Dates
 
 # Variable timestop
 myfunc_time <- function(x){
