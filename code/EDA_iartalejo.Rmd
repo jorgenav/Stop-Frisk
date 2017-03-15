@@ -1,0 +1,247 @@
+---
+title: "Análisis Exploratorio de Datos (EDA_iartalejo)"
+author: "iartalejo"
+date: "14 de marzo de 2017"
+output: 
+  pdf_document: 
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 15
+    toc: yes
+---
+
+```{r, message=FALSE}
+# Carga de librerías
+library(dplyr)
+library(ggplot2)
+library(PASWR2)
+```
+
+```{r}
+# Carga del Dataset
+# SQFdata <- read.csv("2014.csv")
+# buscar attach???? o similar
+```
+
+# 0. SELECCION DE VARIABLES (para este informe):
+```{r}
+SQFdata <- select(SQFdata,
+                  build,
+                  frisked,
+                  knifcuti, machgun, othrweap,
+                  pf_ptwep, pf_baton,
+                  cs_lkout, cs_cloth,
+                  rf_attir, rf_vcact, 
+                  sb_outln, sb_admis,
+                  ac_time, ac_stsnd,
+                  forceuse,
+                  crossst,
+                  xcoord, ycoord,
+                  explnstp,
+                  perstop, arstmade,
+                  sex)
+```
+
+# 1. DATA QUALITY REPORT
+```{r}
+#install.packages("dataQualityR")
+library("dataQualityR")
+drq.num <- paste("./dqr_num.csv", sep = "")
+drq.cat <- paste("./dqr_cat.csv", sep = "")
+checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
+DQR.num <- read.csv("dqr_num.csv")
+DQR.cat <- read.csv("dqr_cat.csv")
+```
+
+## 1.A Variables numéricas
+```{r, results=markup}
+print(DQR.num)
+```
+
+## 1.B Variables categóricas
+```{r}
+print(DQR.cat)
+```
+
+# 2. ANÁLISIS VARIABLES
+
+## SUSPECT'S BUILD (build)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(build)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(build,perstop)) + geom_violin()
+p3 = ggplot(data = SQFdata, aes(build)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## WAS SUSPECT FRISKED?  (frisked)   ("frisked:cacheado", "searched:registrado")
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(frisked)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(frisked,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(frisked)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## WAS A KNIFE OR CUTTING INSTRUMENT FOUND ON SUSPECT?  (knifcuti)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(knifcuti,perstop)) + geom_violin()
+p3 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## WAS A MACHINE GUN FOUND ON SUSPECT? (machgun) ("ametralladora")
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(machgun)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(machgun,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(machgun)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## WAS ANOTHER TYPE OF WEAPON FOUND ON SUSPECT? (othrweap)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(othrweap)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(othrweap,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(othrweap)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## PHYSICAL FORCE USED BY OFFICER - WEAPON POINTED (pf_ptwep)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_ptwep)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(pf_ptwep,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_ptwep)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## PHYSICAL FORCE USED BY OFFICER - BATON (pf_baton) ("porra")
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_baton)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(pf_baton,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_baton)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## REASON FOR STOP - SUSPECT ACTING AS A LOOKOUT (cs_lkout) ("vigía")
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_lkout)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(cs_lkout,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(cs_lkout)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## REASON FOR STOP - WEARING CLOTHES COMMONLY USED IN A CRIME (cs_cloth)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_cloth)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(cs_cloth,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(cs_cloth)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## REASON FOR FRISK - INAPPROPRIATE ATTIRE FOR SEASON (rf_attir)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_attir)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(rf_attir,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_attir)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## REASON FOR FRISK - ACTIONS OF ENGAGING IN A VIOLENT CRIME (rf_vcact)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_vcact)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(rf_vcact,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_vcact)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## BASIS OF SEARCH - OUTLINE OF WEAPON (sb_outln) (BASE DE BÚSQUEDA - ESQUEMA DE ARMA)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(sb_outln)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(sb_outln,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sb_outln)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## BASIS OF SEARCH - ADMISSION BY SUSPECT (sb_admis)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(sb_admis)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(sb_admis,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sb_admis)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## ADDITIONAL CIRCUMSTANCES - TIME OF DAY FITS CRIME INCIDENCE (ac_time)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(ac_time,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## ADDITIONAL CIRCUMSTANCES - SIGHTS OR SOUNDS OF CRIMINAL ACTIVITY (ac_stsnd)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(ac_stsnd, perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## REASON FORCE USED (forceuse)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(forceuse, perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## DID OFFICER EXPLAIN REASON FOR STOP? (explnstp)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(explnstp)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(explnstp, perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(explnstp)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## SUSPECT'S SEX (sex)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(sex)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(sex, perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sex)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+
+## LOCATION OF STOP CROSS STREET (crossst)
+```{r, fig.height=15, fig.width=15}
+SQFdata.filtered = SQFdata %>%
+                      group_by(crossst) %>%
+                      filter(n() > 170)
+                      
+                      #filter(arstmade.Y > mean(arstmade))
+
+p1 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata.filtered , aes(crossst, perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=1)
+```
+
+## LOCATION OF STOP X COORD (xcoord)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(xcoord)) + geom_histogram() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(xcoord, perstop)) + geom_point()
+p3 = ggplot(data = SQFdata, aes(xcoord)) + geom_histogram(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## LOCATION OF STOP Y COORD (ycoord)
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ycoord)) + geom_histogram() + ylab("Frequency")
+p2 = ggplot(data = SQFdata, aes(ycoord, perstop)) + geom_point()
+p3 = ggplot(data = SQFdata, aes(ycoord)) + geom_histogram(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
+```
+
+## LOCATION OF STOP: Y_COORD(ycoord)  vs  X_COORD(ycoord)
+```{r, fig.height=10, fig.width=20}
+ggplot(data = SQFdata, aes(xcoord, ycoord)) + geom_point(aes(color = arstmade))
+
+```
