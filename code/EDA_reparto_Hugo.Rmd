@@ -1,0 +1,310 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+ggplot(SQFdata, aes(x = sex)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = sex)) + geom_bar()
+ggplot(SQFdata,aes(sex,perstop))+geom_boxplot()
+
+summary(SQFdata$arstmade)
+
+fitsex=glm(SQFdata$arstmade~SQFdata$sex,data = SQFdataTrain,family = "binomial")
+summary(fitsex)
+```
+
+```{r Hugo}
+# weight
+# Weight in pounds
+weight1=SQFdata %>% group_by(weight) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))%>%
+    filter(weight<800 & weight>100)
+
+SQFdata %>%
+    group_by(weight, arstmade) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+
+SQFdata$weight[which(is.na(SQFdata$weight))]
+
+summary(SQFdata$weight[which(SQFdata$arstmade=='Y')])
+summary(SQFdata$weight[which(SQFdata$arstmade=='N')])
+
+
+ggplot(SQFdata, aes(x = weight)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = weight)) + geom_bar()
+ggplot(SQFdata,aes(weight,perstop))+geom_boxplot()
+
+SQFdata$weight=relevel(weight1,ref = 2)
+```
+
+```{r}
+# haircolr
+# 
+SQFdata %>% group_by(haircolr) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = haircolr)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = haircolr)) + geom_bar()
+ggplot(SQFdata,aes(haircolr,perstop))+geom_boxplot()
+
+SQFdata$haircolr[which(is.na(SQFdata$haircolr))]
+```
+
+```{r}
+# riflshot
+# 10860 NAs
+
+SQFdata %>% group_by(riflshot) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = riflshot)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = riflshot)) + geom_bar()
+ggplot(SQFdata,aes(riflshot,perstop))+geom_boxplot()
+# no significativa
+```
+
+```{r}
+# sumissue
+# Was summons issued?
+
+SQFdata %>% group_by(sumissue) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$sumissue=SQFdata$sumissue[which(!is.na(SQFdata$sumissue))]
+
+ggplot(SQFdata, aes(x = sumissue)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = sumissue)) + geom_bar()
+ggplot(SQFdata,aes(sumissue,perstop))+geom_boxplot()
+```
+```{r}
+# pf_hands
+# 9133 NAs
+
+SQFdata %>% group_by(pf_hands) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = pf_hands)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = pf_hands)) + geom_bar()
+ggplot(SQFdata,aes(pf_hands,perstop))+geom_boxplot()
+```
+
+```{r}
+# pf_wall
+# 10412 NAs
+
+SQFdata %>% group_by(pf_wall) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = pf_wall)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = pf_wall)) + geom_bar()
+ggplot(SQFdata,aes(pf_wall,perstop))+geom_boxplot()
+```
+
+```{r}
+# pf_other
+# 10813 NAs
+
+SQFdata %>% group_by(pf_other) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = pf_other)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = pf_other)) + geom_bar()
+ggplot(SQFdata,aes(pf_other,perstop))+geom_boxplot()
+```
+
+```{r}
+# cs_objcs
+# 10445 NAs
+
+SQFdata %>% group_by(cs_objcs) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = cs_objcs)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = cs_objcs)) + geom_bar()
+ggplot(SQFdata,aes(cs_objcs,perstop))+geom_boxplot()
+```
+
+```{r}
+# cs_bulge
+# 10032 NAs
+
+SQFdata %>% group_by(cs_bulge) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = cs_bulge)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = cs_bulge)) + geom_bar()
+ggplot(SQFdata,aes(cs_bulge,perstop))+geom_boxplot()
+
+```
+
+```{r}
+# rf_vcrim
+# 8325 NAs
+
+SQFdata %>% group_by(rf_vcrim) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = rf_vcrim)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = rf_vcrim)) + geom_bar()
+ggplot(SQFdata,aes(rf_vcrim,perstop))+geom_boxplot()
+
+```
+
+```{r}
+# rf_knowl
+# 10244 NAs
+
+SQFdata %>% group_by(rf_knowl) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = rf_knowl)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = rf_knowl)) + geom_bar()
+ggplot(SQFdata,aes(rf_knowl,perstop))+geom_boxplot()
+
+```
+
+```{r}
+# rf_furt
+# 6880 NAs
+
+SQFdata %>% group_by(rf_furt) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = rf_furt)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = rf_furt)) + geom_bar()
+ggplot(SQFdata,aes(riflshot,rf_furt))+geom_boxplot()
+```
+
+```{r}
+# ac_evasv
+# 8553 NAs
+
+SQFdata %>% group_by(ac_evasv) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = ac_evasv)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = ac_evasv)) + geom_bar()
+ggplot(SQFdata,aes(ac_evasv,perstop))+geom_boxplot()
+
+
+
+```
+
+```{r}
+# ac_assoc
+# 9972 NAs
+SQFdata %>% group_by(ac_assoc) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = ac_assoc)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = ac_assoc)) + geom_bar()
+ggplot(SQFdata,aes(ac_assoc,perstop))+geom_boxplot()
+```
+
+
+```{r}
+# ac_inves
+# 9355 NAs
+
+SQFdata %>% group_by(ac_inves) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+ggplot(SQFdata, aes(x = ac_inves)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = ac_inves)) + geom_bar()
+ggplot(SQFdata,aes(ac_inves,perstop))+geom_boxplot()
+```
+
+
+```{r}
+# stname
+# String -> location of stop street name -> Es interesante?
+
+SQFdata %>% group_by(stname) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+summary(SQFdata$stname~SQFdata$arstmade)
+SQFdata$stname[which(is.na(SQFdata$stname))]
+
+ggplot(SQFdata, aes(x = stname)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = stname)) + geom_bar()
+ggplot(SQFdata,aes(stname,perstop))+geom_boxplot()
+```
+
+```{r}
+# offunif
+# 
+
+SQFdata %>% group_by(offunif) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$offunif[which(is.na(SQFdata$offunif))]
+
+ggplot(SQFdata, aes(x = offunif)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = offunif)) + geom_bar()
+ggplot(SQFdata,aes(offunif,perstop))+geom_boxplot()
+```
+
+```{r}
+# offverb
+# verbal statement provided by officer (if not in uniform) -> Limpiar datos
+
+SQFdata %>% group_by(offverb) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$offverb[which(is.na(SQFdata$offverb))]
+
+ggplot(SQFdata, aes(x = offverb)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = offverb)) + geom_bar()
+ggplot(SQFdata,aes(offverb,perstop))+geom_boxplot()
+```
+
+```{r}
+# officrid
+# id card provided by officer (if not in uniform) -> Limpiar datos
+
+SQFdata %>% group_by(officrid) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$officrid[which(is.na(SQFdata$officrid))]
+
+ggplot(SQFdata, aes(x = officrid)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = officrid)) + geom_bar()
+ggplot(SQFdata,aes(officrid,perstop))+geom_boxplot()
+
+```
+
+```{r}
+# offshld
+# shield provided by officer (if not in uniform) -> Limpiar datos
+
+SQFdata %>% group_by(offshld) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$offshld[which(is.na(SQFdata$offshld))]
+
+ggplot(SQFdata, aes(x = riflshot)) + geom_bar()
+ggplot(SQFdata, aes(arstmade,fill = riflshot)) + geom_bar()
+ggplot(SQFdata,aes(riflshot,perstop))+geom_boxplot()
+
+```
