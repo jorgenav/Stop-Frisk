@@ -29,7 +29,7 @@ library("dataQualityR")
 # buscar attach???? o similar
 ```
 
-# 0. SELECCION DE VARIABLES (para este informe):
+# 0. SELECCION DE VARIABLES:
 ```{r}
 SQFdata <- select(SQFdata,
                   build,
@@ -71,14 +71,14 @@ print(DQR.cat)
 
 ## VARIABLE DEPENDIENTE
 
-## TIEMPO DE PARADA (perstop) 
+## Tiempo de parada (perstop) 
 ```{r, fig.height=5, fig.width=15}
 hist(SQFdata$perstop, breaks = 87,  prob=T, xlim=c(0,87))
 plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
 ```
 ## VARIABLES INDEPENDIENTES
 
-## COMPLEXIÓN DEL SOSPECHOSO (build)
+## Complexión del sospechoso (build)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade,build) %>%
         summarise(n=n(), 
