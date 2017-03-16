@@ -48,7 +48,7 @@ SQFdata <- select(SQFdata,
                   sex)
 ```
 
-# 1. DATA QUALITY REPORT
+# 1. ANÁLISIS DESCRIPTIVO
 ```{r}
 drq.num <- paste("./dqr_num.csv", sep = "")
 drq.cat <- paste("./dqr_cat.csv", sep = "")
@@ -69,14 +69,16 @@ print(DQR.cat)
 
 # 2. ANÁLISIS EXPLORATORIO VARIABLES
 
-## VARIABLE DEPEDIENTE: PERSTOP (minutos)
+## VARIABLE DEPENDIENTE
+
+## TIEMPO DE PARADA (perstop) 
 ```{r, fig.height=5, fig.width=15}
 hist(SQFdata$perstop, breaks = 87,  prob=T, xlim=c(0,87))
 plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
 ```
 ## VARIABLES INDEPENDIENTES
 
-## SUSPECT'S BUILD (build)
+## COMPLEXIÓN DEL SOSPECHOSO (build)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade,build) %>%
         summarise(n=n(), 
