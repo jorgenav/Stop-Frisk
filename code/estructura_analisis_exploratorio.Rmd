@@ -8,7 +8,7 @@ output: html_document
 
 
 
-## Hipóteis inicial
+## Hipótesis inicial
 Se plantea como hipótesis la  demanda publicada en New York Liberty Civils <https://www.nyclu.org/en/stop-and-frisk-data> , es decir verificar si la ley Stop-Frisk está siendo aplicada bajo conceptos de discriminación.  El análisis inicial se fundamentó en el tiempo de observación, sin embargo se desechó la posibilidad, dado que no se tiene registro de personas observadas que no fueron paradas.
 
 
@@ -74,6 +74,8 @@ print(DQR.cat)
 hist(SQFdata$perstop, breaks = 87,  prob=T, xlim=c(0,87))
 plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
 ```
+## VARIABLES DEPENDIENTES
+
 ## SUSPECT'S BUILD (build)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade,build) %>%
