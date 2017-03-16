@@ -69,12 +69,12 @@ print(DQR.cat)
 
 # 2. ANÁLISIS EXPLORATORIO VARIABLES
 
-## VARIABLE INDEPEDIENTE: PERSTOP (minutos)
+## VARIABLE DEPEDIENTE: PERSTOP (minutos)
 ```{r, fig.height=5, fig.width=15}
 hist(SQFdata$perstop, breaks = 87,  prob=T, xlim=c(0,87))
 plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
 ```
-## VARIABLES DEPENDIENTES
+## VARIABLES INDEPENDIENTES
 
 ## SUSPECT'S BUILD (build)
 ```{r, fig.height=5, fig.width=15}
