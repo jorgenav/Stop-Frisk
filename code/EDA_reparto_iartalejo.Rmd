@@ -10,6 +10,7 @@ output:
     toc: yes
 ---
 
+
 ```{r, message=FALSE}
 # Carga de librerías
 library(dplyr)
