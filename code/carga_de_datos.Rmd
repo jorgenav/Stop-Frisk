@@ -1,13 +1,5 @@
----
-title: "Data mining project with NYC Stop&Frisk data"
-author: ""
-date: ""
-output: html_document
----
-
 # Carga de datos del Proyecto
 
-```{r}
 if(!file.exists("2014.csv")) {
   download.file("http://www.nyc.gov/html/nypd/downloads/zip/analysis_and_planning/2014_sqf_csv.zip",
     "2014_sqf_csv")
@@ -17,4 +9,3 @@ if(!file.exists("2014.csv")) {
 SQFdata <- read.csv("2014.csv")
 
 dim(SQFdata)
-```
