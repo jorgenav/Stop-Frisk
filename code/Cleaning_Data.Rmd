@@ -5,7 +5,7 @@ output: html_document
 ---
 # Limpieza de datos
 
-## Fix date and time
+## Tratamiento fechas y horas
 ```{r}
 #install.packages("lubridate")
 library(lubridate)
@@ -297,15 +297,19 @@ SQFdata$crossst[which(SQFdata$crossst == " ")] <- NA
 
 # Corregir NAs y unificar valores en forceuse
 SQFdata$forceuse[which(SQFdata$forceuse == " ")] <- NA
+SQFdata$forceuse <- factor(SQFdata$forceuse, levels = c(" ", "DO", "DS", "OR", "OT", "SF", "SW"), labels=c('NA', 'Defense of other', 'Defense of self', 'Overcome resistence', 'Other', 'Suspected flight', 'Suspected weapon'))
 
 # Corregir NAs y unificar valores en officrid
 SQFdata$officrid[which(SQFdata$officrid == " ")] <- NA
+SQFdata$officrid <- factor(SQFdata$officrid, levels = c(" ", "I", "0"), labels=c('NA', 'Id', 'No'))
 
 # Corregir NAs y unificar valores en offshld
 SQFdata$offshld[which(SQFdata$offshld == " ")] <- NA
+SQFdata$offshld <- factor(SQFdata$offshld, levels = c(" ", "S", "0"), labels=c('NA', 'Shield', 'No'))
 
 # Corregir NAs y unificar valores en offverb
 SQFdata$offverb[which(SQFdata$offverb == " ")] <- NA
+SQFdata$offverb <- factor(SQFdata$offverb, levels = c(" ", "V", "0"), labels=c('NA', 'Verbal', 'No'))
 
 # Corregir NAs y unificar valores en othfeatr
 SQFdata$othfeatr[which(SQFdata$othfeatr == " ")] <- NA
@@ -340,9 +344,40 @@ SQFdata$post <- factor(SQFdata$post)
 # Corrección detailCM
 SQFdata$detailCM <- factor(SQFdata$detailCM)
 
+# Corrección inout
+SQFdata$inout <- factor(SQFdata$inout, levels = c('I','O'), labels=c('Inside', 'Outside'))
+
+# Corrección trhsloc
+SQFdata$trhsloc <- factor(SQFdata$trhsloc, levels = c("H", "P", "T"),
+                          labels=c('Housing', 'Neither', 'Transit'))
+
+# Corrección typeofid
+SQFdata$typeofid <- factor(SQFdata$typeofid, levels = c("O", "P", "R", "V"),
+                           labels=c('Other', 'Photo', 'Refused', 'Verbal'))
+
+# Corrección sex
+SQFdata$sex <- factor(SQFdata$sex, levels = c("F", "M", "Z"), labels=c('Female', 'Male', 'Unknown'))
+
+# Corrección race
+SQFdata$race <- factor(SQFdata$race, levels = c("A", "B", "I", "P", "Q", "U", "W", "Z"),
+                       labels=c('Asian/Pacific islander', 'Black', 'American indian/Alaskan native',
+                                'Black-hispanic', 'White-hispanic', 'Unknown', 'White', 'Other'))
+
+# Corrección eyecolor
+SQFdata$eyecolor <- factor(SQFdata$eyecolor, levels = c("BK","BL","BR","DF","GR","GY","HA","MA","MC","P","VI","XX","Z"),
+                       labels=c('Black', 'Blue', 'Brown', 'Two different', 'Green', 'Gray',
+                                'Hazel', 'Maroon', 'MC', 'Pink', 'Violet', 'Unknown', 'Other'))
+
+# Corrección haircolr
+SQFdata$haircolr <- factor(SQFdata$haircolr, levels = c("BA","BK","BL","BR","DY","FR","GY","RA","SN","SP","WH","XX","ZZ"),
+                       labels=c('Bald', 'Black', 'Blond', 'Brown', 'Dyed', 'Frosted', 'Gray',
+                                'Red', 'Sandy', 'Salt and pepper', 'White', 'Unknown', 'Other'))
+
+# Corrección build
+SQFdata$build <- factor(SQFdata$build, levels = c("H", "M", "T", "U", "Z"),
+                        labels=c('Heavy', 'Medium', 'Thin', 'Muscular', 'Unknown'))
 ```
 
 ```{r}
 #summary(SQFdata)
 ```
-
