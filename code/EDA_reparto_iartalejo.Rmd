@@ -4,42 +4,49 @@ author: "iartalejo"
 date: "14 de marzo de 2017"
 output: 
   pdf_document: 
-    fig_caption: yes
-    fig_height: 5
-    fig_width: 15
     toc: yes
 ---
+## Problemática
 
-```{r, message=FALSE}
+
+
+## Hipótesis inicial
+Se plantea como hipótesis la  demanda publicada en New York Liberty Civils <https://www.nyclu.org/en/stop-and-frisk-data> , es decir verificar si la ley Stop-Frisk está siendo aplicada bajo conceptos de discriminación.  El análisis inicial se fundamentó en el tiempo de observación, sin embargo se desechó la posibilidad, dado que no se tiene registro de personas observadas que no fueron paradas.
+
+
+## Pregunta 1
+Cuáles son los factores que determinan el tiempo de parada `perstop`, interesa verificar si está influenciado por características discriminatorias.
+
+```{r}
 # Carga de librerías
 library(dplyr)
 library(ggplot2)
 library(PASWR2)
+library(fitdistrplus)
+library(mixtools)
 ```
 
 ```{r}
 # Carga del Dataset
-# SQFdata <- read.csv("2014.csv")
-# buscar attach???? o similar
+if(!exists("foo", mode="function")) source("Cleaning_Data.R")
 ```
 
 # 0. SELECCION DE VARIABLES (para este informe):
 ```{r}
-SQFdata <- select(SQFdata,
-                  build,
-                  frisked,
-                  knifcuti, machgun, othrweap,
-                  pf_ptwep, pf_baton,
-                  cs_lkout, cs_cloth,
-                  rf_attir, rf_vcact, 
-                  sb_outln, sb_admis,
-                  ac_time, ac_stsnd,
-                  forceuse,
-                  crossst,
-                  xcoord, ycoord,
-                  explnstp,
-                  perstop, arstmade,
-                  sex)
+SQFdata <- tbl_df(SQFdata)
+SQFdata <- dplyr::select(SQFdata, build,
+                         frisked,
+                         knifcuti, machgun, othrweap,
+                         pf_ptwep, pf_baton,
+                         cs_lkout, cs_cloth,
+                         rf_attir, rf_vcact,
+                         sb_outln, sb_admis,
+                         ac_time, ac_stsnd,
+                         forceuse,
+                         crossst,
+                         xcoord, ycoord,
+                         explnstp,
+                         perstop, arstmade)
 ```
 
 # 1. DATA QUALITY REPORT
@@ -63,17 +70,58 @@ print(DQR.num)
 print(DQR.cat)
 ```
 
-# 2. ANÁLISIS VARIABLES
+# 2. ANÁLISIS EXPLORATORIO VARIABLES
 
-## SUSPECT'S BUILD (build)
+## VARIABLE DEPENDIENTE
+## Tiempo de parada (perstop)
+```{r, fig.height=5, fig.width=15}
+#hist(SQFdata$perstop, breaks = 20,  prob=F, xlim=c(0,87))
+plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
+
+stop <- SQFdata$perstop
+mixmdl <- normalmixEM(stop, k=2)
+plot(mixmdl,which=2)
+lines(density(stop), lty=2, lwd=2)
+```
+
+## VARIABLES INDEPENDIENTES
+
+## Tiempo de observación (perobs)
+
+## Complexión del sospechoso (build)
+```{r}
+SQFdata %>% group_by(build) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(build)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(build,perstop)) + geom_violin()
+p2 = ggplot(data = SQFdata, aes(build,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(build)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,p3,cols=2)
 ```
+```{r}
+SQFdata %>% group_by(build, arstmade) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round( n/sum(n)*100,2),"%"))
+```
 
-## WAS SUSPECT FRISKED?  (frisked)   ("frisked:cacheado", "searched:registrado")
+## ¿Fue el sospechoso cacheado?  (frisked)   
+("frisked:cacheado", "searched:registrado")
+```{r}
+SQFdata %>% group_by(arstmade, frisked) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(frisked)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(frisked,perstop)) + geom_boxplot()
@@ -81,15 +129,33 @@ p3 = ggplot(data = SQFdata, aes(frisked)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## WAS A KNIFE OR CUTTING INSTRUMENT FOUND ON SUSPECT?  (knifcuti)
+## ¿Fue encontrado un cuchillo o instrumento de corte en el sospechoso?  (knifcuti)
+```{r}
+SQFdata %>% group_by(arstmade, knifcuti) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(knifcuti,perstop)) + geom_violin()
+p2 = ggplot(data = SQFdata, aes(knifcuti,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## WAS A MACHINE GUN FOUND ON SUSPECT? (machgun) ("ametralladora")
+## ¿Fue encontrada una ametralladora en el sospechoso? (machgun)
+```{r}
+SQFdata %>% group_by(arstmade, machgun) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(machgun)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(machgun,perstop)) + geom_boxplot()
@@ -97,7 +163,16 @@ p3 = ggplot(data = SQFdata, aes(machgun)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## WAS ANOTHER TYPE OF WEAPON FOUND ON SUSPECT? (othrweap)
+## ¿Fue encontrada otro tipo de arma en el sospechoso? (othrweap)
+```{r}
+SQFdata %>% group_by(arstmade, othrweap) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(othrweap)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(othrweap,perstop)) + geom_boxplot()
@@ -105,7 +180,16 @@ p3 = ggplot(data = SQFdata, aes(othrweap)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## PHYSICAL FORCE USED BY OFFICER - WEAPON POINTED (pf_ptwep)
+## Fuerza física usada por el oficial de policía - Apuntar con el arma (pf_ptwep)
+```{r}
+SQFdata %>% group_by(arstmade, pf_ptwep) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(pf_ptwep)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(pf_ptwep,perstop)) + geom_boxplot()
@@ -113,7 +197,16 @@ p3 = ggplot(data = SQFdata, aes(pf_ptwep)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## PHYSICAL FORCE USED BY OFFICER - BATON (pf_baton) ("porra")
+## Fuerza física usada por el oficial de policía - Porra (pf_baton)
+```{r}
+SQFdata %>% group_by(arstmade, pf_baton) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(pf_baton)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(pf_baton,perstop)) + geom_boxplot()
@@ -121,7 +214,16 @@ p3 = ggplot(data = SQFdata, aes(pf_baton)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## REASON FOR STOP - SUSPECT ACTING AS A LOOKOUT (cs_lkout) ("vigía")
+## Razón para la parada - El sospechoso actuando como un vigía (cs_lkout)
+```{r}
+SQFdata %>% group_by(arstmade, cs_lkout) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(cs_lkout)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(cs_lkout,perstop)) + geom_boxplot()
@@ -129,7 +231,16 @@ p3 = ggplot(data = SQFdata, aes(cs_lkout)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## REASON FOR STOP - WEARING CLOTHES COMMONLY USED IN A CRIME (cs_cloth)
+## Razón para la parada - Llevar ropa usada frecuentemente en un crimen (cs_cloth)
+```{r}
+SQFdata %>% group_by(arstmade, cs_cloth) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(cs_cloth)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(cs_cloth,perstop)) + geom_boxplot()
@@ -137,7 +248,16 @@ p3 = ggplot(data = SQFdata, aes(cs_cloth)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## REASON FOR FRISK - INAPPROPRIATE ATTIRE FOR SEASON (rf_attir)
+## Razón para el cacheo - Atuendo inapropiado para la estación del año (rf_attir)
+```{r}
+SQFdata %>% group_by(arstmade, rf_attir) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(rf_attir)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(rf_attir,perstop)) + geom_boxplot()
@@ -145,7 +265,16 @@ p3 = ggplot(data = SQFdata, aes(rf_attir)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## REASON FOR FRISK - ACTIONS OF ENGAGING IN A VIOLENT CRIME (rf_vcact)
+## Razón para el cacheo - Acciones relacionadas en un crimen violento (rf_vcact)
+```{r}
+SQFdata %>% group_by(arstmade, rf_vcact) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(rf_vcact)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(rf_vcact,perstop)) + geom_boxplot()
@@ -153,7 +282,16 @@ p3 = ggplot(data = SQFdata, aes(rf_vcact)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## BASIS OF SEARCH - OUTLINE OF WEAPON (sb_outln) (BASE DE BÚSQUEDA - ESQUEMA DE ARMA)
+## Fundamentos del registro - Esquema de arma (sb_outln)
+```{r}
+SQFdata %>% group_by(arstmade, sb_outln) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(sb_outln)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(sb_outln,perstop)) + geom_boxplot()
@@ -161,7 +299,16 @@ p3 = ggplot(data = SQFdata, aes(sb_outln)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## BASIS OF SEARCH - ADMISSION BY SUSPECT (sb_admis)
+## Fundamentos del registro - Declaración del sospechoso (sb_admis)
+```{r}
+SQFdata %>% group_by(arstmade, sb_admis) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(sb_admis)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(sb_admis,perstop)) + geom_boxplot()
@@ -169,7 +316,16 @@ p3 = ggplot(data = SQFdata, aes(sb_admis)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## ADDITIONAL CIRCUMSTANCES - TIME OF DAY FITS CRIME INCIDENCE (ac_time)
+## Circunstancias adicionales - Momento del día se ajusta a indicencias de crímenes (ac_time)
+```{r}
+SQFdata %>% group_by(arstmade, ac_time) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(ac_time,perstop)) + geom_boxplot()
@@ -177,7 +333,16 @@ p3 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## ADDITIONAL CIRCUMSTANCES - SIGHTS OR SOUNDS OF CRIMINAL ACTIVITY (ac_stsnd)
+## Circunstancias adicionales - Señakes o sonidos de actividad criminal (ac_stsnd)
+```{r}
+SQFdata %>% group_by(arstmade, ac_stsnd) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(ac_stsnd, perstop)) + geom_boxplot()
@@ -185,15 +350,33 @@ p3 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## REASON FORCE USED (forceuse)
+## Razón de utilización de la fuerza (forceuse)
+```{r}
+SQFdata %>% group_by(arstmade, forceuse) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(forceuse, perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p1 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=45, hjust=1))
+p2 = ggplot(data = SQFdata, aes(forceuse, perstop)) + geom_boxplot() + theme(axis.text.x = element_text(angle=45, hjust=1))
+p3 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=45, hjust=1))
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## DID OFFICER EXPLAIN REASON FOR STOP? (explnstp)
+## ¿El oficial de policía explicó la razón de la parada? (explnstp)
+```{r}
+SQFdata %>% group_by(arstmade, explnstp) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(explnstp)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(explnstp, perstop)) + geom_boxplot()
@@ -201,46 +384,30 @@ p3 = ggplot(data = SQFdata, aes(explnstp)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## SUSPECT'S SEX (sex)
-```{r, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(sex)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(sex, perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(sex)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
-multiplot(p1,p2,p3,cols=2)
+## Localización de la Parada: Cruce con la calle (crossst)
+```{r}
+SQFdata %>% group_by(arstmade, crossst) %>%
+        filter(n() > 100) %>%
+        summarise(n=n(), 
+                  perStop= sum(perstop),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
 ```
 
-
-## LOCATION OF STOP CROSS STREET (crossst)
 ```{r, fig.height=15, fig.width=15}
 SQFdata.filtered = SQFdata %>%
                       group_by(crossst) %>%
-                      filter(n() > 170)
-                      
+                      filter(n() > 150)
                       #filter(arstmade.Y > mean(arstmade))
 
-p1 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata.filtered , aes(crossst, perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p1 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=45, hjust=1))
+p2 = ggplot(data = SQFdata.filtered , aes(crossst, perstop)) + geom_boxplot() + theme(axis.text.x = element_text(angle=45, hjust=1))
+p3 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=45, hjust=1))
 multiplot(p1,p2,p3,cols=1)
 ```
 
-## LOCATION OF STOP X COORD (xcoord)
-```{r, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(xcoord)) + geom_histogram() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(xcoord, perstop)) + geom_point()
-p3 = ggplot(data = SQFdata, aes(xcoord)) + geom_histogram(aes(fill = arstmade), position = "fill") + ylab("Percentage")
-multiplot(p1,p2,p3,cols=2)
-```
-
-## LOCATION OF STOP Y COORD (ycoord)
-```{r, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(ycoord)) + geom_histogram() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(ycoord, perstop)) + geom_point()
-p3 = ggplot(data = SQFdata, aes(ycoord)) + geom_histogram(aes(fill = arstmade), position = "fill") + ylab("Percentage")
-multiplot(p1,p2,p3,cols=2)
-```
-
-## LOCATION OF STOP: Y_COORD(ycoord)  vs  X_COORD(ycoord)
+## Localización de la Parada: xcoord  vs  ycoord
 ```{r, fig.height=10, fig.width=20}
 ggplot(data = SQFdata, aes(xcoord, ycoord)) + geom_point(aes(color = arstmade))
 
