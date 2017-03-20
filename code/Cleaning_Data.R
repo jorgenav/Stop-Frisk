@@ -1,12 +1,12 @@
----
-title: "Data mining project with NYC Stop&Frisk data"
-author: "iartalejo"
-output: html_document
----
+# title: "Data mining project with NYC Stop&Frisk data"
+# author: "iartalejo"
+
+if(!exists("SQFdata", mode="function")) source("carga_de_datos.R")
+
 # Limpieza de datos
 
 ## Tratamiento fechas y horas
-```{r}
+
 #install.packages("lubridate")
 library(lubridate)
 
@@ -25,10 +25,9 @@ SQFdata$timestop <- hm(SQFdata$timestop)  #Convert Strings to Times
 
 # Variable dob
 SQFdata$dob <- mdy(SQFdata$dob)  #Convert to Dates
-```
 
 ## Unificación valores
-```{r}
+
 # Corrección perstop
 SQFdata$perstop = as.integer(SQFdata$perstop)
 
@@ -376,8 +375,5 @@ SQFdata$haircolr <- factor(SQFdata$haircolr, levels = c("BA","BK","BL","BR","DY"
 # Corrección build
 SQFdata$build <- factor(SQFdata$build, levels = c("H", "M", "T", "U", "Z"),
                         labels=c('Heavy', 'Medium', 'Thin', 'Muscular', 'Unknown'))
-```
-
-```{r}
+                        
 #summary(SQFdata)
-```
