@@ -304,7 +304,9 @@ SQFdata$crossst[which(SQFdata$crossst == " ")] <- NA
 
 # Corregir NAs y unificar valores en forceuse
 SQFdata$forceuse[which(SQFdata$forceuse == " ")] <- NA
-SQFdata$forceuse <- factor(SQFdata$forceuse, levels = c(" ", "DO", "DS", "OR", "OT", "SF", "SW"), labels=c('NA', 'Defense of other', 'Defense of self', 'Overcome resistence', 'Other', 'Suspected flight', 'Suspected weapon'))
+SQFdata$forceuse <- factor(SQFdata$forceuse, levels = c(" ", "DO", "DS", "OR", "OT", "SF", "SW"),
+                           labels=c('NA', 'Defense of other', 'Defense of self', 'Overcome resistence',
+                                    'Other', 'Suspected flight', 'Suspected weapon'))
 
 # Corregir NAs y unificar valores en officrid
 SQFdata$officrid[which(SQFdata$officrid == " ")] <- NA
