@@ -22,13 +22,11 @@ Cuáles son los factores que determinan el tiempo de parada `perstop`, interesa 
 library(dplyr)
 library(ggplot2)
 library(PASWR2)
-library(fitdistrplus)
-library(mixtools)
 ```
 
 ```{r}
 # Carga del Dataset
-if(!exists("foo", mode="function")) source("Cleaning_Data.R")
+source("Cleaning_Data.R")
 ```
 
 # 0. SELECCION DE VARIABLES (para este informe):
@@ -73,8 +71,12 @@ print(DQR.cat)
 # 2. ANÁLISIS EXPLORATORIO VARIABLES
 
 ## VARIABLE DEPENDIENTE
+
 ## Tiempo de parada (perstop)
 ```{r, fig.height=5, fig.width=15}
+library(fitdistrplus)
+library(mixtools)
+
 #hist(SQFdata$perstop, breaks = 20,  prob=F, xlim=c(0,87))
 plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
 
@@ -82,20 +84,31 @@ stop <- SQFdata$perstop
 mixmdl <- normalmixEM(stop, k=2)
 plot(mixmdl,which=2)
 lines(density(stop), lty=2, lwd=2)
+
+detach("package:fitdistrplus", unload=TRUE)
+detach("package:MASS", unload=TRUE)
 ```
 
 ## VARIABLES INDEPENDIENTES
 
 ## Tiempo de observación (perobs)
+...
 
-## Complexión del sospechoso (build)
+## Complexión del sospechoso (build) <- PROPUESTA CON DOS TABLAS
 ```{r}
 SQFdata %>% group_by(build) %>%
         summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la variable "build", que se paran (Stop) a muchos más sospechosos con complexión "Medium" y "Thin" que del resto, siendo el porcentaje de sospechosos parados con complexión "Muscular" muy bajo. Aunque esto podría estar influenciado por el número de individuos que existen de cada caso en la población en general. 
+
+Pasemos ahora a analizar los diferentes grupos en relación con nuestras variables dependientes:
+
+En cuanto a la variable "perStop", la media de tiempo parado para cada grupo es muy similar. No habiendo diferencias más allá de los 4 segundos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que los valores de la mediana son mucho más altos en los casos de complexión "Heavy" y "Medium" que en los demás grupos. 
+
+Por otro lado, el rango intercuartil del tiempo parado es similar entre los diferentes grupos, salvo en el caso de "Muscular" donde es un poco más amplio que en el resto de casos, es decir hay más variabilidad.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(build)) + geom_bar() + ylab("Frequency")
@@ -105,11 +118,10 @@ multiplot(p1,p2,p3,cols=2)
 ```
 ```{r}
 SQFdata %>% group_by(build, arstmade) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round( n/sum(n)*100,2),"%"))
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la variable dependiente "arstmade", se aprecia un mayor porcentaje de arrestos en el grupo "Muscular" (18.38%) comparado con los demás, siendo el grupo con menor porcentaje de arrestos el grupo "Medium" (13.93%). En base a este análisis exploratorio, a priori parece que existen **ligeras** diferencias entre los diferentes grupos, aunque podrían no ser estadísticamente significativas (a comprobar en posterior análisis). En cuyo caso (negativo), se concluiría que no existen diferencias sustanciales entre los grupos y por lo tanto no es un factor relevante a la hora de determinar si se produce o no un arresto.
 
 ## ¿Fue el sospechoso cacheado?  (frisked)   
 ("frisked:cacheado", "searched:registrado")
@@ -409,6 +421,9 @@ multiplot(p1,p2,p3,cols=1)
 
 ## Localización de la Parada: xcoord  vs  ycoord
 ```{r, fig.height=10, fig.width=20}
+#install.packages("leaflet")
+library(leaflet)
 ggplot(data = SQFdata, aes(xcoord, ycoord)) + geom_point(aes(color = arstmade))
-
+#df <- SQFdata %>% dplyr::select(xcoord, ycoord)
+#leaflet(df) %>% addTiles() %>% setView( , , zoom = 4) %>% addCircles(lat = df$xcoord, lng = df$ycoord)
 ```

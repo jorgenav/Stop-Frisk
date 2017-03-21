@@ -1,9 +1,17 @@
 # title: "Data mining project with NYC Stop&Frisk data"
 # author: "iartalejo"
 
-if(!exists("SQFdata", mode="function")) source("carga_de_datos.R")
+# CARGA DE DATOS DEL PROYECTO
 
-# Limpieza de datos
+if(!file.exists("2014.csv")) {
+  download.file("http://www.nyc.gov/html/nypd/downloads/zip/analysis_and_planning/2014_sqf_csv.zip",
+                "2014_sqf_csv")
+  unzip("2014_sqf_csv")
+}
+
+SQFdata <- read.csv("2014.csv")
+
+# LIMPIEZA DE DATOS
 
 ## Tratamiento fechas y horas
 
