@@ -1,60 +1,225 @@
 ---
-title: "R Notebook"
-output: html_notebook
+title: "EDA"
+author: "Jorge Navarro Garcia"
+date: "13 de marzo de 2017"
+output: html_document
 ---
 
-ggplot(SQFdata, aes(x = sex)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = sex)) + geom_bar()
-ggplot(SQFdata,aes(sex,perstop))+geom_boxplot()
+# Reparto de variables
 
-summary(SQFdata$arstmade)
+```{r Nathaly}
 
-fitsex=glm(SQFdata$arstmade~SQFdata$sex,data = SQFdataTrain,family = "binomial")
-summary(fitsex)
-```
+# pct
+# precint of stop 1 through 123
 
-```{r Hugo}
-# weight
-# Weight in pounds
-weight1=SQFdata %>% group_by(weight) %>%
-    summarise(count=n())%>%
-    arrange(desc(count))%>%
-    filter(weight<800 & weight>100)
+SQFdata %>% group_by(pct) %>%
+    summarise(count=n()) %>%
+    arrange(desc(count))
 
-SQFdata %>%
-    group_by(weight, arstmade) %>%
+# ser_num
+# UF-250 serial number
+
+SQFdata %>% group_by(ser_num) %>%
+    summarise(count=n()) %>%
+    arrange(desc(count))
+
+SQFdata$ser_num[which(is.na(SQFdata$ser_num))]
+
+# city
+# Condados
+
+SQFdata %>% group_by(city) %>%
+    summarise(count=n()) %>%
+    arrange(desc(count))
+
+SQFdata$city[which(is.na(SQFdata$city))]
+
+# searched
+# 
+
+SQFdata %>% group_by(searched) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
+SQFdata$searched[which(is.na(SQFdata$searched))]
+
+# pistol
+# 10806 NAs...
+
+SQFdata %>% group_by(pistol) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# perobs
+# 
+
+SQFdata %>% group_by(perobs) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$perobs[which(is.na(SQFdata$perobs))]
+
+# pf_hcuff
+# 9714
+
+SQFdata %>% group_by(pf_hcuff) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# pf_pepsp
+# 10857 NAs
+
+SQFdata %>% group_by(pf_pepsp) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# cs_drgtr
+# 10037 NAs
+
+SQFdata %>% group_by(cs_drgtr) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# cs_furtv
+# 6479 NAs
+
+SQFdata %>% group_by(cs_furtv) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# cs_vcrim
+# 9709 NAs
+
+SQFdata %>% group_by(cs_vcrim) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# rf_rfcmp
+# 9475 NAs
+
+SQFdata %>% group_by(rf_rfcmp) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# rf_verbl
+# 10741 NAs
+
+SQFdata %>% group_by(rf_verbl) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# sb_other
+# 9981 NAs
+
+SQFdata %>% group_by(sb_other) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# ac_proxm
+# 7566 NAs
+
+SQFdata %>% group_by(ac_proxm) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# ac_rept
+# 8272 NAs
+
+SQFdata %>% group_by(ac_rept) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# inout
+# 
+
+SQFdata %>% group_by(inout) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$inout[which(is.na(SQFdata$inout))]
+
+# trhsloc
+# 
+
+SQFdata %>% group_by(trhsloc) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$trhsloc[which(is.na(SQFdata$trhsloc))]
+
+# addrpct
+# location of address precinct -> Es interesante?
+
+SQFdata %>% group_by(addrpct) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$addrpct[which(is.na(SQFdata$addrpct))]
+
+# repcmd
+# reporting officer's command -> Es interesante?
+
+SQFdata %>% group_by(repcmd) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$repcmd[which(is.na(SQFdata$repcmd))]
+
+# revcmd
+# reviewing officer's command -> Es interesante?
+
+SQFdata %>% group_by(revcmd) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$revcmd[which(is.na(SQFdata$revcmd))]
+
+```
+
+
+```{r Hugo}
+library(dplyr)
+# sex
+
+SQFdata %>% group_by(sex) %>%
+    summarise(count=n()) %>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(sex)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sex,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sex)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$sex[which(is.na(SQFdata$sex))]
+
+# weight
+# Weight in pounds
+
+SQFdata %>% group_by(weight) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(weight)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(weight,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(weight)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
 SQFdata$weight[which(is.na(SQFdata$weight))]
 
-summary(SQFdata$weight[which(SQFdata$arstmade=='Y')])
-summary(SQFdata$weight[which(SQFdata$arstmade=='N')])
-
-
-ggplot(SQFdata, aes(x = weight)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = weight)) + geom_bar()
-ggplot(SQFdata,aes(weight,perstop))+geom_boxplot()
-
-SQFdata$weight=relevel(weight1,ref = 2)
-```
-
-```{r}
 # haircolr
 # 
+
 SQFdata %>% group_by(haircolr) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = haircolr)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = haircolr)) + geom_bar()
-ggplot(SQFdata,aes(haircolr,perstop))+geom_boxplot()
+p1 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(haircolr,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
 SQFdata$haircolr[which(is.na(SQFdata$haircolr))]
-```
 
-```{r}
 # riflshot
 # 10860 NAs
 
@@ -62,13 +227,11 @@ SQFdata %>% group_by(riflshot) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = riflshot)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = riflshot)) + geom_bar()
-ggplot(SQFdata,aes(riflshot,perstop))+geom_boxplot()
-# no significativa
-```
+p1 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(riflshot,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```{r}
 # sumissue
 # Was summons issued?
 
@@ -76,13 +239,13 @@ SQFdata %>% group_by(sumissue) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-SQFdata$sumissue=SQFdata$sumissue[which(!is.na(SQFdata$sumissue))]
+p1 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sumissue,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-ggplot(SQFdata, aes(x = sumissue)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = sumissue)) + geom_bar()
-ggplot(SQFdata,aes(sumissue,perstop))+geom_boxplot()
-```
-```{r}
+SQFdata$sumissue[which(is.na(SQFdata$sumissue))]
+
 # pf_hands
 # 9133 NAs
 
@@ -90,12 +253,11 @@ SQFdata %>% group_by(pf_hands) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = pf_hands)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = pf_hands)) + geom_bar()
-ggplot(SQFdata,aes(pf_hands,perstop))+geom_boxplot()
-```
+p1 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_hands,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```{r}
 # pf_wall
 # 10412 NAs
 
@@ -103,12 +265,11 @@ SQFdata %>% group_by(pf_wall) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = pf_wall)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = pf_wall)) + geom_bar()
-ggplot(SQFdata,aes(pf_wall,perstop))+geom_boxplot()
-```
+p1 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_wall,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```{r}
 # pf_other
 # 10813 NAs
 
@@ -116,12 +277,11 @@ SQFdata %>% group_by(pf_other) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = pf_other)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = pf_other)) + geom_bar()
-ggplot(SQFdata,aes(pf_other,perstop))+geom_boxplot()
-```
+p1 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_other,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```{r}
 # cs_objcs
 # 10445 NAs
 
@@ -129,12 +289,11 @@ SQFdata %>% group_by(cs_objcs) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = cs_objcs)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = cs_objcs)) + geom_bar()
-ggplot(SQFdata,aes(cs_objcs,perstop))+geom_boxplot()
-```
+p1 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_objcs,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```{r}
 # cs_bulge
 # 10032 NAs
 
@@ -142,13 +301,11 @@ SQFdata %>% group_by(cs_bulge) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = cs_bulge)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = cs_bulge)) + geom_bar()
-ggplot(SQFdata,aes(cs_bulge,perstop))+geom_boxplot()
+p1 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_bulge,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```
-
-```{r}
 # rf_vcrim
 # 8325 NAs
 
@@ -156,13 +313,11 @@ SQFdata %>% group_by(rf_vcrim) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = rf_vcrim)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = rf_vcrim)) + geom_bar()
-ggplot(SQFdata,aes(rf_vcrim,perstop))+geom_boxplot()
+p1 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_vcrim,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```
-
-```{r}
 # rf_knowl
 # 10244 NAs
 
@@ -170,13 +325,11 @@ SQFdata %>% group_by(rf_knowl) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = rf_knowl)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = rf_knowl)) + geom_bar()
-ggplot(SQFdata,aes(rf_knowl,perstop))+geom_boxplot()
+p1 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_knowl,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```
-
-```{r}
 # rf_furt
 # 6880 NAs
 
@@ -184,12 +337,11 @@ SQFdata %>% group_by(rf_furt) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = rf_furt)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = rf_furt)) + geom_bar()
-ggplot(SQFdata,aes(riflshot,rf_furt))+geom_boxplot()
-```
+p1 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_furt,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-```{r}
 # ac_evasv
 # 8553 NAs
 
@@ -197,28 +349,23 @@ SQFdata %>% group_by(ac_evasv) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = ac_evasv)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = ac_evasv)) + geom_bar()
-ggplot(SQFdata,aes(ac_evasv,perstop))+geom_boxplot()
+p1 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_evasv,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-
-
-```
-
-```{r}
 # ac_assoc
 # 9972 NAs
+
 SQFdata %>% group_by(ac_assoc) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = ac_assoc)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = ac_assoc)) + geom_bar()
-ggplot(SQFdata,aes(ac_assoc,perstop))+geom_boxplot()
-```
+p1 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_assoc,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-
-```{r}
 # ac_inves
 # 9355 NAs
 
@@ -226,28 +373,25 @@ SQFdata %>% group_by(ac_inves) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
-ggplot(SQFdata, aes(x = ac_inves)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = ac_inves)) + geom_bar()
-ggplot(SQFdata,aes(ac_inves,perstop))+geom_boxplot()
-```
+p1 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_inves,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
 
-
-```{r}
 # stname
 # String -> location of stop street name -> Es interesante?
 
 SQFdata %>% group_by(stname) %>%
     summarise(count=n())%>%
     arrange(desc(count))
-summary(SQFdata$stname~SQFdata$arstmade)
+
+p1 = ggplot(data = SQFdata, aes(stname)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(stname,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(stname)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
 SQFdata$stname[which(is.na(SQFdata$stname))]
 
-ggplot(SQFdata, aes(x = stname)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = stname)) + geom_bar()
-ggplot(SQFdata,aes(stname,perstop))+geom_boxplot()
-```
-
-```{r}
 # offunif
 # 
 
@@ -255,14 +399,13 @@ SQFdata %>% group_by(offunif) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
+p1 = ggplot(data = SQFdata, aes(offunif)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offunif,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offunif)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
 SQFdata$offunif[which(is.na(SQFdata$offunif))]
 
-ggplot(SQFdata, aes(x = offunif)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = offunif)) + geom_bar()
-ggplot(SQFdata,aes(offunif,perstop))+geom_boxplot()
-```
-
-```{r}
 # offverb
 # verbal statement provided by officer (if not in uniform) -> Limpiar datos
 
@@ -270,14 +413,13 @@ SQFdata %>% group_by(offverb) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
+p1 = ggplot(data = SQFdata, aes(offverb)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offverb,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offverb)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
 SQFdata$offverb[which(is.na(SQFdata$offverb))]
 
-ggplot(SQFdata, aes(x = offverb)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = offverb)) + geom_bar()
-ggplot(SQFdata,aes(offverb,perstop))+geom_boxplot()
-```
-
-```{r}
 # officrid
 # id card provided by officer (if not in uniform) -> Limpiar datos
 
@@ -285,15 +427,13 @@ SQFdata %>% group_by(officrid) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
+p1 = ggplot(data = SQFdata, aes(officrid)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(officrid,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(officrid)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
 SQFdata$officrid[which(is.na(SQFdata$officrid))]
 
-ggplot(SQFdata, aes(x = officrid)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = officrid)) + geom_bar()
-ggplot(SQFdata,aes(officrid,perstop))+geom_boxplot()
-
-```
-
-```{r}
 # offshld
 # shield provided by officer (if not in uniform) -> Limpiar datos
 
@@ -301,10 +441,481 @@ SQFdata %>% group_by(offshld) %>%
     summarise(count=n())%>%
     arrange(desc(count))
 
+p1 = ggplot(data = SQFdata, aes(offshld)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offshld,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offshld)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
 SQFdata$offshld[which(is.na(SQFdata$offshld))]
 
-ggplot(SQFdata, aes(x = riflshot)) + geom_bar()
-ggplot(SQFdata, aes(arstmade,fill = riflshot)) + geom_bar()
-ggplot(SQFdata,aes(riflshot,perstop))+geom_boxplot()
+```
 
+
+```{r Jorge}
+
+# race
+
+SQFdata$race
+
+SQFdata %>% group_by(race) %>%
+    summarise(count=n()) %>%
+    arrange(desc(count))
+
+SQFdata$race[which(is.na(SQFdata$race))]
+
+# age
+
+SQFdata %>% group_by(age) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata %>% group_by(age) %>%
+    summarise(count = n()) %>%
+    arrange(desc(as.numeric(age)))
+
+summary(as.numeric(SQFdata$age))
+
+SQFdata$age[which(is.na(SQFdata$age))]
+
+# contrabn
+# 
+
+SQFdata %>% group_by(contrabn) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$contrabn[which(is.na(SQFdata$contrabn))]
+
+# asltweap
+# 10859 NAs
+
+SQFdata %>% group_by(asltweap) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# detailCM
+# Crime code description -> En 2014 SQF Codebook, descripción
+
+SQFdata %>% group_by(detailCM) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$detailCM[which(is.na(SQFdata$detailCM))]
+
+# pf_grnd
+# 10742 NAs
+
+SQFdata %>% group_by(pf_grnd) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# pf_drwep
+# 10770 NAs
+
+SQFdata %>% group_by(pf_drwep) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# cs_descr
+# 7509 NAs
+
+SQFdata %>% group_by(cs_descr) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# cs_casng
+# 8026 NAs
+
+SQFdata %>% group_by(cs_casng) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# cs_other
+# 8065 NAs
+
+SQFdata %>% group_by(cs_other) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# rf_othsw
+# 9776 NAs
+
+SQFdata %>% group_by(rf_othsw) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# rf_bulg
+# 10055 NAs
+
+SQFdata %>% group_by(rf_bulg) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# sb_hdobj
+# 10083 NAs
+
+SQFdata %>% group_by(sb_hdobj) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# ac_cgdir
+# 8043 NAs
+
+SQFdata %>% group_by(ac_cgdir) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# ac_incid
+# 5223 NAs
+
+SQFdata %>% group_by(ac_incid) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# ac_other
+# 10095
+
+SQFdata %>% group_by(ac_other) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# stinter
+# String -> location of stopo intersection -> Es interesante?
+
+SQFdata %>% group_by(stinter) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$stinter[which(is.na(SQFdata$stinter))]
+
+# sector
+# location of stop sector -> 1 a 21 según Codebook
+
+SQFdata %>% group_by(sector) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$sector[which(is.na(SQFdata$sector))]
+
+# typeofid
+# 
+
+SQFdata %>% group_by(typeofid) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$typeofid[which(is.na(SQFdata$typeofid))]
+
+# othpers
+# 
+
+SQFdata %>% group_by(othpers) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$othpers[which(is.na(SQFdata$othpers))]
+
+# radio
+# radio run
+
+SQFdata %>% group_by(radio) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$radio[which(is.na(SQFdata$radio))]
+
+```
+
+
+```{r Iván}
+
+# build
+# 
+
+SQFdata %>% group_by(build) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$build[which(is.na(SQFdata$build))]
+
+# frisked
+# 
+
+SQFdata %>% group_by(frisked) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$frisked[which(is.na(SQFdata$frisked))]
+
+# knifcuti
+# 10605 NAs
+
+SQFdata %>% group_by(knifcuti) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# machgun
+# 10860 NAs? -> Ningún valor Y
+
+SQFdata %>% group_by(machgun) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# othrweap
+# 10771 NAs
+
+SQFdata %>% group_by(othrweap) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# pf_ptwep
+# 10780
+
+SQFdata %>% group_by(pf_ptwep) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# pf_baton
+# 10856 NAs
+
+SQFdata %>% group_by(pf_baton) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# cs_lkout
+# 9348 NAs
+
+SQFdata %>% group_by(cs_lkout) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# cs_cloth
+# 10431 NAs
+
+SQFdata %>% group_by(cs_cloth) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# rf_attir
+# 10178 NAs
+
+SQFdata %>% group_by(rf_attir) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# rf_vcact
+# 9894 NAs
+
+SQFdata %>% group_by(rf_vcact) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# sb_outln
+# 10761 NAs
+
+SQFdata %>% group_by(sb_outln) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# sb_admis
+# 10771 NAs
+
+SQFdata %>% group_by(sb_admis) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# ac_time
+# 6807 NAs
+
+SQFdata %>% group_by(ac_time) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# ac_stsnd
+# 10540 NAs
+
+SQFdata %>% group_by(ac_stsnd) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+# forceuse
+# Reason for force -> Interesante??
+
+SQFdata %>% group_by(forceuse) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$forceuse[which(is.na(SQFdata$forceuse))]
+
+# crossst
+# String -> location of stop cross street -> Es interesante?
+
+SQFdata %>% group_by(crossst) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$crossst[which(is.na(SQFdata$crossst))]
+
+# xcoord
+# 
+
+SQFdata %>% group_by(xcoord) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$xcoord[which(is.na(SQFdata$xcoord))]
+
+# ycoord
+# 
+
+SQFdata %>% group_by(ycoord) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$ycoord[which(is.na(SQFdata$ycoord))]
+
+# explnstp
+# did officer explain reason for stop? -> Sólo 68 N -> Es interesante?
+
+SQFdata %>% group_by(explnstp) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$explnstp[which(is.na(SQFdata$explnstp))]
+
+```
+
+
+```{r Deshechadas}
+
+# year
+# No aplica
+
+# datestop
+# No aplica
+
+# timestop
+# No aplica
+
+# dob
+# No aplica
+
+# height
+# Aparentemente no existe
+SQFdata %>% group_by(height) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$height[which(is.na(SQFdata$height))]
+
+# othfeatr
+# Demasiados NA -> No es interesante
+
+SQFdata %>% group_by(othfeatr) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$othfeatr[which(is.na(SQFdata$othfeatr))]
+
+# arstoffn
+# String -> offense suspect arrested for -> No es interesante
+
+SQFdata %>% group_by(arstoffn) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$arstoffn[which(is.na(SQFdata$arstoffn))]
+
+# sumoffen
+# String -> offense suspect was summonsed for -> No es interesante
+
+SQFdata %>% group_by(sumoffen) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$sumoffen[which(is.na(SQFdata$sumoffen))]
+
+# crimsusp
+# String -> crime suspected -> No es interesante
+
+SQFdata %>% group_by(crimsusp) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$crimsusp[which(is.na(SQFdata$crimsusp))]
+
+# premname
+# String -> location of stop premise name -> No es interesante
+
+SQFdata %>% group_by(premname) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$premname[which(is.na(SQFdata$premname))]
+
+# addrnum
+# location of stop address number -> No es interesante
+
+SQFdata %>% group_by(addrnum) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$addrnum[which(is.na(SQFdata$addrnum))]
+
+# beat
+# location of stop beat -> 32141 NAs -> No es interesante
+
+SQFdata %>% group_by(beat) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$beat[which(is.na(SQFdata$beat))]
+
+# post
+# 41852 NAs -> No es interesante
+
+SQFdata %>% group_by(post) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$post[which(is.na(SQFdata$post))]
+
+# recstat
+# record status -> No es interesante
+
+SQFdata %>% group_by(recstat) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$recstat[which(is.na(SQFdata$recstat))]
+
+# linecm
+# count > 1 additional details -> No es interesante
+
+SQFdata %>% group_by(lineCM) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$lineCM[which(is.na(SQFdata$lineCM))]
+
+```
+
+
+```{r Variables respuesta}
+
+# perstop
+# Variable respuesta
+
+SQFdata %>% group_by(perstop) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+SQFdata$perstop[which(is.na(SQFdata$perstop))]
+
+# arstmade
+# Variable respuesta
+
+SQFdata %>% group_by(arstmade) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
 ```

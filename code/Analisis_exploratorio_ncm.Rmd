@@ -4,19 +4,19 @@ author: "Nahaly_Cardenas"
 date: "16 de marzo de 2017"
 output: html_document
 ---
-## Problemática
+## Problem?tica
 
 
 
-## Hipóteis inicial
-Se plantea como hipótesis la  demanda publicada en New York Liberty Civils <https://www.nyclu.org/en/stop-and-frisk-data> , es decir verificar si la ley Stop-Frisk está siendo aplicada bajo conceptos de discriminación.  El análisis inicial se fundamentó en el tiempo de observación, sin embargo se desechó la posibilidad, dado que no se tiene registro de personas observadas que no fueron paradas.
+## Hip?teis inicial
+Se plantea como hip?tesis la  demanda publicada en New York Liberty Civils <https://www.nyclu.org/en/stop-and-frisk-data> , es decir verificar si la ley Stop-Frisk est? siendo aplicada bajo conceptos de discriminaci?n.  El an?lisis inicial se fundament? en el tiempo de observaci?n, sin embargo se desech? la posibilidad, dado que no se tiene registro de personas observadas que no fueron paradas.
 
 
 ## Pregunta 1
-Cuáles son los factores que determinan el tiempo de parada `perstop`, interesa verificar si está influenciado por características discriminatorias.
+Cu?les son los factores que determinan el tiempo de parada `perstop`, interesa verificar si est? influenciado por caracter?sticas discriminatorias.
 
 ```{r, message=FALSE}
-# Carga de librerías
+# Carga de librer?as
 library(dplyr)
 library(ggplot2)
 library(PASWR2)
@@ -74,17 +74,17 @@ DQR.num <- read.csv("dqr_num.csv")
 DQR.cat <- read.csv("dqr_cat.csv")
 ```
 
-## 1.A Variables numéricas
+## 1.A Variables num?ricas
 ```{r, results=markup}
 print(DQR.num)
 ```
 
-## 1.B Variables categóricas
+## 1.B Variables categ?ricas
 ```{r}
 print(DQR.cat)
 ```
 
-# 2. ANÁLISIS EXPLORATORIO VARIABLES
+# 2. AN?LISIS EXPLORATORIO VARIABLES
 
 ## VARIABLE DEPENDIENTE
 ## Tiempo de parada (perstop)
@@ -99,15 +99,15 @@ lines(density(stop), lty=2, lwd=2)
 ```
 ## VARIABLES INDEPENDIENTES
 
-## Tiempo de observación (perobs)
+## Tiempo de observaci?n (perobs)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% filter(perobs<150) %>%
         ggplot(aes(perobs, perstop)) +
         geom_point() +
-        labs(x="Período de observación ", y="Período de parada") +
+        labs(x="Per?odo de observaci?n ", y="Per?odo de parada") +
         geom_smooth(method = 'lm') +
         scale_size_area() +
-        ggtitle("Relación entre tiempo de observación y parada")
+        ggtitle("Relaci?n entre tiempo de observaci?n y parada")
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -133,7 +133,7 @@ SQFdata %>%
 SQFdata %>% filter(perobs<150)%>% 
         ggplot(aes(arstmade, log(perobs))) +
         geom_boxplot()
-        ggtitle("Relación entre tiempo de observación y parada")
+        ggtitle("Relaci?n entre tiempo de observaci?n y parada")
 ```
 
 ## Condados (city)
@@ -188,7 +188,7 @@ p2 = ggplot(data = SQFdata, aes(pistol,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(pistol)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,p3,cols=2)
 ```
-## El oficial usa fuerza físcica - esposas (pf_hcuff)
+## El oficial usa fuerza f?scica - esposas (pf_hcuff)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, pf_hcuff) %>%
         summarise(n=n(), 
@@ -205,7 +205,7 @@ p2 = ggplot(data = SQFdata, aes(pf_hcuff,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(pf_hcuff)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,p3,cols=2)
 ```
-## El oficial usa fuerza física - spray pimienta (pf_pepsp)
+## El oficial usa fuerza f?sica - spray pimienta (pf_pepsp)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, pf_pepsp) %>%
         summarise(n=n(), 
@@ -222,7 +222,7 @@ p2 = ggplot(data = SQFdata, aes(pf_pepsp,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(pf_pepsp)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,p3,cols=2)
 ```
-## Razón para la parada - acciones indicaban transacción de drogas (cs_drgtr)
+## Raz?n para la parada - acciones indicaban transacci?n de drogas (cs_drgtr)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, cs_drgtr) %>%
         summarise(n=n(), 
@@ -240,7 +240,7 @@ p3 = ggplot(data = SQFdata, aes(cs_drgtr)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## Razón para la parada - movimientos sospechosos (cs_furtv)
+## Raz?n para la parada - movimientos sospechosos (cs_furtv)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, cs_furtv) %>%
         summarise(n=n(), 
@@ -258,7 +258,7 @@ p3 = ggplot(data = SQFdata, aes(cs_furtv)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## Razón para la parada - acciones que indican estar involucrado en un crimen violento (cs_vcrim)
+## Raz?n para la parada - acciones que indican estar involucrado en un crimen violento (cs_vcrim)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, cs_vcrim) %>%
         summarise(n=n(), 
@@ -276,7 +276,7 @@ p3 = ggplot(data = SQFdata, aes(cs_vcrim)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## Razón para la parada - rehusarse a cumplir con las instrucciones del oficial (rf_rfcmp)
+## Raz?n para la parada - rehusarse a cumplir con las instrucciones del oficial (rf_rfcmp)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, rf_rfcmp) %>%
         summarise(n=n(), 
@@ -294,7 +294,7 @@ p3 = ggplot(data = SQFdata, aes(rf_rfcmp)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## Razón para la parada - amenazas verbales por parte del sospechoso (rf_verbl)
+## Raz?n para la parada - amenazas verbales por parte del sospechoso (rf_verbl)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, rf_verbl) %>%
         summarise(n=n(), 
@@ -312,7 +312,7 @@ p3 = ggplot(data = SQFdata, aes(rf_verbl)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## Razón de busqueda - otros (sb_other)
+## Raz?n de busqueda - otros (sb_other)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, sb_other) %>%
         summarise(n=n(), 
@@ -348,7 +348,7 @@ p3 = ggplot(data = SQFdata, aes(ac_proxm)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## Circunstancias adicionales - informe de la víctima / testigo / oficial (ac_rept)
+## Circunstancias adicionales - informe de la v?ctima / testigo / oficial (ac_rept)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, ac_rept) %>%
         summarise(n=n(), 
@@ -402,7 +402,7 @@ p3 = ggplot(data = SQFdata, aes(trhsloc)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## Recinto donde se realizó la parada (pct)
+## Recinto donde se realiz? la parada (pct)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, pct) %>%
         summarise(n=n(), 
@@ -420,7 +420,7 @@ p3 = ggplot(data = SQFdata, aes(pct)) + geom_bar(aes(fill = arstmade), position 
 multiplot(p1,p2,p3,cols=2)
 ```
 
-## Dirección del recinto donde se realizó la parada (addrpct)
+## Direcci?n del recinto donde se realiz? la parada (addrpct)
 ```{r, fig.height=5, fig.width=15}
 SQFdata %>% group_by(arstmade, addrpct) %>%
         summarise(n=n(), 
@@ -474,7 +474,277 @@ p3 = ggplot(data = SQFdata, aes(revcmd)) + geom_bar(aes(fill = arstmade), positi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-# Análisis variables independientes
+# sex
+```{r Hugo}
+SQFdata %>% group_by(sex) %>%
+    summarise(count=n()) %>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(sex)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sex,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sex)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$sex[which(is.na(SQFdata$sex))]
+```
+# weight
+# Weight in pounds
+```{r}
+SQFdata %>% group_by(weight) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(weight)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(weight,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(weight)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$weight[which(is.na(SQFdata$weight))]
+```
+# haircolr
+```{r}
+
+SQFdata %>% group_by(haircolr) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(haircolr,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$haircolr[which(is.na(SQFdata$haircolr))]
+```
+# riflshot
+# 10860 NAs
+```{r}
+SQFdata %>% group_by(riflshot) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(riflshot,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# sumissue
+# Was summons issued?
+```{r}
+SQFdata %>% group_by(sumissue) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sumissue,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$sumissue[which(is.na(SQFdata$sumissue))]
+```
+# pf_hands
+# 9133 NAs
+```{r}
+SQFdata %>% group_by(pf_hands) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_hands,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# pf_wall
+# 10412 NAs
+```{r}
+SQFdata %>% group_by(pf_wall) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_wall,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# pf_other
+# 10813 NAs
+```{r}
+SQFdata %>% group_by(pf_other) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_other,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# cs_objcs
+# 10445 NAs
+```{r}
+SQFdata %>% group_by(cs_objcs) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_objcs,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# cs_bulge
+# 10032 NAs
+```{r}
+SQFdata %>% group_by(cs_bulge) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_bulge,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# rf_vcrim
+# 8325 NAs
+```{r}
+SQFdata %>% group_by(rf_vcrim) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_vcrim,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# rf_knowl
+# 10244 NAs
+```{r}
+SQFdata %>% group_by(rf_knowl) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_knowl,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# rf_furt
+# 6880 NAs
+```{r}
+SQFdata %>% group_by(rf_furt) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_furt,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# ac_evasv
+# 8553 NAs
+```{r}
+SQFdata %>% group_by(ac_evasv) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_evasv,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# ac_assoc
+# 9972 NAs
+```{r}
+SQFdata %>% group_by(ac_assoc) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_assoc,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# ac_inves
+# 9355 NAs
+```{r}
+SQFdata %>% group_by(ac_inves) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_inves,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+# stname
+# String -> location of stop street name -> Es interesante?
+```{r}
+SQFdata %>% group_by(stname) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(stname)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(stname,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(stname)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$stname[which(is.na(SQFdata$stname))]
+```
+# offunif
+```{r}
+SQFdata %>% group_by(offunif) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(offunif)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offunif,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offunif)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$offunif[which(is.na(SQFdata$offunif))]
+```
+# offverb
+# verbal statement provided by officer (if not in uniform) -> Limpiar datos
+```{r}
+SQFdata %>% group_by(offverb) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(offverb)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offverb,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offverb)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$offverb[which(is.na(SQFdata$offverb))]
+```
+# officrid
+# id card provided by officer (if not in uniform) -> Limpiar datos
+```{r}
+SQFdata %>% group_by(officrid) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(officrid)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(officrid,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(officrid)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$officrid[which(is.na(SQFdata$officrid))]
+```
+# offshld
+# shield provided by officer (if not in uniform) -> Limpiar datos
+```{r}
+SQFdata %>% group_by(offshld) %>%
+    summarise(count=n())%>%
+    arrange(desc(count))
+
+p1 = ggplot(data = SQFdata, aes(offshld)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offshld,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offshld)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+SQFdata$offshld[which(is.na(SQFdata$offshld))]
+
+```
+
+# An?lisis variables independientes
 
 
 
