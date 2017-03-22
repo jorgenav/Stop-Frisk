@@ -295,6 +295,7 @@ SQFdata$adtlrept[which(SQFdata$adtlrept == " ")] <- NA
 # Corregir NAs y unificar valores en age
 SQFdata$age[which(SQFdata$age == "**")] <- NA
 SQFdata$age = as.integer(sub("([[:space:]])","",SQFdata$age))
+SQFdata$age[which(SQFdata$age < 10 | SQFdata$age > 90)] <- NA
 
 # Corregir NAs y unificar valores en arstoffn
 SQFdata$arstoffn[which(SQFdata$arstoffn == " ")] <- NA
@@ -369,8 +370,8 @@ SQFdata$sex <- factor(SQFdata$sex, levels = c("F", "M", "Z"), labels=c('Female',
 
 # Corrección race
 SQFdata$race <- factor(SQFdata$race, levels = c("A", "B", "I", "P", "Q", "U", "W", "Z"),
-                       labels=c('Asian/Pacific islander', 'Black', 'American indian/Alaskan native',
-                                'Black-hispanic', 'White-hispanic', 'Unknown', 'White', 'Other'))
+                       labels=c('Asian', 'Black', 'American indian',
+                                'Black-hispan', 'White-hispan', 'Unknown', 'White', 'Other'))
 
 # Corrección eyecolor
 SQFdata$eyecolor <- factor(SQFdata$eyecolor, levels = c("BK","BL","BR","DF","GR","GY","HA","MA","MC","P","VI","XX","Z"),
