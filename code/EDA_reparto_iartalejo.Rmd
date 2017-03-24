@@ -73,7 +73,8 @@ print(DQR.cat)
 ## VARIABLE DEPENDIENTE
 
 ## Tiempo de parada (perstop)
-```{r, fig.height=5, fig.width=15}
+
+```{r, fig.height=5, fig.width=10}
 library(fitdistrplus)
 library(mixtools)
 
@@ -90,11 +91,16 @@ detach("package:MASS", unload=TRUE)
 ```
 
 ## VARIABLES INDEPENDIENTES
+```{r}
+SQFdata.1 <- SQFdata %>% filter(perstop <= 40)
+SQFdata.2 <- SQFdata %>% filter(perstop > 40)
+```
+
 
 ## Tiempo de observación (perobs)
 ...
 
-## Complexión del sospechoso (build) <- PROPUESTA CON DOS TABLAS
+## Complexión del sospechoso (build)
 ```{r}
 SQFdata %>% group_by(build) %>%
         summarise(n=n(),
@@ -102,20 +108,23 @@ SQFdata %>% group_by(build) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-Se puede apreciar en la distribución de la variable "build", que se paran (Stop) a muchos más sospechosos con complexión "Medium" y "Thin" que del resto, siendo el porcentaje de sospechosos parados con complexión "Muscular" muy bajo. Aunque esto podría estar influenciado por el número de individuos que existen de cada caso en la población en general. 
+Se puede apreciar en la distribución de la variable "build", que se paran (Stop) a muchos más sospechosos con complexión "Medium" y "Thin" que del resto, siendo el porcentaje de sospechosos parados con complexión "Muscular" muy bajo. Aunque esto podría estar influenciado por el número de individuos que existen de cada caso en la población en general.
 
 Pasemos ahora a analizar los diferentes grupos en relación con nuestras variables dependientes:
 
-En cuanto a la variable "perStop", la media de tiempo parado para cada grupo es muy similar. No habiendo diferencias más allá de los 4 segundos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que los valores de la mediana son mucho más altos en los casos de complexión "Heavy" y "Medium" que en los demás grupos. 
+En cuanto a la variable "perStop", la media de tiempo parado para cada grupo es muy similar. No habiendo diferencias más allá de los 4 segundos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que los valores de la mediana son mucho más altos en los casos de complexión "Heavy" y "Medium" que en los demás grupos.
 
 Por otro lado, el rango intercuartil del tiempo parado es similar entre los diferentes grupos, salvo en el caso de "Muscular" donde es un poco más amplio que en el resto de casos, es decir hay más variabilidad.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(build)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(build,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(build)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
-multiplot(p1,p2,p3,cols=2)
+p2 = ggplot(data = SQFdata.1, aes(build, perstop)) + geom_violin()
+p3 = ggplot(data = SQFdata.2, aes(build, perstop)) + geom_violin()
+p4 = ggplot(data = SQFdata, aes(build)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,p4,cols=2)
 ```
+_**Dividir en dos grupos la variable perstop, no garantiza tener dos normales. Ni en esta variable ni en knifcuti**_
+
 ```{r}
 SQFdata %>% group_by(build, arstmade) %>%
         summarise(n=n()) %>%
@@ -126,12 +135,11 @@ En cuanto a la variable dependiente "arstmade", se aprecia un mayor porcentaje d
 ## ¿Fue el sospechoso cacheado?  (frisked)   
 ("frisked:cacheado", "searched:registrado")
 ```{r}
-SQFdata %>% group_by(arstmade, frisked) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(frisked) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -141,31 +149,43 @@ p3 = ggplot(data = SQFdata, aes(frisked)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(frisked, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n = paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## ¿Fue encontrado un cuchillo o instrumento de corte en el sospechoso?  (knifcuti)
 ```{r}
-SQFdata %>% group_by(arstmade, knifcuti) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(knifcuti) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(knifcuti,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
-multiplot(p1,p2,p3,cols=2)
+p2 = ggplot(data = SQFdata.1, aes(build, perstop)) + geom_violin()
+p3 = ggplot(data = SQFdata.2, aes(build, perstop)) + geom_violin()
+p4 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,p4,cols=2)
+```
+Dividir en dos grupos la variable perstop, no garantiza tener dos normales.
+
+```{r}
+SQFdata %>% group_by(knifcuti, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ## ¿Fue encontrada una ametralladora en el sospechoso? (machgun)
 ```{r}
-SQFdata %>% group_by(arstmade, machgun) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(machgun) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -175,14 +195,19 @@ p3 = ggplot(data = SQFdata, aes(machgun)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(machgun, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## ¿Fue encontrada otro tipo de arma en el sospechoso? (othrweap)
 ```{r}
-SQFdata %>% group_by(arstmade, othrweap) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(othrweap) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -192,14 +217,19 @@ p3 = ggplot(data = SQFdata, aes(othrweap)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(othrweap, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Fuerza física usada por el oficial de policía - Apuntar con el arma (pf_ptwep)
 ```{r}
-SQFdata %>% group_by(arstmade, pf_ptwep) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(pf_ptwep) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -209,14 +239,19 @@ p3 = ggplot(data = SQFdata, aes(pf_ptwep)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(pf_ptwep, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Fuerza física usada por el oficial de policía - Porra (pf_baton)
 ```{r}
-SQFdata %>% group_by(arstmade, pf_baton) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(pf_baton) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -226,14 +261,19 @@ p3 = ggplot(data = SQFdata, aes(pf_baton)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(pf_baton, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Razón para la parada - El sospechoso actuando como un vigía (cs_lkout)
 ```{r}
-SQFdata %>% group_by(arstmade, cs_lkout) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(cs_lkout) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -243,14 +283,19 @@ p3 = ggplot(data = SQFdata, aes(cs_lkout)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(cs_lkout, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Razón para la parada - Llevar ropa usada frecuentemente en un crimen (cs_cloth)
 ```{r}
-SQFdata %>% group_by(arstmade, cs_cloth) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(cs_cloth) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -260,14 +305,19 @@ p3 = ggplot(data = SQFdata, aes(cs_cloth)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(cs_cloth, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Razón para el cacheo - Atuendo inapropiado para la estación del año (rf_attir)
 ```{r}
-SQFdata %>% group_by(arstmade, rf_attir) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(rf_attir) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -277,14 +327,19 @@ p3 = ggplot(data = SQFdata, aes(rf_attir)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(rf_attir, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Razón para el cacheo - Acciones relacionadas en un crimen violento (rf_vcact)
 ```{r}
-SQFdata %>% group_by(arstmade, rf_vcact) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(rf_vcact) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -294,14 +349,19 @@ p3 = ggplot(data = SQFdata, aes(rf_vcact)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(rf_vcact, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Fundamentos del registro - Esquema de arma (sb_outln)
 ```{r}
-SQFdata %>% group_by(arstmade, sb_outln) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(sb_outln) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -311,14 +371,19 @@ p3 = ggplot(data = SQFdata, aes(sb_outln)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(sb_outln, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Fundamentos del registro - Declaración del sospechoso (sb_admis)
 ```{r}
-SQFdata %>% group_by(arstmade, sb_admis) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(sb_admis) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -328,14 +393,19 @@ p3 = ggplot(data = SQFdata, aes(sb_admis)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(sb_admis, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Circunstancias adicionales - Momento del día se ajusta a indicencias de crímenes (ac_time)
 ```{r}
-SQFdata %>% group_by(arstmade, ac_time) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(ac_time) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -345,14 +415,19 @@ p3 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(ac_time, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Circunstancias adicionales - Señakes o sonidos de actividad criminal (ac_stsnd)
 ```{r}
-SQFdata %>% group_by(arstmade, ac_stsnd) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(ac_stsnd) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -362,14 +437,19 @@ p3 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(ac_stsnd, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Razón de utilización de la fuerza (forceuse)
 ```{r}
-SQFdata %>% group_by(arstmade, forceuse) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(forceuse) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -379,14 +459,19 @@ p3 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(forceuse, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## ¿El oficial de policía explicó la razón de la parada? (explnstp)
 ```{r}
-SQFdata %>% group_by(arstmade, explnstp) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(explnstp) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
@@ -396,15 +481,19 @@ p3 = ggplot(data = SQFdata, aes(explnstp)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
+```{r}
+SQFdata %>% group_by(explnstp, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Localización de la Parada: Cruce con la calle (crossst)
 ```{r}
-SQFdata %>% group_by(arstmade, crossst) %>%
-        filter(n() > 100) %>%
-        summarise(n=n(), 
-                  perStop= sum(perstop),
+SQFdata %>% group_by(crossst) %>%
+        summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
-        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=15, fig.width=15}
@@ -419,11 +508,38 @@ p3 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar(aes(fill = arstma
 multiplot(p1,p2,p3,cols=1)
 ```
 
+```{r}
+SQFdata %>% group_by(crossst, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ## Localización de la Parada: xcoord  vs  ycoord
-```{r, fig.height=10, fig.width=20}
+```{r, fig.height=20, fig.width=20}
+#ggplot(data = SQFdata, aes(xcoord, ycoord)) + geom_point(aes(color = arstmade))
+
 #install.packages("leaflet")
 library(leaflet)
-ggplot(data = SQFdata, aes(xcoord, ycoord)) + geom_point(aes(color = arstmade))
-#df <- SQFdata %>% dplyr::select(xcoord, ycoord)
-#leaflet(df) %>% addTiles() %>% setView( , , zoom = 4) %>% addCircles(lat = df$xcoord, lng = df$ycoord)
+
+# EPSG Projection 2263 - NAD83 / New York Long Island (ftUS)
+SRORG8563 <- leafletCRS(crsClass = "L.Proj.CRS",
+                        code = "EPSG:2263",
+                        proj4def = "+proj=lcc +lat_1=41.03333333333333 +lat_2=40.66666666666666 +lat_0=40.16666666666666 +lon_0=-74 +x_0=300000.0000000001 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs",
+                        resolutions = c(8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5)
+                        )
+
+df <- SQFdata %>% dplyr::select(xcoord, ycoord) %>% dplyr::filter(!is.na(xcoord)|!is.na(ycoord))
+leaflet(data = df,
+        options = leafletOptions(crs = SRORG8563)) %>%
+  setView(1000633, 176542, zoom = 10) %>%
+  addProviderTiles(providers$Esri.WorldGrayCanvas) #%>%
+  #addCircleMarkers(lat = ~df$xcoord, lng = ~df$ycoord, color= ~(SQFdata$arstmade)) %>%
+  #addLegend(position="bottomleft", colors=c("#984ea3", "#e41a1c"), labels=c("YES/arstmade", "NO/arstmade"))
+
+df <- SQFdata %>% dplyr::select(xcoord, ycoord) %>% dplyr::filter(!is.na(xcoord)|!is.na(ycoord))
+leaflet(data = df) %>%
+  setView(-73.9796295, 40.6978522, zoom = 11) %>%
+  addProviderTiles(providers$Esri.WorldGrayCanvas) #%>%
+  #addCircleMarkers(lat = ~df$xcoord, lng = ~df$ycoord, color= ~(SQFdata$arstmade)) %>%
+  #addLegend(position="bottomleft", colors=c("#984ea3", "#e41a1c"), labels=c("YES/arstmade", "NO/arstmade"))
 ```
