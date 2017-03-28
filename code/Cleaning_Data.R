@@ -370,8 +370,8 @@ SQFdata$sex <- factor(SQFdata$sex, levels = c("F", "M", "Z"), labels=c('Female',
 
 # Corrección race
 SQFdata$race <- factor(SQFdata$race, levels = c("A", "B", "I", "P", "Q", "U", "W", "Z"),
-                       labels=c('Asian', 'Black', 'American indian',
-                                'Black-hispan', 'White-hispan', 'Unknown', 'White', 'Other'))
+                       labels=c('ASIAN/PACIFIC ISLANDER', 'BLACK', 'AMERICAN INDIAN/ALASKAN NATIVE',
+                                'BLACK-HISPANIC', 'WHITE-HISPANIC', 'UNKNOWN', 'WHITE', 'OTHER'))
 
 # Corrección eyecolor
 SQFdata$eyecolor <- factor(SQFdata$eyecolor, levels = c("BK","BL","BR","DF","GR","GY","HA","MA","MC","P","VI","XX","Z"),
