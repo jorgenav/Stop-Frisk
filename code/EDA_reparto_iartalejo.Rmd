@@ -11,8 +11,7 @@ output:
 
 
 ## Hipótesis inicial
-Se plantea como hipótesis la  demanda publicada en New York Liberty Civils <https://www.nyclu.org/en/stop-and-frisk-data> , es decir verificar si la ley Stop-Frisk está siendo aplicada bajo conceptos de discriminación.  El análisis inicial se fundamentó en el tiempo de observación, sin embargo se desechó la posibilidad, dado que no se tiene registro de personas observadas que no fueron paradas.
-
+Se plantea como hipótesis la demanda publicada en New York Liberty Civils <https://www.nyclu.org/en/stop-and-frisk-data> , es decir verificar si la ley Stop-Frisk está siendo aplicada bajo conceptos de discriminación.  El análisis inicial se fundamentó en el tiempo de observación, sin embargo se desechó la posibilidad, dado que no se tiene registro de personas observadas que no fueron paradas.
 
 ## Pregunta 1
 Cuáles son los factores que determinan el tiempo de parada `perstop`, interesa verificar si está influenciado por características discriminatorias.
@@ -91,11 +90,6 @@ detach("package:MASS", unload=TRUE)
 ```
 
 ## VARIABLES INDEPENDIENTES
-```{r}
-SQFdata.1 <- SQFdata %>% filter(perstop <= 40)
-SQFdata.2 <- SQFdata %>% filter(perstop > 40)
-```
-
 
 ## Tiempo de observación (perobs)
 ...
@@ -108,29 +102,28 @@ SQFdata %>% group_by(build) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-Se puede apreciar en la distribución de la variable "build", que se paran (Stop) a muchos más sospechosos con complexión "Medium" y "Thin" que del resto, siendo el porcentaje de sospechosos parados con complexión "Muscular" muy bajo. Aunque esto podría estar influenciado por el número de individuos que existen de cada caso en la población en general.
+Se puede apreciar en la distribución de la **variable "build"**, que se paran (Stop) a muchos más sospechosos con complexión "Medium" y "Thin" que del resto, siendo el porcentaje de sospechosos parados con complexión "Muscular" muy bajo. Aunque esto podría estar influenciado por el número de individuos que existen de cada caso en la población en general.
 
 Pasemos ahora a analizar los diferentes grupos en relación con nuestras variables dependientes:
 
-En cuanto a la variable "perStop", la media de tiempo parado para cada grupo es muy similar. No habiendo diferencias más allá de los 4 segundos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que los valores de la mediana son mucho más altos en los casos de complexión "Heavy" y "Medium" que en los demás grupos.
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado para cada grupo es muy similar. No habiendo diferencias más allá de los 4 minutos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que los valores de la mediana son mucho más altos en los casos de complexión "Heavy" y "Medium" que en los demás grupos.
 
 Por otro lado, el rango intercuartil del tiempo parado es similar entre los diferentes grupos, salvo en el caso de "Muscular" donde es un poco más amplio que en el resto de casos, es decir hay más variabilidad.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(build)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata.1, aes(build, perstop)) + geom_violin()
-p3 = ggplot(data = SQFdata.2, aes(build, perstop)) + geom_violin()
-p4 = ggplot(data = SQFdata, aes(build)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
-multiplot(p1,p2,p3,p4,cols=2)
+p2 = ggplot(data = SQFdata, aes(build, perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(build)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
 ```
-_**Dividir en dos grupos la variable perstop, no garantiza tener dos normales. Ni en esta variable ni en knifcuti**_
+
 
 ```{r}
 SQFdata %>% group_by(build, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-En cuanto a la variable dependiente "arstmade", se aprecia un mayor porcentaje de arrestos en el grupo "Muscular" (18.38%) comparado con los demás, siendo el grupo con menor porcentaje de arrestos el grupo "Medium" (13.93%). En base a este análisis exploratorio, a priori parece que existen **ligeras** diferencias entre los diferentes grupos, aunque podrían no ser estadísticamente significativas (a comprobar en posterior análisis). En cuyo caso (negativo), se concluiría que no existen diferencias sustanciales entre los grupos y por lo tanto no es un factor relevante a la hora de determinar si se produce o no un arresto.
+En cuanto a la **variable dependiente "arstmade"**, se aprecia un mayor porcentaje de arrestos en el grupo "Muscular" (18.38%) comparado con los demás, siendo el grupo con menor porcentaje de arrestos el grupo "Medium" (13.93%). En base a este análisis exploratorio, a priori parece que existen **ligeras** diferencias entre los diferentes grupos, aunque podrían no ser estadísticamente significativas (a comprobar en posterior análisis). En cuyo caso (negativo), se concluiría que no existen diferencias sustanciales entre los grupos y por lo tanto no es un factor relevante a la hora de determinar si se produce o no un arresto.
 
 ## ¿Fue el sospechoso cacheado?  (frisked)   
 ("frisked:cacheado", "searched:registrado")
@@ -141,6 +134,9 @@ SQFdata %>% group_by(frisked) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "frisked"**, que de los sospechos parados se cachean al doble de individuos (66.27%) respecto a los que no son cacheados (33.73%).
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado para cada grupo es muy similar. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar, sorprendentemente, que el valor de la mediana es bastante más alto en el caso de los no cacheados (46 min) que en el caso de los sí cacheados (35min).
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(frisked)) + geom_bar() + ylab("Frequency")
@@ -154,6 +150,7 @@ SQFdata %>% group_by(frisked, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n = paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que no hay grandes diferencias en los porcentajes de arrestos en función de si el sospechoso ha sido previamente cacheado o no. Por lo que se puede concluir que, a priori, este factor no es determinante a la hora de ser arrestado.
 
 ## ¿Fue encontrado un cuchillo o instrumento de corte en el sospechoso?  (knifcuti)
 ```{r}
@@ -163,21 +160,24 @@ SQFdata %>% group_by(knifcuti) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "knifcuti"**, que de los sospechos parados tan solo el 2.33% portan un cuchillo o similar. A parte de esto, se aprecia que el porcentanje de NAs es del 23.16%, siendo un valor nada despreciable. Aunque es razonable pensar que, de este porcentaje, los casos donde el sospechoso portaba un arma de este estilo y que no haya sido registrado por el oficial de policía han de ser mímimos, ya que como hemos visto es un hecho destacado y poco frecuente. Siendo más bien la razón de que no se haya registrado ningún dato el que no se portase este tipo de arma. Por lo que, si imputásemos los "NA" como "N" el porcentaje de "Y" sería aún más pequeño.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado para cada grupo es muy similar. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana es bastante más alto en los casos donde no fue encontrado un cuchillo (46 min) que en el resto de casos.
+
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata.1, aes(build, perstop)) + geom_violin()
-p3 = ggplot(data = SQFdata.2, aes(build, perstop)) + geom_violin()
-p4 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
-multiplot(p1,p2,p3,p4,cols=2)
+p2 = ggplot(data = SQFdata, aes(knifcuti, perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
 ```
-Dividir en dos grupos la variable perstop, no garantiza tener dos normales.
 
 ```{r}
 SQFdata %>% group_by(knifcuti, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos se dispara hasta el 64.14% en caso de ser encontrado un cuchillo. Por lo que se puede concluir que, a priori, éste es un factor relevante a la hora de ser arrestado.
 
 ## ¿Fue encontrada una ametralladora en el sospechoso? (machgun)
 ```{r}
@@ -187,6 +187,9 @@ SQFdata %>% group_by(machgun) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "machgun"**, que no ha sido parado ningún sospecho que portase una ametralladora. A parte de esto, se aprecia que el porcentanje de NAs es del 23.72%, siendo un valor nada despreciable. Aunque es razonable pensar que, de este porcentaje, los casos donde el sospechoso portaba un arma de este estilo y que no haya sido registrado por el oficial de policía han de ser inexistentes, ya que es un hecho destacado como para ser pasado por alto. Siendo más bien la razón de que no se haya registrado ningún dato, el que no se portase este tipo de arma.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado para cada grupo es muy similar.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(machgun)) + geom_bar() + ylab("Frequency")
@@ -200,6 +203,7 @@ SQFdata %>% group_by(machgun, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que los porcentajes de arrestos son prácticamente iguales para los casos donde el sospechoso no portaba este tipo de arma o donde no se haya registrado este dato.
 
 ## ¿Fue encontrada otro tipo de arma en el sospechoso? (othrweap)
 ```{r}
@@ -209,6 +213,9 @@ SQFdata %>% group_by(othrweap) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "othrweap"**, que de los sospechos parados tan solo el 0.79% portaban otro tipo de arma no catalogada. A parte de eso, se aprecia que el porcentanje de NAs es del 23.52%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado en el caso de llevar un arma de otro tipo no catalogada es de casi 5 min inferior respecto a los otros casos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana es bastante más bajo (24min) en los casos donde sí fue encontrada un arma no catalogada que en los que no (46 min).
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(othrweap)) + geom_bar() + ylab("Frequency")
@@ -222,6 +229,7 @@ SQFdata %>% group_by(othrweap, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos se dispara hasta el 61.71% en caso de ser encontrado un arma de otro tipo no catalogada. Por lo que se puede concluir que, a priori, éste es un factor relevante a la hora de ser arrestado.
 
 ## Fuerza física usada por el oficial de policía - Apuntar con el arma (pf_ptwep)
 ```{r}
@@ -231,6 +239,9 @@ SQFdata %>% group_by(pf_ptwep) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "pf_ptwep"**, que el oficial de policía tuvo que apuntar con su arma al sospecho parado tan solo el 0.73% de las ocasiones. A parte de esto, se aprecia que el porcentanje de NAs es del 23.54%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado cuando el oficial de policía tuvo que apuntar con su arma al sospecho es de casi 6 min inferior respecto a los otros casos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana es bastante más bajo (24min) en los casos donde sí tuvo que apuntar con su arma al sospecho que en los que no (46 min).
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(pf_ptwep)) + geom_bar() + ylab("Frequency")
@@ -244,6 +255,7 @@ SQFdata %>% group_by(pf_ptwep, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos aumenta hasta el 23.49% cuando el oficial de policía tuvo que apuntar con su arma al sospecho siendo el 14.94% cuando no ocurrió esto último. Por lo que se puede concluir que, a priori, éste puede ser un factor relevante a la hora de ser arrestado aunque no lo es tanto como sucede en otras variables.
 
 ## Fuerza física usada por el oficial de policía - Porra (pf_baton)
 ```{r}
@@ -253,6 +265,9 @@ SQFdata %>% group_by(pf_baton) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "pf_baton"**, que el oficial de policía tuvo que utilizar la porra contra el sospecho parado tan solo en el 0.02% de las ocasiones (10 ocasiones en total). Por lo que, se puede concluir que es un tipo de defensa muy poco usada por los oficiales de policía que en caso de tener que utilizar la fuerza optan por otro tipo de armas antes que por ésta.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado es la mitad cuando el oficial de policía tuvo que utilizar la porra contra el sospecho parado que en los otros casos.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(pf_baton)) + geom_bar() + ylab("Frequency")
@@ -266,6 +281,7 @@ SQFdata %>% group_by(pf_baton, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos se dispara hasta el 80% en los casos donde el oficial de policía tuvo que utilizar la porra contra el sospecho parado. Por lo que se puede concluir que, a priori, éste es un factor relevante a la hora de ser arrestado. Aunque la escasez de casos puede que no sean suficientes para sacar conclusiones definitivas.
 
 ## Razón para la parada - El sospechoso actuando como un vigía (cs_lkout)
 ```{r}
@@ -275,6 +291,9 @@ SQFdata %>% group_by(cs_lkout) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "cs_lkout"** que de los sospechos parados, el 14.4% lo fue por estar actuando como vigía. A parte de eso, se aprecia que el porcentanje de NAs es del 20.42%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado en el caso de estar actuando como vigía es similar a los otros casos. También, se puede apreciar que el valor de la mediana es similar en los casos donde sí estaba el sospechoso actuando como un vigía como en los que no.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(cs_lkout)) + geom_bar() + ylab("Frequency")
@@ -288,6 +307,7 @@ SQFdata %>% group_by(cs_lkout, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es más bajo (9.15%) en caso de ser parado por estar actuando como un vigía que en otros casos (15.97%). Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ## Razón para la parada - Llevar ropa usada frecuentemente en un crimen (cs_cloth)
 ```{r}
@@ -297,6 +317,9 @@ SQFdata %>% group_by(cs_cloth) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "cs_cloth"**, que de los sospechos parados tan solo el 4.78% lo fueron por llevar ropa usada frecuentemente en un crimen. A parte de eso, se aprecia que el porcentanje de NAs es del 22.78%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado en el caso de llevar ropa usada frecuentemente en un crimen es similar a los otros casos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana es más bajo (35min) en los casos donde el sospechoso llevaba ropa usada frecuentemente en un crimen que en los casos donde no (46 min).
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(cs_cloth)) + geom_bar() + ylab("Frequency")
@@ -310,6 +333,7 @@ SQFdata %>% group_by(cs_cloth, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es más bajo (9.69%) en caso de ser parado por llevar ropa usada frecuentemente en un crimen que en los casos donde no (15.26%). Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ## Razón para el cacheo - Atuendo inapropiado para la estación del año (rf_attir)
 ```{r}
@@ -319,6 +343,9 @@ SQFdata %>% group_by(rf_attir) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "rf_attir"**, que de los sospechos cacheados tan solo el 7.7% lo fueron por llevar un atuendo inapropiado para la estación del año en curso. A parte de esto, se aprecia que el porcentanje de NAs es del 22.23%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado en el caso de ser cacheado por llevar un atuendo inapropiado para la estación del año en curso es similar a los otros casos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana es más bajo (35min) en los casos donde el sospechoso fue cacheado por llevar un atuendo inapropiado para la estación del año, que en los casos donde no (46 min).
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(rf_attir)) + geom_bar() + ylab("Frequency")
@@ -332,6 +359,7 @@ SQFdata %>% group_by(rf_attir, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es más bajo (11.77%) en caso de ser cacheado por llevar un atuendo inapropiado para la estación del año en curso que en los casos donde no (15.30%). Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ## Razón para el cacheo - Acciones relacionadas en un crimen violento (rf_vcact)
 ```{r}
@@ -341,6 +369,9 @@ SQFdata %>% group_by(rf_vcact) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "rf_vcact"**, que de los sospechos cacheados el 9.05% lo fueron por cometer acciones relacionadas en un crimen violento. A parte de esto, se aprecia que el porcentanje de NAs es del 21.61%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado en el caso de ser cacheado por cometer acciones relacionadas en un crimen violento es similar a los otros casos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana es más bajo (34min) en los casos donde el sospechoso fue cacheado por cometer acciones relacionadas en un crimen violento, que en los casos donde no (46 min).
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(rf_vcact)) + geom_bar() + ylab("Frequency")
@@ -354,8 +385,9 @@ SQFdata %>% group_by(rf_vcact, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es un poco más bajo (12.07%) en caso de ser cacheado por cometer acciones relacionadas en un crimen violento que en los casos donde no (15.19%). Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
-## Fundamentos del registro - Esquema de arma (sb_outln)
+## Fundamentos del registro - Silueta de arma (sb_outln)
 ```{r}
 SQFdata %>% group_by(sb_outln) %>%
         summarise(n=n(),
@@ -363,6 +395,9 @@ SQFdata %>% group_by(sb_outln) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "sb_outln"**, que tan solo en el 0.92% de las ocasiones (419 ocasiones en total) la razón para que el sospechoso fuese registrado o inspeccionado fue que se percibió una silueta de arma en el cacheo. A parte de esto, se aprecia que el porcentanje de NAs es del 23.5%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado es muy similar para los diferentes casos. Incluso la mediana también es igual, en contraste con lo que ocurre generalmente en el resto de variables donde esto no es así.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(sb_outln)) + geom_bar() + ylab("Frequency")
@@ -376,8 +411,9 @@ SQFdata %>% group_by(sb_outln, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos aumenta hasta el 50.36% en los casos donde se registra al sospecho porque se aprecia una silueta de arma. Por lo que se puede concluir que, a priori, éste es un factor relevante a la hora de ser arrestado.
 
-## Fundamentos del registro - Declaración del sospechoso (sb_admis)
+## Fundamentos del registro - Declaraciones del sospechoso (sb_admis)
 ```{r}
 SQFdata %>% group_by(sb_admis) %>%
         summarise(n=n(),
@@ -385,6 +421,9 @@ SQFdata %>% group_by(sb_admis) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "sb_admis"**, que tan solo en el 0.83% de las ocasiones (380 ocasiones en total) el sospechoso fue registrado o inspeccionado por las declaraciones manifestadas por el propio sospechoso. A parte de esto, se aprecia que el porcentanje de NAs es del 23.52%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado es muy similar para los diferentes casos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana es más bajo (34min) en los casos donde el sospechoso fue registrado por las declaraciones manifestadas por el propio sospechoso, que en los casos donde no (46 min).
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(sb_admis)) + geom_bar() + ylab("Frequency")
@@ -398,8 +437,9 @@ SQFdata %>% group_by(sb_admis, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos aumenta hasta el 65.26% en los casos donde se registra al sospechoso siendo la razón las declaraciones manifestadas por el propio sospechoso. Por lo que se puede concluir que, a priori, éste es un factor relevante a la hora de ser arrestado.
 
-## Circunstancias adicionales - Momento del día se ajusta a indicencias de crímenes (ac_time)
+## Circunstancias adicionales - Momento del día con mayor indicencia de crímenes (ac_time)
 ```{r}
 SQFdata %>% group_by(ac_time) %>%
         summarise(n=n(),
@@ -407,6 +447,9 @@ SQFdata %>% group_by(ac_time) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "ac_time"**, que el 40.3% de las ocasiones cuando se para a un sospechoso corresponden con periodos del día con mayor incidencia de crímenes, siendo el porcentaje de NAs de 14.87%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado es muy similar para los diferentes casos. Incluso la mediana también es igual, en contraste con lo que ocurre generalmente en el resto de variables donde esto no es así.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar() + ylab("Frequency")
@@ -414,6 +457,7 @@ p2 = ggplot(data = SQFdata, aes(ac_time,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,p3,cols=2)
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es muy similar en todos los casos, estando en torno al 15%. Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ```{r}
 SQFdata %>% group_by(ac_time, arstmade) %>%
@@ -421,7 +465,7 @@ SQFdata %>% group_by(ac_time, arstmade) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-## Circunstancias adicionales - Señakes o sonidos de actividad criminal (ac_stsnd)
+## Circunstancias adicionales - Señales o sonidos de actividad criminal (ac_stsnd)
 ```{r}
 SQFdata %>% group_by(ac_stsnd) %>%
         summarise(n=n(),
@@ -429,6 +473,9 @@ SQFdata %>% group_by(ac_stsnd) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "ac_stsnd"**, que tan solo en el 3.06% de las ocasiones (1400 ocasiones en total) el sospechoso fue parado por percibirse señales o sonidos de actividad criminal. A parte de esto, se aprecia que el porcentanje de NAs es del 23.02%.
+
+En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado es muy similar para los diferentes casos. Aunque está medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana es más bajo (34min) en los casos donde el sospechoso fue parado por percibirse señales o sonidos de actividad criminal, que en los casos donde no (46 min).
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar() + ylab("Frequency")
@@ -436,6 +483,7 @@ p2 = ggplot(data = SQFdata, aes(ac_stsnd, perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,p3,cols=2)
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es muy similar en todos los casos, estando en torno al 15%. Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ```{r}
 SQFdata %>% group_by(ac_stsnd, arstmade) %>%
@@ -473,6 +521,9 @@ SQFdata %>% group_by(explnstp) %>%
                   perStop_mediana= round(median(perstop),2)) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+Se puede apreciar en la distribución de la **variable "explnstp"**, que el oficial de policía explicó al sospecho la razón de la parada en la práctica totalidad de las ocasiones (99.85%).
+
+En cuanto a la **variable dependiente "perStop"**, tanto la media como la mediana de tiempo parado es muy similar para ambos casos.
 
 ```{r, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(explnstp)) + geom_bar() + ylab("Frequency")
@@ -486,10 +537,12 @@ SQFdata %>% group_by(explnstp, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos se dobla (38.24%)  en los casos donde el oficial de policía no explicó la razón de la parada al sospechoso respecto a los casos donde sí lo hizo (15.03%). Aunque la escasez de casos, donde no se explicó la razón de la parada, puede que no sean suficientes para determinar que éste sea un factor relevante a la hora de ser arrestado.
 
 ## Localización de la Parada: Cruce con la calle (crossst)
 ```{r}
 SQFdata %>% group_by(crossst) %>%
+        filter(n() > 150) %>%
         summarise(n=n(),
                   perStop_media= round(mean(perstop),2),
                   perStop_mediana= round(median(perstop),2)) %>%
@@ -509,7 +562,7 @@ multiplot(p1,p2,p3,cols=1)
 ```
 
 ```{r}
-SQFdata %>% group_by(crossst, arstmade) %>%
+SQFdata.filtered %>% group_by(crossst, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
@@ -531,8 +584,9 @@ SRORG8563 <- leafletCRS(crsClass = "L.Proj.CRS",
 df <- SQFdata %>% dplyr::select(xcoord, ycoord) %>% dplyr::filter(!is.na(xcoord)|!is.na(ycoord))
 leaflet(data = df,
         options = leafletOptions(crs = SRORG8563)) %>%
-  setView(1000633, 176542, zoom = 10) %>%
-  addProviderTiles(providers$Esri.WorldGrayCanvas) #%>%
+  setView(-73.9796295, 40.6978522, zoom = 10) %>%
+  addTiles()
+  #addProviderTiles(providers$Esri.WorldGrayCanvas) #%>%
   #addCircleMarkers(lat = ~df$xcoord, lng = ~df$ycoord, color= ~(SQFdata$arstmade)) %>%
   #addLegend(position="bottomleft", colors=c("#984ea3", "#e41a1c"), labels=c("YES/arstmade", "NO/arstmade"))
 
