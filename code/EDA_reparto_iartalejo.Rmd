@@ -457,13 +457,13 @@ p2 = ggplot(data = SQFdata, aes(ac_time,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,p3,cols=2)
 ```
-En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es muy similar en todos los casos, estando en torno al 15%. Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ```{r}
 SQFdata %>% group_by(ac_time, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es muy similar en todos los casos, estando en torno al 15%. Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ## Circunstancias adicionales - Señales o sonidos de actividad criminal (ac_stsnd)
 ```{r}
@@ -483,13 +483,13 @@ p2 = ggplot(data = SQFdata, aes(ac_stsnd, perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,p3,cols=2)
 ```
-En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es muy similar en todos los casos, estando en torno al 15%. Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ```{r}
 SQFdata %>% group_by(ac_stsnd, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+En cuanto a la **variable dependiente "arstmade"**, se aprecia que el porcentaje de arrestos es muy similar en todos los casos, estando en torno al 15%. Por lo que, apriori, no parece que sea un factor determinante a la hora de ser arrestado.
 
 ## Razón de utilización de la fuerza (forceuse)
 ```{r}
@@ -585,32 +585,24 @@ SQFdata.filtered %>% group_by(crossst, arstmade) %>%
 En cuanto a la **variable dependiente "arstmade"**, se aprecia un mayor porcentaje de arrestos en las siguientes localizaciones de la parada (cruce con la calle): East 132 Street, Morris Avenue, East 14 Street, Park Avenue, 3 Avenue y East 169 Street que en el resto de localizaciones. Por lo que, apriori, puede que sea un factor determinante a la hora de ser arrestado.
 
 ## Localización de la Parada: xcoord  vs  ycoord
-```{r, fig.height=20, fig.width=20}
-#ggplot(data = SQFdata, aes(xcoord, ycoord)) + geom_point(aes(color = arstmade))
-
-#install.packages("leaflet")
+```{r, fig.height=30, fig.width=30}
+if (! "leaflet" %in% installed.packages()) install.packages("leaflet", depend = TRUE)
 library(leaflet)
 
-# EPSG Projection 2263 - NAD83 / New York Long Island (ftUS)
-SRORG8563 <- leafletCRS(crsClass = "L.Proj.CRS",
-                        code = "EPSG:2263",
-                        proj4def = "+proj=lcc +lat_1=41.03333333333333 +lat_2=40.66666666666666 +lat_0=40.16666666666666 +lon_0=-74 +x_0=300000.0000000001 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs",
-                        resolutions = c(8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5)
-                        )
+# EPSG Projection 2263 - NAD83 / New York Long Island (ftUS) > WGS 84 (a.k.a. EPSG:4326)
+if (! "proj4" %in% installed.packages()) install.packages("proj4", depend = TRUE) ### needs PROJ.4 installed in your computer first (http://proj4.org/): sudo apt-get install libproj-dev proj-data proj-bin
+library(proj4)
+coords <- SQFdata[, c("xcoord", "ycoord")]
+coords.new <- project(coords, inverse=TRUE, proj="+proj=lcc +lat_1=41.03333333333333 +lat_2=40.66666666666666 +lat_0=40.16666666666666 +lon_0=-74 +x_0=300000.0000000001 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs")
+SQFdata["xcoord"] <- coords.new[[1]]
+SQFdata["ycoord"] <- coords.new[[2]]
 
-df <- SQFdata %>% dplyr::select(xcoord, ycoord) %>% dplyr::filter(!is.na(xcoord)|!is.na(ycoord))
-leaflet(data = df,
-        options = leafletOptions(crs = SRORG8563)) %>%
-  setView(-73.9796295, 40.6978522, zoom = 10) %>%
-  addTiles()
-  #addProviderTiles(providers$Esri.WorldGrayCanvas) #%>%
-  #addCircleMarkers(lat = ~df$xcoord, lng = ~df$ycoord, color= ~(SQFdata$arstmade)) %>%
-  #addLegend(position="bottomleft", colors=c("#984ea3", "#e41a1c"), labels=c("YES/arstmade", "NO/arstmade"))
+df <- SQFdata %>% dplyr::select(xcoord, ycoord, arstmade) %>% dplyr::filter(!is.na(xcoord)|!is.na(ycoord))
+pal <- colorFactor(c("#984ea3", "#e41a1c"), df$arstmade)
 
-df <- SQFdata %>% dplyr::select(xcoord, ycoord) %>% dplyr::filter(!is.na(xcoord)|!is.na(ycoord))
 leaflet(data = df) %>%
-  setView(-73.9796295, 40.6978522, zoom = 11) %>%
-  addProviderTiles(providers$Esri.WorldGrayCanvas) #%>%
-  #addCircleMarkers(lat = ~df$xcoord, lng = ~df$ycoord, color= ~(SQFdata$arstmade)) %>%
-  #addLegend(position="bottomleft", colors=c("#984ea3", "#e41a1c"), labels=c("YES/arstmade", "NO/arstmade"))
+  addProviderTiles(providers$Esri.WorldGrayCanvas) %>%
+  setView(-73.9796295, 40.6978522, zoom = 10) %>%
+  addCircleMarkers(lng = ~df$xcoord, lat = ~df$ycoord, radius = 1, color= ~pal(df$arstmade)) %>%
+  addLegend(position="bottomleft", colors=c("#e41a1c","#984ea3"), labels=c("arstmade (Yes)", "arstmade (No)"))
 ```
