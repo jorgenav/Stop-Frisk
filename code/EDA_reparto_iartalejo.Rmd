@@ -559,7 +559,7 @@ SQFdata %>% group_by(crossst) %>%
 ```
 La variable "crossst" (localización de la Parada: Cruce con la calle) tiene 3.437 valores distintos entre los 45.787 casos registrados. Por lo que, hemos hecho un filtrado de las localizaciones donde el número de paradas registradas es mayor al menos a 150 casos para que los indicadores resultantes sean mínimamente significativos.
 
-Se puede apreciar en la distribución de la **variable "crossst"**, que las "localizaciones de la Parada: Cruce con la calle X" con más casos son: Broadway y Park Avenue con más de 400 casos; East 14 Street, Nostrand Avenue, RichMond Terrace, 3 Avenue y Port Richmond Avenue con más de 200 casos.
+Se puede apreciar en la distribución de la **variable "crossst"**, que las "localizaciones de la Parada: Cruce con la calle X" con más casos son: Broadway y Park Avenue con más de 400 casos; y East 14 Street, Nostrand Avenue, RichMond Terrace, 3 Avenue y Port Richmond Avenue con más de 200 casos.
 
 En cuanto a la **variable dependiente "perStop"**, la media de tiempo parado es muy similar para las diferentes localizaciones. Aunque esta medida se ve influenciada significativamente por los valores extremos. En contraste, se puede apreciar que el valor de la mediana de tiempo parado es prácticamente el doble en Broadway, RichMond Terrace, Port Richmond Avenue, Rockaway Avenue, Liberty Avenue y Church Avenue que en las otras localizaciones.
 
@@ -589,7 +589,7 @@ En cuanto a la **variable dependiente "arstmade"**, se aprecia un mayor porcenta
 if (! "leaflet" %in% installed.packages()) install.packages("leaflet", depend = TRUE)
 library(leaflet)
 
-# EPSG Projection 2263 - NAD83 / New York Long Island (ftUS) > WGS 84 (a.k.a. EPSG:4326)
+# EPSG Projection 2263 - NAD83 / New York Long Island (ftUS) > EPSG Projection 4326 - WGS 84
 if (! "proj4" %in% installed.packages()) install.packages("proj4", depend = TRUE) ### needs PROJ.4 installed in your computer first (http://proj4.org/): sudo apt-get install libproj-dev proj-data proj-bin
 library(proj4)
 coords <- SQFdata[, c("xcoord", "ycoord")]
@@ -598,11 +598,11 @@ SQFdata["xcoord"] <- coords.new[[1]]
 SQFdata["ycoord"] <- coords.new[[2]]
 
 df <- SQFdata %>% dplyr::select(xcoord, ycoord, arstmade) %>% dplyr::filter(!is.na(xcoord)|!is.na(ycoord))
-pal <- colorFactor(c("#984ea3", "#e41a1c"), df$arstmade)
+pal <- colorFactor(c("#2980b9", "#C70039"), df$arstmade)
 
 leaflet(data = df) %>%
   addProviderTiles(providers$Esri.WorldGrayCanvas) %>%
-  setView(-73.9796295, 40.6978522, zoom = 10) %>%
-  addCircleMarkers(lng = ~df$xcoord, lat = ~df$ycoord, radius = 1, color= ~pal(df$arstmade)) %>%
-  addLegend(position="bottomleft", colors=c("#e41a1c","#984ea3"), labels=c("arstmade (Yes)", "arstmade (No)"))
+  setView(-73.9796295, 40.6978522, zoom = 11) %>%
+  addCircleMarkers(lng=~df$xcoord, lat=~df$ycoord, radius=2, stroke=FALSE, color=~pal(df$arstmade), popup=df$arstmade) %>%
+  addLegend(position="bottomleft", colors=c("#C70039","#2980b9"), labels=c("arstmade (Yes)", "arstmade (No)"))
 ```
