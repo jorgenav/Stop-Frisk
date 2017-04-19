@@ -1,0 +1,191 @@
+---
+title: "Modelos"
+author: "iartalejo"
+date: "14 de abril de 2017"
+output:
+  html_notebook
+  pdf_document: 
+    toc: yes
+---
+#1 DATA PREPARATION
+
+```{r}
+# Carga del Dataset
+source("Cleaning_Data.R")
+```
+
+##1.1 Missing Values
+
+A) Imputación con caret:
+```{r}
+#library(caret)
+#SQFdata.imputed <- preProcess(x = SQFdata, method = "knnImpute")
+#SQFdata.imputed <- predict(object = SQFdata.imputed, newdata = SQFdata)
+```
+NO APLICABLE: Este método solo imputa variables numéricas. Ver SQFdata.imputed$method
+
+B) MissingDataGUI: A Graphical User Interface for Exploring Missing Values in Data
+```{r}
+library(MissingDataGUI)
+MissingDataGUI(data = SQFdata, width = 1000, height = 750)
+```
+%NA >50%:-93,-94,-100,-102,-103,-22,-91,-18,-107,-16,-80,-106,-78,-96,-97,-79
+Variables irrelevantes:-1,-2,-3,-6,-19,-20,-31,-74,-75,-83,-92,-95,-104,-108,-109,-110,-111,-112
+
+```{r}
+library(dplyr)
+SQFdata.filtered <- SQFdata %>%
+                      select(-93,-94,-100,-102,-103,-22,-91,-18,-107,-16,-80,-106,-78,-96,-97,-79,
+                             -1,-2,-3,-6,-19,-20,-31,-74,-75,-83,-92,-95,-104,-108,-109,-110,-111,-112)
+
+SQFdata.filtered <- na.omit(SQFdata.filtered)
+```
+
+```{r}
+# Comprobación:
+# MissingDataGUI(data = SQFdata.filtered, width = 1000, height = 750)
+```
+
+##1.2 Reducción variables
+```{r}
+# Variables con poca varianza
+library(caret)
+nearZeroVar(x = SQFdata, names = TRUE)
+```
+ATENCIÓN: Que tenga poca varianza no quiere decir que no sea relevante para la variable objetivo arstmade?? Ver en EDA, por ejemplo, las variables ...
+
+```{r}
+# Variables correladas
+library(caret)
+...
+findCorrelation(x = "a correlation matrix", names = TRUE)
+```
+```{r}
+# Variables relevantes en EDA:
+
+```
+
+##1.3 Convert nominal features into a numeric format
+```{r}
+# A) Semimanual:
+
+#str(SQFdata)
+#for (i in c(SQFdata$explnstp, SQFdata$othpers, sumissue, offunif)) {
+#  i = as.numeric(i)
+#  i[which(i == 1)] <- 0
+#  i[which(i == 2)] <- 1
+#}
+```
+
+```{r}
+# B) Dummies Variables (caret)
+
+```
+
+##1.4 Transformation – normalizing numeric data
+```{r}
+
+```
+
+#2 MODELS
+
+```{r}
+# Parallel Processing
+library(doMC)
+registerDoMC(cores = 4)
+```
+
+##2.1 KNN
+OPCION 1:
+### 2.1.1 Creating training and test datasets
+```{r}
+# We calculate the indices for the sets
+set.seed(123456789)
+n_data=dim(SQFdata.filtered)[1]
+n_train=round(0.7*n_data)
+n_test=n_data-n_train
+indices=1:n_data
+indices_train= sample(indices,n_train)
+indices_test=indices[-indices_train]
+
+# We calculate the sets
+SQFdata.filtered_train = SQFdata.filtered[indices_train,]
+SQFdata.filtered_test = SQFdata.filtered[indices_test,]
+
+SQFdata.filtered_train_labels = SQFdata.filtered_train[,11]
+SQFdata.filtered_test_labels = SQFdata.filtered_test[,11]
+
+```
+
+### 2.1.2 Training a model on the data
+```{r}
+library("class")
+SQFdata.filtered_test_pred <- knn(train = SQFdata.filtered_train, test = SQFdata.filtered_test, cl = SQFdata.filtered_train_labels, k = 2)
+
+```
+
+OPCION 2 (CARET):
+### 2.1.3 Training a model on the data (caret)
+```{r}
+library(caret)
+set.seed(123456789)
+#2 folds de validación cruzada 
+trControl <- trainControl(method = "cv", number = 2)
+#trControl <- trainControl(method = "repeatedcv", number = 5, repeats = 5)
+modelo1b <- train(x = SQFdata.filtered[,-c(11)], y = SQFdata.filtered$arstmade, method = "kknn", trControl = trControl)
+modelo1b
+```
+
+### 2.1.3 Evaluating model performance
+```{r}
+library(gmodels)
+CrossTable(x = SQFdata.filtered_test_labels, y = SQFdata.filtered_test_pred, prop.chisq=FALSE)
+```
+
+### 2.1.4 Improving model performance
+#### a) Transformation – z-score standardization
+
+#### b) Testing alternative values of k
+
+### 2.1.5 Summary
+
+
+##2.2 REGRESIÓN LOGÍSTICA
+
+### 2.2.1 Creating training and test datasets
+```{r}
+# We calculate the indices for the sets
+set.seed(123456789)
+n_data=dim(SQFdata.filtered)[1]
+n_train=round(0.7*n_data)
+n_test=n_data-n_train
+indices=1:n_data
+indices_train= sample(indices,n_train)
+indices_test=indices[-indices_train]
+
+# We calculate the sets
+SQFdata.filtered_train = SQFdata.filtered[indices_train,]
+SQFdata.filtered_test = SQFdata.filtered[indices_test,]
+
+SQFdata.filtered_train_labels = SQFdata.filtered_train[,11]
+SQFdata.filtered_test_labels = SQFdata.filtered_test[,11]
+```
+### 2.2.2 Modelo
+```{r}
+mod.fit <- glm(formula=arstmade~., data=SQFdata.filtered_train, family=binomial(link=logit))
+summary(mod.fit)
+mod.probs = predict(mod.fit, SQFdata.filtered_test, type="response")
+```
+
+
+##2.3 RANDOM FOREST
+
+```{r}
+library(caret)
+#3 folds de validación cruzada 
+#trControl <- trainControl(method = "none")
+trControl <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
+modelo2 <- train(x = SQFdata.filtered[,-c(11)], y = SQFdata.filtered$arstmade, method = "parRF", trControl = trControl)
+modelo2
+```
+
