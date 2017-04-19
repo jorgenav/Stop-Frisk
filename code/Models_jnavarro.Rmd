@@ -1,0 +1,518 @@
+---
+title: "Models"
+author: "Jorge Navarro Garcia"
+date: "13 de abril de 2017"
+output: pdf_document
+---
+
+```{r, message=FALSE}
+# Carga de librerías
+library(magrittr)
+library(dplyr)
+library(car)
+library(effects)
+library(randomForest)
+library(caret)
+library(dataQualityR)
+library(DMwR)
+library(foreach)
+library(doMC)
+library(class)
+```
+
+# Creación de modelos predictivos
+
+## Carga de datos
+
+```{r,message=FALSE}
+# Carga del Dataset
+source('code/Cleaning_Data.R')
+# source('Cleaning_Data.R')
+
+dim(SQFdata)
+
+SQFdata <- SQFdata[,-match(c("arstoffn", "sumoffen", "officrid", "offverb", "offshld", "forceuse", "othfeatr", "addrnum", "stname", "post", "beat"),colnames(SQFdata))]
+
+```
+
+
+# 1. ANÁLISIS DESCRIPTIVO
+```{r, message=FALSE}
+drq.num <- paste("./dqr_num.csv", sep = "")
+drq.cat <- paste("./dqr_cat.csv", sep = "")
+checkDataQuality(SQFdataTest, out.file.num = drq.num,  out.file.cat = drq.cat)
+DQR.num <- read.csv("dqr_num.csv")
+DQR.cat <- read.csv("dqr_cat.csv")
+```
+
+## 1.A Variables numéricas
+```{r}
+print(DQR.num)
+```
+
+## 1.B Variables categóricas
+```{r}
+print(DQR.cat)
+```
+
+## Transformación de los datos
+
+```{r}
+# Punto de partida
+SQFdata %>% group_by(is.na(age)) %>%
+    summarise(n())
+
+SQFdata_modif <- SQFdata %>% filter(!is.na(age))
+
+dim(SQFdata)
+dim(SQFdata_modif)
+
+# Trabajo con NAs
+
+
+SQFdata_modif %>% filter(is.na(pistol)) %>%
+    group_by(knifcuti, othrweap) %>%
+    select(pistol, knifcuti, othrweap) %>% 
+    summarise(n())
+
+SQFdata_modif %>% group_by(pf_hands) %>%
+    filter(is.na(pf_hands)) %>%
+    # group_by(pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>%
+    group_by(pf_wall) %>%
+    # group_by(pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>%
+    select(pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>% 
+    summarise(count = n())
+    # mutate(percent = 100*count/sum(count))
+```
+
+```{r}
+# Variables NO eliminadas
+summary(SQFdata_modif$pistol)
+summary(SQFdata_modif$knifcuti)
+summary(SQFdata_modif$othrweap)
+
+summary(SQFdata_modif$pf_hands)
+summary(SQFdata_modif$pf_wall)
+summary(SQFdata_modif$pf_grnd)
+summary(SQFdata_modif$pf_drwep)
+summary(SQFdata_modif$pf_ptwep)
+summary(SQFdata_modif$pf_hcuff)
+summary(SQFdata_modif$pf_other)
+
+summary(SQFdata_modif$ac_rept)
+summary(SQFdata_modif$ac_inves)
+summary(SQFdata_modif$rf_vcrim)
+summary(SQFdata_modif$rf_othsw)
+summary(SQFdata_modif$ac_proxm)
+summary(SQFdata_modif$rf_attir)
+summary(SQFdata_modif$cs_objcs)
+summary(SQFdata_modif$cs_descr)
+summary(SQFdata_modif$cs_casng)
+summary(SQFdata_modif$cs_lkout)
+summary(SQFdata_modif$rf_vcact)
+summary(SQFdata_modif$cs_cloth)
+summary(SQFdata_modif$cs_drgtr)
+summary(SQFdata_modif$ac_evasv)
+summary(SQFdata_modif$ac_assoc)
+summary(SQFdata_modif$cs_furtv)
+summary(SQFdata_modif$rf_rfcmp)
+summary(SQFdata_modif$ac_cgdir)
+summary(SQFdata_modif$rf_verbl)
+summary(SQFdata_modif$cs_vcrim)
+summary(SQFdata_modif$cs_bulge)
+summary(SQFdata_modif$cs_other)
+summary(SQFdata_modif$ac_incid)
+summary(SQFdata_modif$ac_time)
+summary(SQFdata_modif$rf_knowl)
+summary(SQFdata_modif$ac_stsnd)
+summary(SQFdata_modif$ac_other)
+summary(SQFdata_modif$sb_hdobj)
+summary(SQFdata_modif$sb_outln)
+summary(SQFdata_modif$sb_admis)
+summary(SQFdata_modif$sb_other)
+summary(SQFdata_modif$rf_furt)
+summary(SQFdata_modif$rf_bulg)
+
+# Variables eliminadas
+summary(SQFdata_modif$adtlrept)
+summary(SQFdata_modif$riflshot)
+summary(SQFdata_modif$asltweap)
+summary(SQFdata_modif$machgun)
+summary(SQFdata_modif$pf_baton)
+summary(SQFdata_modif$pf_pepsp)
+
+# Modificación de variables no eliminadas
+SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))] <- 'N'
+SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
+SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
+SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
+SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))] <- 'N'
+SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))] <- 'N'
+SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
+SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
+SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
+SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
+SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))] <- 'N'
+SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
+SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
+SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
+SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
+SQFdata_modif$rf_attir[which(is.na(SQFdata_modif$rf_attir))] <- 'N'
+SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
+SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
+SQFdata_modif$cs_casng[which(is.na(SQFdata_modif$cs_casng))] <- 'N'
+SQFdata_modif$cs_lkout[which(is.na(SQFdata_modif$cs_lkout))] <- 'N'
+SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
+SQFdata_modif$cs_cloth[which(is.na(SQFdata_modif$cs_cloth))] <- 'N'
+SQFdata_modif$cs_drgtr[which(is.na(SQFdata_modif$cs_drgtr))] <- 'N'
+SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
+SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
+SQFdata_modif$cs_furtv[which(is.na(SQFdata_modif$cs_furtv))] <- 'N'
+SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
+SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
+SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
+SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
+SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
+SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
+SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))] <- 'N'
+SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
+SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
+SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
+SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
+SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
+SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))] <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))] <- 'N'
+
+
+# Variables con strings como factores
+summary(SQFdata_modif$premname)
+summary(SQFdata_modif$stinter)
+summary(SQFdata_modif$crossst)
+summary(SQFdata_modif$sector)
+
+# Variables que no aparecen en el checkDataQuality
+summary(SQFdata_modif$state)
+summary(SQFdata_modif$zip)
+summary(SQFdata_modif$addrtyp)
+summary(SQFdata_modif$rescode)
+summary(SQFdata_modif$premtype)
+summary(SQFdata_modif$aptnum)
+summary(SQFdata_modif$timestop)
+
+# Factores con maś de 53 niveles
+levels(SQFdata_modif$pct)
+levels(SQFdata_modif$crimsusp)
+levels(SQFdata_modif$addrpct)
+levels(SQFdata_modif$detailCM)
+
+# Otras variables eliminadas
+summary(SQFdata_modif$year)
+summary(SQFdata_modif$datestop)
+summary(SQFdata_modif$compyear)
+summary(SQFdata_modif$comppct)
+summary(SQFdata_modif$lineCM)
+summary(SQFdata_modif$dob)
+
+# Factores con menos de 2 niveles
+summary(SQFdata_modif$dettypCM)
+
+SQFdata_modif %>% group_by(dob == "1900-12-31") %>%
+    summarise(n())
+
+SQFdata %>% group_by(dob == "1900-12-31") %>%
+    summarise(n())
+
+SQFdata %>% group_by(age) %>%
+    summarise(n())
+
+
+# Variables en duda
+summary(SQFdata_modif$ser_num)
+summary(SQFdata_modif$revcmd)
+summary(SQFdata_modif$repcmd)
+
+
+SQFdata_modif <- SQFdata_modif[,-match(c("adtlrept", "riflshot", "asltweap", "machgun", "pf_baton", "pf_pepsp", "xcoord", "ycoord", "premname", "sector", "stinter", "crossst", "state", "zip", "addrtyp", "rescode", "premtype", "aptnum", "timestop", "pct", "crimsusp", "addrpct", "detailCM","year","datestop","compyear","comppct","lineCM","dob", "dettypCM"),colnames(SQFdata_modif))]
+
+dim(SQFdata_modif)
+
+
+# Factores con menos de 2 niveles -> Eliminar
+SQFdata_modif <- SQFdata[,-c(which(sapply(X = SQFdata, fun) < 2))]
+
+dim(SQFdata)
+dim(SQFdata_modif)
+
+
+fun <- function(x){
+    length(levels(x))
+}
+
+fun_v2 <- function( x ){
+    ifelse(is.factor( x ),return(length(levels( x ))),return(2))
+}
+
+SQFdata <- SQFdata[,-c(which(sapply(SQFdata, fun_v2) < 2))]
+
+sapply(SQFdata_modif, fun)
+sapply(SQFdata_modif, fun_v2) < 2
+
+dim(SQFdata)
+dim(SQFdata_modif)
+
+dim(SQFdata[,-c(which(sapply(SQFdata, fun) < 2))])
+dim(SQFdata_modif[,-c(which(sapply(SQFdata_modif, fun) < 2))])
+
+dim(SQFdata[,-c(which(sapply(SQFdata, fun_v2) < 2))])
+dim(SQFdata_modif[,-c(which(sapply(SQFdata_modif, fun_v2) < 2))])
+
+SQFdata <- SQFdata[,-c(which(sapply(SQFdata, fun_v2) < 2))]
+
+nearZeroVar(SQFdata_modif)
+
+# dim(SQFdata_modif)
+
+dim(SQFdata_modif[-nearZeroVar(SQFdata_modif)])
+
+SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+
+```
+
+## Trabajo con NAs
+
+```{r}
+
+```
+
+
+## División de muestra en train/test
+
+En SMOTE perc.over determina el número de casos por caso que se añaden a la clase minoritaria, mientras que perc.under es el número de casos que se seleccionan de la clase mayoritaria por caso añadido a la minoritaria.
+
+Es decir, en el caso que nos ocupa, la clase negativa son 4842 casos y la positiva 27060. Nos interesa que ambas clases posean el mismo número de casos, por lo que la clase negativa tendrá que ser ampliada en 27060/4842 = 5.588 = 4.588 casos por cada caso que existe.
+
+Para añadir los casos necesarios, perc.over tiene que fijarse a un múltiplo de 100, de lo contrario redondea a la baja. Para afinar el resultado, se ajusta perc.under de la siguiente forma:
+
+Sabemos que para este caso debemos añadir 4.588 casos por caso en la clase minoritaria, perc.over se fija a 400 y se calcula el número de casos que se han de seleccionar de la clase mayoritaria en base al número de casos añadidos. Se añaden 4*4842 = 19368 casos, por lo que en la clase minoritaria quedarán finalmente 19368 + 4842 = 24210 casos. Queremos que la clase mayoritaria alcance ese mismo número de casos, por lo que habrá que seleccionar *X* casos por cada caso añadido a la clase minoritaria:
+
+$$19368·X=24210$$
+Quedando como resultado final un perc.under de *1.25*.
+
+```{r}
+set.seed(123456)
+train = sample(1:dim(SQFdata_modif)[1], dim(SQFdata_modif)[1] * 0.7)
+SQFdataTrain = SQFdata_modif[train, ]
+SQFdataTest = SQFdata_modif[-train, ]
+dim(SQFdataTrain)
+dim(SQFdataTest)
+
+SQFdataTrain %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+
+# Ajuste del desbalanceo con SMOTE (se rechaza la posibilidad de realizar
+# up-sampling dado que es necesario añadir demasiados casos)
+
+newSQFdataTrain <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 400, perc.under = 125)
+
+newSQFdataTrain %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+
+```
+
+## Regresión lineal: perstop -> NO APLICA
+
+```{r}
+SQFdataTrain$race <- relevel(SQFdataTrain$race, ref = "BLACK")
+```
+
+## Regresión logística: arstmade
+
+	¿Probabilidad de arresto una vez detenido? -> Variables determinantes?
+
+```{r}
+
+model_glm <- glm(arstmade ~ ., data = SQFdataTrain, family = "binomial")
+summary(model_glm)
+
+model_glm_SMOTE <- glm(arstmade ~ ., data = newSQFdataTrain, family = "binomial")
+summary(model_glm_SMOTE)
+
+dim(SQFdataTrain)
+dim(newSQFdataTrain)
+
+
+pred <- predict(model_glm, SQFdataTest, type = "response")
+confusionMatrix(factor(pred > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), SQFdataTest$arstmade, positive = "Y")
+
+pred_SMOTE <- predict(model_glm_SMOTE, SQFdataTest, type = "response")
+confusionMatrix(factor(pred_SMOTE > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), SQFdataTest$arstmade, positive = "Y")
+
+
+
+
+
+
+
+model_glm <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE) %dopar% {
+    glm(arstmade ~ ., data = SQFdataTrain, family="binomial")
+}
+
+model_glm <- glm(arstmade ~ race + recstat + inout, data = SQFdataTrain, na.action = na.omit, family = "binomial")
+
+model_glm_Vacio = glm(arstmade ~ 1, data = SQFdataTrain, family = "binomial")
+summary(model_glm_Vacio)
+
+
+registerDoMC(cores = 8)
+
+train_control <- trainControl(allowParallel = TRUE)
+model_glm_Completo <- train(arstmade ~ ., data=SQFdataTrain, trControl=train_control, method = "polr", na.action = na.omit)
+
+
+
+# Hacia delante
+model_glm_Forwards = step(model_glm_Vacio, scope = list(lower = formula(model_glm_Vacio), upper = formula(modeloCompleto)), direction = "forward", trace = 0)
+formula(model_glm_Forwards)
+
+
+
+```
+
+
+## KNN: arstmade
+	¿¿¿Detenciones compartidas por condados???
+
+```{r}
+model_knn <- knn(SQFdataTrain, SQFdataTest, SQFdataTest$arstmade)
+
+model_knn <- knn(SQFdataTrain, newSQFdataTest, cl = SQFdataTrain$arstmade, k = 3, prob = TRUE)
+model_knn1 <- knn1(SQFdataTrain, newSQFdataTest, cl = SQFdataTrain$arstmade)
+
+sapply(SQFdataTrain, function(x) {ifelse(is.factor(x),as.numeric(x) - 1,x)})
+
+foreach(ntree=names(SQFdataTrain), .combine=combine, .multicombine=TRUE) %dopar% {
+    ifelse(is.factor(x),as.numeric(x) - 1, x)
+}
+
+
+ifelse(is.factor(SQFdataTrain$ser_num),as.numeric(SQFdataTrain$ser_num) - 1, c(SQFdataTrain$ser_num))
+
+predict(model_knn, SQFdataTest)
+
+SQFdataTrain$ser_num
+
+
+fun_factor <- function(x){
+    if(is.factor(x)){
+        return(as.integer(x) - 1)
+    }
+    else{
+        return(x)
+    }
+}
+
+SQFdataTrain.numeric <- sapply(SQFdataTrain[,-match("arstmade",colnames(SQFdataTrain))], fun_factor)
+newSQFdataTest.numeric <- sapply(newSQFdataTest[,-match("arstmade",colnames(newSQFdataTest))], fun_factor)
+
+dim(SQFdataTrain)
+dim(SQFdataTrain.numeric)
+
+SQFdataTrain.numeric.labels <- as.numeric(SQFdataTrain$arstmade) - 1
+
+newSQFdataTest.numeric.labels <- as.numeric(newSQFdataTest$arstmade) - 1
+
+
+model_knn <- knn(SQFdataTrain.numeric, newSQFdataTest.numeric, cl = SQFdataTrain.numeric.labels, k = 3, prob = TRUE)
+
+model_knn1 <- knn1(SQFdataTrain.numeric, newSQFdataTest.numeric, cl = SQFdataTrain.numeric.labels)
+
+confusionMatrix(model_knn1, newSQFdataTest.numeric.labels, positive = "1")
+
+newSQFdataTest.numeric[,"arstmade"]
+
+
+dim(SQFdataTrain)
+dim(newSQFdataTest)
+
+newSQFdataTest <- SQFdataTest
+
+newSQFdataTest <- newSQFdataTest %>% filter(!is.na(age))
+
+```
+
+## Árboles de decisión: arstmade
+	Realizar prepoda?? Fijar variables
+
+```{r}
+model_rf <- randomForest(x = SQFdataTrain[,-which(colnames(SQFdataTrain)=="age")], y = SQFdataTrain$arstmade, ntree=100, importance=FALSE, proximity=TRUE, mtry=4, replace=FALSE)
+
+summary(SQFdataTrain$age)
+
+SQFdataTrain <- SQFdataTrain %>%
+    filter(!is.na(SQFdataTrain$age))
+    
+dim(SQFdataTrain)
+dim(SQFdata_modif)
+
+summary(SQFdataTrain)
+
+
+SQFdataTrain$race <- relevel(SQFdataTrain$race, ref = "BLACK")
+
+levels(SQFdataTrain$arstmade) <- c(0,1)
+
+registerDoMC(cores = 8)
+
+train_control <- trainControl(method="repeatedcv", number=10, repeats = 1, allowParallel = TRUE)
+
+model_rforst <- train(arstmade ~ ., data = SQFdataTrain, method = "parRF",
+                  preProcess = c("center", "scale"), trControl = train_control)
+
+
+model_rf <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+              .packages='randomForest') %dopar% {
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree)
+}
+
+model_rf_SMOTE <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+              .packages='randomForest') %dopar% {
+    randomForest(arstmade ~ ., data = newSQFdataTrain, ntree=ntree)
+}
+
+confusionMatrix(predict(model_rf, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+confusionMatrix(predict(model_rf_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+
+confusionMatrix(predict(model_rforst, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+
+pred <- predict(model_rforst, SQFdataTest, type = "prob")
+
+length(SQFdataTest$arstmade)
+
+dim(predict(model_rforst, SQFdataTest, type = "prob"))
+
+length(predict(model_rforst, SQFdataTest))
+
+confusionMatrix(factor(pred[2] > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), SQFdataTest$arstmade, positive = "Y")
+
+length(factor(pred[2] > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")))
+length(SQFdataTest$arstmade)
+
+
+length(predict(model_rforst, SQFdataTest))
+length(SQFdataTest$arstmade)
+
+model_rf <- randomForest(arstmade ~ ., ntree=100, importance=FALSE, proximity=TRUE, mtry=10, replace=FALSE, data = SQFdataTrain, na.action = na.omit)
+
+```
+
+
+
+## Sistemas de recomendación: arstmade
+    Aprendizaje colaborativo
+	Basándonos en las características de otros delincuentes que NO hayan sido detenidos, recomendar posibles armas o crímenes "extra"
+	Basándonos en la gente arrestada, recomendar si se debe arrestar a un nuevo individuo que ya ha sido parado
