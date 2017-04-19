@@ -2,7 +2,9 @@
 title: "EDA"
 author: "Jorge Navarro Garcia"
 date: "13 de marzo de 2017"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 ## Problemática
 
@@ -22,9 +24,9 @@ library(ggplot2)
 library(PASWR2)
 ```
 
-```{r}
+```{r,message=FALSE}
 # Carga del Dataset
-source('code/Cleaning_Data.R')
+source('Cleaning_Data.R')
 ```
 
 # 0. SELECCION DE VARIABLES:
@@ -46,7 +48,8 @@ SQFdata <- SQFdata %>% select(perstop, arstmade,
 ```
 
 # 1. ANÁLISIS DESCRIPTIVO
-```{r}
+```{r, message=FALSE}
+library("dataQualityR")
 drq.num <- paste("./dqr_num.csv", sep = "")
 drq.cat <- paste("./dqr_cat.csv", sep = "")
 checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
@@ -55,7 +58,7 @@ DQR.cat <- read.csv("dqr_cat.csv")
 ```
 
 ## 1.A Variables numéricas
-```{r, results=markup}
+```{r}
 print(DQR.num)
 ```
 
@@ -66,15 +69,15 @@ print(DQR.cat)
 
 # 2. ANÁLISIS EXPLORATORIO VARIABLES
 
-## VARIABLE DEPENDIENTE
+## VARIABLES DEPENDIENTES
 
 ## Tiempo de parada (perstop)
 
-```{r, fig.height=5, fig.width=15}
+```{r, fig.height=5, fig.width=15, message=FALSE}
 library(fitdistrplus)
 library(mixtools)
 
-#hist(SQFdata$perstop, breaks = 20,  prob=F, xlim=c(0,87))
+hist(SQFdata$perstop, breaks = 20,  prob=F, xlim=c(0,87))
 plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
 
 stop <- SQFdata$perstop
@@ -89,78 +92,140 @@ detach("package:MASS", unload=TRUE)
 ## Arresto (arstmade)
 
 ```{r, fig.height=5, fig.width=15}
-library(fitdistrplus)
-library(mixtools)
 
-#hist(SQFdata$perstop, breaks = 20,  prob=F, xlim=c(0,87))
-plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
+tot <- length(SQFdata$arstmade)
 
-stop <- SQFdata$perstop
-mixmdl <- normalmixEM(stop, k=2)
-plot(mixmdl,which=2)
-lines(density(stop), lty=2, lwd=2)
+SQFdata %>% group_by(Arresto = arstmade) %>%
+    summarise(Casos = n(),
+              Porcentaje = paste(round(n()/tot*100,2),'%'))
 
-detach("package:fitdistrplus", unload=TRUE)
-detach("package:MASS", unload=TRUE)
 ```
 
 ## VARIABLES INDEPENDIENTES
 
 ## Raza del sospechoso (race)
 
+- Raza frente a tiempo de parada:
+
 ```{r race-perstop}
-SQFdata %>% group_by(race) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+SQFdata %>% group_by(Raza = race) %>%
+        summarise(Casos = n(),
+                  Media = round(mean(perstop),2),
+                  Mediana = round(median(perstop),2)) %>%
+        mutate(Porcentaje = paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
 
-```{r race-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(race)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(race,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(race)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+- Raza frente a arrestos:
+
+```{r race-arstmade}
+SQFdata %>% group_by(Raza = race, Arresto = arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
+
+```{r race-plot, fig.height=12, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(race)) +
+    geom_bar() + ylab("Frecuencia") + xlab('Raza') +
+    theme_minimal() + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p2 = ggplot(data = SQFdata, aes(race,perstop)) +
+    geom_boxplot() + ylab("Tiempo de parada") + xlab('Raza') +
+    theme_minimal() + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p3 = ggplot(data = SQFdata, aes(x = race)) +
+    geom_bar(aes(fill = arstmade), position = "fill") +
+    ylab("Porcentaje de arrestos") + xlab('Raza') +
+    theme_minimal() + theme(axis.text.x = element_text(angle=-45, hjust = 0)) +
+    scale_y_continuous(labels = scales::percent)
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r race-arstmade}
-SQFdata %>% group_by(race, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+
+Se observa una clara diferencia en cuanto al número de casos para cada uno de los niveles de la variable *race*. Mientras que más de un 50% de los casos se dan para el nivel *Black*, tan solo un 0.42% son de tipo *American indian*.
+
+La mediana de *perstop* para *Black* parece ser más elevada que para el resto de niveles, pero sería interesante añadir más casos para poder afirmar que realmente existen diferencias.
+
+En cuanto al número de arrestos realizados, *Black-hispanic* y *White-hispanic* parecen presentar una tasa ligeramente superior que el resto.
+
 
 ## Edad del sospechoso (age)
 
+- Edad frente a tiempo de parada: 
+
 ```{r age-perstop}
+
+ages <- SQFdata$age[which(!is.na(SQFdata$age))]
+
+z = cut(SQFdata$age, c(min(ages)-1, 25, 40, max(ages)))
+summary(z)
+
+SQFdata_age <- SQFdata
+SQFdata_age$age <- factor(relevel(z, ref = 1))
+
 SQFdata %>% group_by(age) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+
+SQFdata_age %>% group_by(age) %>%
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Edad frente a arrestos:
+
+```{r age-arstmade}
+SQFdata %>% group_by(age, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+
+SQFdata_age %>% group_by(age, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r age-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(age)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(age,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(age)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,p3,cols=2)
+
+p1 = ggplot(data = SQFdata_age, aes(age)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata_age, aes(age,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata_age, aes(age)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r age-arstmade}
-SQFdata %>% group_by(age, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Tras factorizar la variable edad, se observa como para los sospechosos de menor edad (<25 años) existe un mayor número de casos. Sin embargo, a pesar de haber más detenciones de personas jóvenes, la tendencia en cuanto a arrestos y tiempos de parada es la contraria, es decir, los menores de 25 años muestran una tasa menor de arrestos y una mediana de tiempo de parada menor.
+
+Podría ser interesante tratar de refinar más los puntos de corte en cuanto a las edades de los sospechosos.
 
 ## Sospechoso portando contrabando (contrabn)
 
+- Contrabando frente a tiempo de parada:
+
 ```{r contrabn-perstop}
 SQFdata %>% group_by(contrabn) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media = round(mean(perstop),2),
+                  Mediana = round(median(perstop),2)) %>%
+        mutate(Porcentaje = paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Contrabando frente a arresto:
+
+```{r contrabn-arstmade}
+SQFdata %>% group_by(contrabn, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r contrabn-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(contrabn)) + geom_bar() + ylab("Frequency")
@@ -169,21 +234,29 @@ p3 = ggplot(data = SQFdata, aes(contrabn)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r contrabn-arstmade}
-SQFdata %>% group_by(contrabn, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Aparentemente se reduce el tiempo de parada de forma considerable (20 minutos sobre la mediana) al encontrar contrabando en el sospechoso. Se puede deducir de la segunda tabla que la reducción del tiempo de parada se debe a un incremento en el número de arrestos. Es decir, si el sospechoso lleva contrabando encima, es muy probable que se le arreste y el tiempo de parada sea limitado.
 
 ## Sospechoso portando fusil de asalto (asltweap)
 
+- Fusil de asalto frente a tiempo de parada:
+
 ```{r asltweap-perstop}
 SQFdata %>% group_by(asltweap) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Fusil de asalto frente a arresto:
+
+```{r asltweap-arstmade}
+SQFdata %>% group_by(asltweap, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r asltweap-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(asltweap)) + geom_bar() + ylab("Frequency")
@@ -192,44 +265,90 @@ p3 = ggplot(data = SQFdata, aes(asltweap)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r asltweap-arstmade}
-SQFdata %>% group_by(asltweap, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+No existen suficientes casos como para obtener conclusiones. O bien se descargan datos de otros años o se elimina la variable.
 
 ## Descripción de código del crimen (detailCM)
 
+- Código de crimen frente a tiempo de parada:
+
 ```{r detailCM-perstop}
+SQFdata_detailCM <- SQFdata %>%
+    group_by(detailCM) %>%
+    mutate(count = n()) %>%
+    filter(count > 2200) %>%
+    arrange(desc(count))
+
 SQFdata %>% group_by(detailCM) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%")) %>%
+        filter(Casos > 900) %>%
+        arrange(desc(Casos))
+
+SQFdata_detailCM %>% group_by(detailCM) %>%
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%")) %>%
+        arrange(desc(Casos))
 ```
+
+- Código de crimen frente a arrestos:
+
+```{r detailCM-arstmade}
+SQFdata %>% group_by(detailCM, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%")) %>%
+        # filter(Casos > 200) %>%
+        arrange(desc(detailCM), desc(arstmade), desc(Casos))
+
+SQFdata_detailCM %>% group_by(detailCM, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%")) %>%
+        # filter(Casos > 200) %>%
+        arrange(desc(detailCM), desc(arstmade), desc(Casos))
+```
+
+- Gráficos:
 
 ```{r detailCM-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(detailCM)) + geom_bar() + ylab("Frequency")
 p2 = ggplot(data = SQFdata, aes(detailCM,perstop)) + geom_boxplot()
 p3 = ggplot(data = SQFdata, aes(detailCM)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,p3,cols=2)
+
+p1 = ggplot(data = SQFdata_detailCM, aes(detailCM)) + geom_bar() + ylab("Frequency")
+p2 = ggplot(data = SQFdata_detailCM, aes(detailCM,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata_detailCM, aes(detailCM)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r detailCM-arstmade}
-SQFdata %>% group_by(detailCM, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Se oservan grandes diferencias entre los distintos tipos de crímenes registrados. Sin embargo, para muchos de ellos se dispone de pocas observaciones por lo que se opta por mostrar únicamente aquellos casos de los que se disponga un mayor número de registros.
+
+Se observan diferencias en cuanto al tiempo de parada según el crimen cometido y en cuanto a las tasas de arresto dentro de los tipos de crimen seleccionados.
 
 ## Uso de fuerza física - Sospechoso al suelo (pf_grnd)
 
+- Sospechoso al suelo frente a tiempo de parada:
+
 ```{r pf_grnd-perstop}
 SQFdata %>% group_by(pf_grnd) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Sospechoso al suelo frente a arrestos:
+
+```{r pf_grnd-arstmade}
+SQFdata %>% group_by(pf_grnd, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r pf_grnd-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(pf_grnd)) + geom_bar() + ylab("Frequency")
@@ -238,21 +357,29 @@ p3 = ggplot(data = SQFdata, aes(pf_grnd)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r pf_grnd-arstmade}
-SQFdata %>% group_by(pf_grnd, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Se muestra una tasa de arrestos mayor y tiempos de parada menores para los casos en los que se reduce al sospechoso en el suelo. Sin embargo, existen pocos casos como para que se pueda afirmar con seguridad.
 
 ## Uso de fuerza física - Desenfundar arma (pf_drwep)
 
+- Desenfundar arma frente a tiempo de parada:
+
 ```{r pf_drwep-perstop}
 SQFdata %>% group_by(pf_drwep) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Desenfundar arma frente a arrestos:
+
+```{r pf_drwep-arstmade}
+SQFdata %>% group_by(pf_drwep, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r pf_drwep-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(pf_drwep)) + geom_bar() + ylab("Frequency")
@@ -261,21 +388,29 @@ p3 = ggplot(data = SQFdata, aes(pf_drwep)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r pf_drwep-arstmade}
-SQFdata %>% group_by(pf_drwep, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Mientras que el tiempo de parada es menor para los casos en los que se desenfunda el arma, la tasa de arrestos se muestra muy similar en ambos casos. Al igual que para la variable anterior, existen pocas observaciones como para poder afirmar diferencias con seguridad.
 
 ## Motivo de parada - Encajar con descripción (cs_descr)
 
+- Encajar con descripción frente a tiempo de parada:
+
 ```{r cs_descr-perstop}
 SQFdata %>% group_by(cs_descr) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Encajar con descripción frente a arrestos:
+
+```{r cs_descr-arstmade}
+SQFdata %>% group_by(cs_descr, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r cs_descr-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(cs_descr)) + geom_bar() + ylab("Frequency")
@@ -284,21 +419,29 @@ p3 = ggplot(data = SQFdata, aes(cs_descr)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r cs_descr-arstmade}
-SQFdata %>% group_by(cs_descr, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+No existe diferencia en la tasa de arrestos según si la detención se produce por encajar con una descripción o no. Por el contrario, si el sospechoso encaja con una descripción la mediana del tiempo de parada se reduce. Esto puede ser debido a que tras identificar al sospechoso no es necesario mantenerlo retenido más tiempo.
 
 ## Motivo de parada - ¿¿Acechar?? a víctima o lugar (cs_casng)
 
+- Acechar frente a tiempo de parada:
+
 ```{r cs_casng-perstop}
 SQFdata %>% group_by(cs_casng) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Acechar frente a arrestos:
+
+```{r cs_casng-arstmade}
+SQFdata %>% group_by(cs_casng, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r cs_casng-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(cs_casng)) + geom_bar() + ylab("Frequency")
@@ -307,21 +450,31 @@ p3 = ggplot(data = SQFdata, aes(cs_casng)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r cs_casng-arstmade}
-SQFdata %>% group_by(cs_casng, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Se muestra una tasa de arrestos ligeramente menor para los casos en los que se encuentra al sospechoso acechando a una víctima o lugar mientras que, para el tiempo de parada la mediana es superior al resto de casos.
+
+Puede ser debido a que al encontrar acechando al sospechoso, aún no se ha cometido ningún crimen y por tanto no es posible llevar a cabo el arresto pero si detener durante algún tiempo al sospechoso.
 
 ## Motivo de parada - Otros (cs_other)
 
+- Otros motivos de parada frente a tiempo de parada:
+
 ```{r cs_other-perstop}
 SQFdata %>% group_by(cs_other) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Otros motivos de parada frente a arrestos:
+
+```{r cs_other-arstmade}
+SQFdata %>% group_by(cs_other, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r cs_other-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(cs_other)) + geom_bar() + ylab("Frequency")
@@ -330,21 +483,29 @@ p3 = ggplot(data = SQFdata, aes(cs_other)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r cs_other-arstmade}
-SQFdata %>% group_by(cs_other, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Existen diferencias en cuanto a la mediana del tiempo de parada, pero no en cuanto a la tasa de arrestos.
 
 ## Motivo de cacheo - Otras sospechas de armas (rf_othsw)
 
+- Sospecha de otras armas frente a tiempo de parada:
+
 ```{r rf_othsw-perstop}
 SQFdata %>% group_by(rf_othsw) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Sospecha de otras armas frente a arrestos:
+
+```{r rf_othsw-arstmade}
+SQFdata %>% group_by(rf_othsw, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r rf_othsw-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(rf_othsw)) + geom_bar() + ylab("Frequency")
@@ -353,21 +514,29 @@ p3 = ggplot(data = SQFdata, aes(rf_othsw)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r rf_othsw-arstmade}
-SQFdata %>% group_by(rf_othsw, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Se muestran diferencias en las tasas de arresto y en la mediana del tiempo de parada. De la misma forma que para otras variables, puede ser debido a que si existe la sospecha de que se esté portando un arma y se confirma, se produce el arresto con mayor probabilidad y por lo tanto no es necesario más tiempo de parada.
 
 ## Motivo de cacheo - Bulto sospechoso (rf_bulg)
 
+- Bulto sospechoso frente a tiempo de parada:
+
 ```{r rf_bulg-perstop}
 SQFdata %>% group_by(rf_bulg) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Bulto sospechoso frente a arrestos:
+
+```{r rf_bulg-arstmade}
+SQFdata %>% group_by(rf_bulg, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r rf_bulg-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(rf_bulg)) + geom_bar() + ylab("Frequency")
@@ -376,21 +545,29 @@ p3 = ggplot(data = SQFdata, aes(rf_bulg)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r rf_bulg-arstmade}
-SQFdata %>% group_by(rf_bulg, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Existen diferencias en cuanto a la mediana del tiempo de parada, pero no en cuanto a la tasa de arrestos.
 
 ## Motivo de búsqueda - Objeto contundente (sb_hdobj)
 
+- Objeto contundente frente a tiempo de parada:
+
 ```{r sb_hdobj-perstop}
 SQFdata %>% group_by(sb_hdobj) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Objeto contundente frente a arrestos:
+
+```{r sb_hdobj-arstmade}
+SQFdata %>% group_by(sb_hdobj, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r sb_hdobj-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(sb_hdobj)) + geom_bar() + ylab("Frequency")
@@ -399,21 +576,29 @@ p3 = ggplot(data = SQFdata, aes(sb_hdobj)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r sb_hdobj-arstmade}
-SQFdata %>% group_by(sb_hdobj, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Existen diferencias en cuanto a la mediana de tiempo de parada y ligeras diferencias en la tasa de arrestos.
 
 ## Circunstancias adicionales - Cambio de dirección al ver a un oficial (ac_cgdir)
 
+- Cambio de dirección frente a tiempo de parada:
+
 ```{r ac_cgdir-perstop}
 SQFdata %>% group_by(ac_cgdir) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Cambio de dirección frente a arrestos:
+
+```{r ac_cgdir-arstmade}
+SQFdata %>% group_by(ac_cgdir, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r ac_cgdir-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(ac_cgdir)) + geom_bar() + ylab("Frequency")
@@ -422,21 +607,29 @@ p3 = ggplot(data = SQFdata, aes(ac_cgdir)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r ac_cgdir-arstmade}
-SQFdata %>% group_by(ac_cgdir, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Se observan diferencias únicamente en el tiempo de parada, la tasa de arresto es similar en ambos casos.
 
 ## Circunstancias adicionales - Área de alta tasa de criminalidad (ac_incid)
 
+- Área de alta tasa de criminalidad frente a tiempo de parada:
+
 ```{r ac_incid-perstop}
 SQFdata %>% group_by(ac_incid) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Área de alta tasa de criminalidad frente a tiempo de parada:
+
+```{r ac_incid-arstmade}
+SQFdata %>% group_by(ac_incid, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r ac_incid-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(ac_incid)) + geom_bar() + ylab("Frequency")
@@ -445,21 +638,29 @@ p3 = ggplot(data = SQFdata, aes(ac_incid)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r ac_incid-arstmade}
-SQFdata %>% group_by(ac_incid, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Se observa una mediana de tiempo de parada ligeramente superior en los casos que se dan en zonas de alta criminalidad. No existen diferencias en cuanto a la tasa de arresto.
 
 ## Circunstancias adicionales - Otras (ac_other)
 
+- Otras circunstancias adicionales frente a tiempo de parada:
+
 ```{r ac_other-perstop}
 SQFdata %>% group_by(ac_other) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Otras circunstancias adicionales frente a arrestos:
+
+```{r ac_other-arstmade}
+SQFdata %>% group_by(ac_other, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r ac_other-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(ac_other)) + geom_bar() + ylab("Frequency")
@@ -468,44 +669,85 @@ p3 = ggplot(data = SQFdata, aes(ac_other)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r ac_other-arstmade}
-SQFdata %>% group_by(ac_other, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Existen diferencias en el tiempo de parada, pero no en la tasa de arrestos.
 
 ## Cruce en el que se produce la parada (stinter)
 
+- Cruce frente a tiempo de parada:
+
 ```{r stinter-perstop}
+SQFdata_stinter <- SQFdata %>%
+    group_by(stinter) %>%
+    mutate(count = n()) %>%
+    filter(count > 270) %>%
+    arrange(desc(count))
+
 SQFdata %>% group_by(stinter) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+
+SQFdata_stinter %>% group_by(stinter) %>%
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%")) %>%
+        arrange(desc(Casos))
+
 ```
 
-```{r stinter-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(stinter)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(stinter,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(stinter)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
-multiplot(p1,p2,p3,cols=2)
-```
+- Cruce frente a arrestos:
 
 ```{r stinter-arstmade}
 SQFdata %>% group_by(stinter, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%")) %>%
+        arrange(desc(stinter), desc(arstmade), desc(Casos))
+
+SQFdata_stinter %>% group_by(stinter, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%")) %>%
+        arrange(desc(stinter), desc(arstmade), desc(Casos))
 ```
+
+- Gráficos:
+
+```{r stinter-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(stinter)) + geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p2 = ggplot(data = SQFdata, aes(stinter,perstop)) + geom_boxplot() + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p3 = ggplot(data = SQFdata, aes(stinter)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+multiplot(p1,p2,p3,cols=2)
+
+p1 = ggplot(data = SQFdata_stinter, aes(stinter)) + geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p2 = ggplot(data = SQFdata_stinter, aes(stinter,perstop)) + geom_boxplot() + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p3 = ggplot(data = SQFdata_stinter, aes(stinter)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+multiplot(p1,p2,p3,cols=2)
+```
+
+Existen claras diferencias según el cruce en el que se produce la detención. Cabe destacar que para poder apreciar la información se seleccionan únicamente aquellos para los que se dispone de un mayor número de observaciones.
 
 ## Sector en el que se produce la parada (sector)
 
+- Sector frente a tiempo de parada:
+
 ```{r sector-perstop}
 SQFdata %>% group_by(sector) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Sector frente a arrestos:
+
+```{r sector-arstmade}
+SQFdata %>% group_by(sector, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r sector-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(sector)) + geom_bar() + ylab("Frequency")
@@ -514,21 +756,29 @@ p3 = ggplot(data = SQFdata, aes(sector)) + geom_bar(aes(fill = arstmade), positi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r sector-arstmade}
-SQFdata %>% group_by(sector, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Se observan diferencias en el tiempo de parada según el sector, pero no en la tasa de arresto que en general se mantiene constante.
 
 ## Tipo de identificación de la persona parada (typeofid)
 
+- Tipo de identificación frente a tiempo de parada:
+
 ```{r typeofid-perstop}
 SQFdata %>% group_by(typeofid) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Tipo de identificación frente a tiempo de parada:
+
+```{r typeofid-arstmade}
+SQFdata %>% group_by(typeofid, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r typeofid-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(typeofid)) + geom_bar() + ylab("Frequency")
@@ -537,21 +787,29 @@ p3 = ggplot(data = SQFdata, aes(typeofid)) + geom_bar(aes(fill = arstmade), posi
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r typeofid-arstmade}
-SQFdata %>% group_by(typeofid, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+En la mayoría de los casos se da un reconocimiento verbal o por foto y no existen grandes diferencias entre ambos ni en la tasa de arrestos ni en los tiempos de parada. Para el resto de casos no se dispone de datos suficientes como para poder afirmar diferencias con seguridad.
 
 ## Paro, interrogatorio o cacheo a otras personas (othpers)
 
+- Otras personas involucradas frente a tiempo de parada:
+
 ```{r othpers-perstop}
 SQFdata %>% group_by(othpers) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Otras personas involucradas frente a tiempo de parada:
+
+```{r othpers-arstmade}
+SQFdata %>% group_by(othpers, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r othpers-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(othpers)) + geom_bar() + ylab("Frequency")
@@ -560,21 +818,29 @@ p3 = ggplot(data = SQFdata, aes(othpers)) + geom_bar(aes(fill = arstmade), posit
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r othpers-arstmade}
-SQFdata %>% group_by(othpers, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+La tasa de arrestos es ligeramente inferior cuando existen más personas involucradas y lo mismo ocurre para el tiempo de parada. Esto puede ser debido a que el agente tiene que repartir el tiempo entre los distintos sospechosos o personas involucradas en el crimen.
 
 ## Llamada de radio (radio)
 
+- Llamada de radio frente a tiempo de parada:
+
 ```{r radio-perstop}
 SQFdata %>% group_by(radio) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+        summarise(Casos = n(),
+                  Media= round(mean(perstop),2),
+                  Mediana= round(median(perstop),2)) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
 ```
+
+- Llamada de radio frente a arrestos:
+
+```{r radio-arstmade}
+SQFdata %>% group_by(radio, arstmade) %>%
+        summarise(Casos = n()) %>%
+        mutate(Porcentaje=paste0(round(Casos/sum(Casos)*100,2),"%"))
+```
+
+- Gráficos:
 
 ```{r radio-plot, fig.height=5, fig.width=15}
 p1 = ggplot(data = SQFdata, aes(radio)) + geom_bar() + ylab("Frequency")
@@ -583,8 +849,8 @@ p3 = ggplot(data = SQFdata, aes(radio)) + geom_bar(aes(fill = arstmade), positio
 multiplot(p1,p2,p3,cols=2)
 ```
 
-```{r radio-arstmade}
-SQFdata %>% group_by(radio, arstmade) %>%
-        summarise(n=n()) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
+Existen diferencias en cuanto al tiempo de parada y ligeras diferencias en la tasa de arresto.
+
+## Conclusiones
+
+De todas las variables analizadas, existe un gran número de ellas en las que la tasa de arresto no muestra grandes diferencias según el valor que toman, por lo que no son relevantes a la hora de decidir el arresto del sospechoso. Por el contrario, para el tiempo de parada la mayoría muestran diferencias por ligeras que puedan ser.
