@@ -27,12 +27,12 @@ library(class)
 ```{r,message=FALSE}
 # Carga del Dataset
 source('Cleaning_Data.R')
-
 dim(SQFdata)
 ```
 
 
-# 1. ANÁLISIS DESCRIPTIVO
+## Análisis descriptivo
+
 ```{r, message=FALSE}
 drq.num <- paste("./dqr_num.csv", sep = "")
 drq.cat <- paste("./dqr_cat.csv", sep = "")
@@ -41,14 +41,14 @@ DQR.num <- read.csv("dqr_num.csv")
 DQR.cat <- read.csv("dqr_cat.csv")
 ```
 
-## 1.A Variables numéricas
+### A Variables numéricas
 ```{r}
 print(DQR.num)
 
 # Variables a tener en cuenta por NAs -> age, xcoord e ycoord
 ```
 
-## 1.B Variables categóricas
+### B Variables categóricas
 ```{r}
 print(DQR.cat)
 # Variables a tener en cuenta por NAs > 60% -> arstoffn, sumoffen, officrid, offverb, ¿offshld (54.62)?, forceuse, othfeatr, addrnum, stname, beat, post
@@ -143,11 +143,16 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-
 # Variables en duda
 summary(SQFdata_modif$ser_num)
 summary(SQFdata_modif$revcmd)
 summary(SQFdata_modif$repcmd)
+
+
+
+# Número de variables final
+dim(SQFdata)
+dim(SQFdata_modif)
 ```
 
 ### Eliminación de NAs
@@ -186,19 +191,19 @@ summary(SQFdata_modif$sb_other);summary(SQFdata_modif$rf_furt);summary(SQFdata_m
 
 
 # Modificación de variables no eliminadas
-SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))] <- 'N'
+SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
 SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
 SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
 
 SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
-SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))] <- 'N'
-SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))] <- 'N'
+SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
+SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
 SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
 SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
 SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
 SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
 
-SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))] <- 'N'
+SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
 SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
 SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
 SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
@@ -221,7 +226,7 @@ SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
 SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
 SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
 SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
-SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
 SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
 SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
 SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
@@ -229,8 +234,8 @@ SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
 SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
 SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
 SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
-SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))] <- 'N'
-SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
 
 
 # AÑADIR EXPLICACIÓN CON PAQUETE MissingDataGUI
@@ -250,41 +255,73 @@ SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))] <- 'N'
 #     summarise(count = n())
 #     mutate(percent = 100*count/sum(count))
 
-
+# Comprobación de NAs
+sum(is.na(SQFdata))
+sum(is.na(SQFdata_modif))
 ```
 
 ## División de muestra en train/test
 
-En SMOTE perc.over determina el número de casos por caso que se añaden a la clase minoritaria, mientras que perc.under es el número de casos que se seleccionan de la clase mayoritaria por caso añadido a la minoritaria.
-
-Es decir, en el caso que nos ocupa, la clase negativa son 4842 casos y la positiva 27060. Nos interesa que ambas clases posean el mismo número de casos, por lo que la clase negativa tendrá que ser ampliada en 27060/4842 = 5.588 = 4.588 casos por cada caso que existe.
-
-Para añadir los casos necesarios, perc.over tiene que fijarse a un múltiplo de 100, de lo contrario redondea a la baja. Para afinar el resultado, se ajusta perc.under de la siguiente forma:
-
-Sabemos que para este caso debemos añadir 4.588 casos por caso en la clase minoritaria, perc.over se fija a 400 y se calcula el número de casos que se han de seleccionar de la clase mayoritaria en base al número de casos añadidos. Se añaden 4·4842 = 19368 casos, por lo que en la clase minoritaria quedarán finalmente 19368 + 4842 = 24210 casos. Queremos que la clase mayoritaria alcance ese mismo número de casos, por lo que habrá que seleccionar *X* casos por cada caso añadido a la clase minoritaria: $19368·X=24210$
-Quedando como resultado final un perc.under de *1.25*.
-
 ```{r}
-set.seed(123456)
-train = sample(1:dim(SQFdata_modif)[1], dim(SQFdata_modif)[1] * 0.7)
-SQFdataTrain = SQFdata_modif[train, ]
-SQFdataTest = SQFdata_modif[-train, ]
-dim(SQFdataTrain)
-dim(SQFdataTest)
+# Creación de conjuntos train y test
+tot_obs <- dim(SQFdata_modif)[1]
+indices <- 1:tot_obs
 
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain = SQFdata_modif[indices_train, ]
+SQFdataTest = SQFdata_modif[-indices_train, ]
+
+# Datos desbalanceados
 SQFdataTrain %>% group_by(arstmade) %>%
     summarise(count = n()) %>%
     mutate(percent = 100*count/sum(count))
+```
 
-# Ajuste del desbalanceo con SMOTE (se rechaza la posibilidad de realizar
-# up-sampling dado que es necesario añadir demasiados casos)
+### Ajuste del desbalanceo: Down-sampling y SMOTE
 
-newSQFdataTrain <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 400, perc.under = 125)
+- Down-Sampling:
 
-newSQFdataTrain %>% group_by(arstmade) %>%
+```{r}
+# Total de casos -> 4847 (si) + 27203 (no) = 32050
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberían ser 4847 casos
+training.yes <- SQFdataTrain %>% filter(arstmade == 'Y')
+training.no <- SQFdataTrain %>% filter(arstmade == 'N')
+
+set.seed(4567)
+ind_training.no <- sample(rownames(training.no),4799)
+training.no <- training.no[ind_training.no,]
+
+SQFdataTrain_DSAMP <- rbind(training.yes, training.no)
+
+SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
     summarise(count = n()) %>%
     mutate(percent = 100*count/sum(count))
+```
 
+- SMOTE:
+
+En SMOTE perc.over determina el número de casos por caso que se añaden a la clase minoritaria, mientras que perc.under es el número de casos que se seleccionan de la clase mayoritaria por caso añadido a la minoritaria.
+
+Es decir, en el caso que nos ocupa, la clase negativa son 4799 casos y la positiva 27103 Nos interesa que ambas clases posean el mismo número de casos, por lo que la clase negativa tendrá que ser ampliada en 27103/4799 = 5.647 = 4.647 casos por cada caso que existe.
+
+Para añadir los casos necesarios, perc.over tiene que fijarse a un múltiplo de 100, de lo contrario redondea a la baja. Para afinar el resultado, se ajusta perc.under de la siguiente forma:
+
+Sabemos que para este caso debemos añadir al menos 4.647 casos por caso en la clase minoritaria, perc.over se fija a 400 y se calcula el número de casos que se han de seleccionar de la clase mayoritaria en base al número de casos añadidos. Se añaden 4·4799 = 19196 casos, por lo que en la clase minoritaria quedarán finalmente $19196+4799=23995$ casos. Queremos que la clase mayoritaria alcance ese mismo número de casos, por lo que habrá que seleccionar *X* casos por cada caso añadido a la clase minoritaria: $19196·X=23995$
+Quedando como resultado final un perc.under de *1.25*.
+
+```{r}
+# Ajuste del desbalanceo con SMOTE (se rechaza la posibilidad de realizar
+# up-sampling dado que es necesario añadir demasiados casos)
+set.seed(6789)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 400, perc.under = 125)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 300, perc.under = 133.33)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 100, perc.under = 200)
+SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 50, perc.under = 300)
+
+SQFdataTrain_SMOTE %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
 ```
 
 ## Regresión logística: arstmade
@@ -293,51 +330,59 @@ newSQFdataTrain %>% group_by(arstmade) %>%
 
 ```{r}
 
-model_glm <- glm(arstmade ~ ., data = SQFdataTrain, family = "binomial")
-summary(model_glm)
-
-model_glm_SMOTE <- glm(arstmade ~ ., data = newSQFdataTrain, family = "binomial")
-summary(model_glm_SMOTE)
-
-dim(SQFdataTrain)
-dim(newSQFdataTrain)
-
-
-pred <- predict(model_glm, SQFdataTest, type = "response")
-confusionMatrix(factor(pred > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), SQFdataTest$arstmade, positive = "Y")
-
-pred_SMOTE <- predict(model_glm_SMOTE, SQFdataTest, type = "response")
-confusionMatrix(factor(pred_SMOTE > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), SQFdataTest$arstmade, positive = "Y")
-
-
-
-
-
-
-
-model_glm <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE) %dopar% {
-    glm(arstmade ~ ., data = SQFdataTrain, family="binomial")
+fun_glm <- function(x){
+    model <- glm(arstmade ~ ., data = x, family = "binomial")
+    print(summary(model))
+    # if(deparse(substitute(x)) %in% c("SQFdataTrain_DSAMP","SQFdataTrain_SMOTE")){
+    model$xlevels$eyecolor <- levels(SQFdataTrain$eyecolor)
+    # }
+    pred <- predict(model, SQFdataTest, type = "response")
+    print(confusionMatrix(factor(pred > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")),
+    SQFdataTest$arstmade, positive = "Y"))
+    return(model)
 }
 
-model_glm <- glm(arstmade ~ race + recstat + inout, data = SQFdataTrain, na.action = na.omit, family = "binomial")
+model_glm       <- fun_glm(SQFdataTrain)
+model_glm_DSAMP <- fun_glm(SQFdataTrain_DSAMP)
+model_glm_SMOTE <- fun_glm(SQFdataTrain_SMOTE)
 
-model_glm_Vacio = glm(arstmade ~ 1, data = SQFdataTrain, family = "binomial")
-summary(model_glm_Vacio)
+df.comp.glm <- data.frame(aic = c(model_glm$aic, model_glm_DSAMP$aic, model_glm_SMOTE$aic),
+                          null.deviance = c(model_glm$null.deviance,model_glm_DSAMP$null.deviance,model_glm_SMOTE$null.deviance),
+                          deviance = c(model_glm$deviance,model_glm_DSAMP$deviance,model_glm_SMOTE$deviance),
+                          row.names = c("NORM","DSAMP","SMOTE"))
+df.comp.glm
 
 
-registerDoMC(cores = 8)
 
-train_control <- trainControl(allowParallel = TRUE)
-model_glm_Completo <- train(arstmade ~ ., data=SQFdataTrain, trControl=train_control, method = "polr", na.action = na.omit)
+pred_glm <- predict(model_glm, SQFdataTest, type = "response")
+confusionMatrix(factor(pred_glm > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")),SQFdataTest$arstmade, positive = "Y")
+
+pred_glm_DSAMP <- predict(model_glm_DSAMP, SQFdataTest, type = "response")
+confusionMatrix(factor(pred_glm_DSAMP > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")),SQFdataTest$arstmade, positive = "Y")
+
+pred_glm_SMOTE <- predict(model_glm_SMOTE, SQFdataTest, type = "response")
+confusionMatrix(factor(pred_glm_SMOTE > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")),SQFdataTest$arstmade, positive = "Y")
 
 
+# ===================================================================
+# ¿Es interesante?
+library(ROSE)
+accuracy.meas(SQFdataTest$arstmade, pred_glm, threshold = 0.02)
+accuracy.meas(SQFdataTest$arstmade, pred_glm_DSAMP, threshold = 0.02)
+accuracy.meas(SQFdataTest$arstmade, pred_glm_SMOTE, threshold = 0.02)
+# ===================================================================
+
+sensitivity(SQFdataTest$arstmade, factor(pred_glm > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), positive = "Y")
+specificity(SQFdataTest$arstmade, factor(pred_glm > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")))
+
+
+# Aplicar step y ver cómo se comporta cada modelo (POR TERMINAR)
+
+# model_glm_Vacio = glm(arstmade ~ 1, data = SQFdataTrain, family = "binomial")
 
 # Hacia delante
-model_glm_Forwards = step(model_glm_Vacio, scope = list(lower = formula(model_glm_Vacio), upper = formula(modeloCompleto)), direction = "forward", trace = 0)
-formula(model_glm_Forwards)
-
-
-
+# model_glm_Forwards = step(model_glm_Vacio, scope = list(lower = formula(model_glm_Vacio), upper = formula(modeloCompleto)), direction = "forward", trace = 0)
+# formula(model_glm_Forwards)
 ```
 
 
