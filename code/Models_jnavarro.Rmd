@@ -26,13 +26,9 @@ library(class)
 
 ```{r,message=FALSE}
 # Carga del Dataset
-source('code/Cleaning_Data.R')
-# source('Cleaning_Data.R')
+source('Cleaning_Data.R')
 
 dim(SQFdata)
-
-SQFdata <- SQFdata[,-match(c("arstoffn", "sumoffen", "officrid", "offverb", "offshld", "forceuse", "othfeatr", "addrnum", "stname", "post", "beat"),colnames(SQFdata))]
-
 ```
 
 
@@ -40,7 +36,7 @@ SQFdata <- SQFdata[,-match(c("arstoffn", "sumoffen", "officrid", "offverb", "off
 ```{r, message=FALSE}
 drq.num <- paste("./dqr_num.csv", sep = "")
 drq.cat <- paste("./dqr_cat.csv", sep = "")
-checkDataQuality(SQFdataTest, out.file.num = drq.num,  out.file.cat = drq.cat)
+checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
 DQR.num <- read.csv("dqr_num.csv")
 DQR.cat <- read.csv("dqr_cat.csv")
 ```
@@ -48,92 +44,30 @@ DQR.cat <- read.csv("dqr_cat.csv")
 ## 1.A Variables numéricas
 ```{r}
 print(DQR.num)
+
+# Variables a tener en cuenta por NAs -> age, xcoord e ycoord
 ```
 
 ## 1.B Variables categóricas
 ```{r}
 print(DQR.cat)
+# Variables a tener en cuenta por NAs > 60% -> arstoffn, sumoffen, officrid, offverb, ¿offshld (54.62)?, forceuse, othfeatr, addrnum, stname, beat, post
+
+# Variables a tener en cuenta por NAs cercanos al 20% -> adtlrept, pistol, riflshot, asltweap, knifcuti, machgun, othrweap, pf_hands, pf_wall, pf_grnd, pf_drwep, pf_ptwep, pf_baton, pf_hcuff, pf_pepsp, pf_other, , ac_rept, ac_inves, rf_vcrim, rf_othsw, ac_proxm, rf_attir, cs_objcs, cs_descr, cs_casng, cs_lkout, rf_vcact, cs_cloth, cs_drgtr, ac_evasv, ac_assoc, cs_furtv, rf_rfcmp, , ac_cgdir, rf_verbl, cs_vcrim, cs_bulge, cs_other, ac_incid, ac_time, rf_knowl, ac_stsnd, ac_other, sb_hdobj, sb_outln, sb_admis, sb_other, rf_furt, rf_bulg, premname, stinter, crossst, sector
 ```
 
 ## Transformación de los datos
 
-```{r}
-# Punto de partida
-SQFdata %>% group_by(is.na(age)) %>%
-    summarise(n())
-
-SQFdata_modif <- SQFdata %>% filter(!is.na(age))
-
-dim(SQFdata)
-dim(SQFdata_modif)
-
-# Trabajo con NAs
-
-
-SQFdata_modif %>% filter(is.na(pistol)) %>%
-    group_by(knifcuti, othrweap) %>%
-    select(pistol, knifcuti, othrweap) %>% 
-    summarise(n())
-
-SQFdata_modif %>% group_by(pf_hands) %>%
-    filter(is.na(pf_hands)) %>%
-    # group_by(pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>%
-    group_by(pf_wall) %>%
-    # group_by(pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>%
-    select(pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>% 
-    summarise(count = n())
-    # mutate(percent = 100*count/sum(count))
-```
+### Eliminación de variables
 
 ```{r}
-# Variables NO eliminadas
-summary(SQFdata_modif$pistol)
-summary(SQFdata_modif$knifcuti)
-summary(SQFdata_modif$othrweap)
 
-summary(SQFdata_modif$pf_hands)
-summary(SQFdata_modif$pf_wall)
-summary(SQFdata_modif$pf_grnd)
-summary(SQFdata_modif$pf_drwep)
-summary(SQFdata_modif$pf_ptwep)
-summary(SQFdata_modif$pf_hcuff)
-summary(SQFdata_modif$pf_other)
+# Eliminación de variables con más de 60% de datos faltantes.
+SQFdata_modif <- SQFdata %>%
+                    select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
+                                       forceuse, othfeatr, addrnum, stname, beat, post))
 
-summary(SQFdata_modif$ac_rept)
-summary(SQFdata_modif$ac_inves)
-summary(SQFdata_modif$rf_vcrim)
-summary(SQFdata_modif$rf_othsw)
-summary(SQFdata_modif$ac_proxm)
-summary(SQFdata_modif$rf_attir)
-summary(SQFdata_modif$cs_objcs)
-summary(SQFdata_modif$cs_descr)
-summary(SQFdata_modif$cs_casng)
-summary(SQFdata_modif$cs_lkout)
-summary(SQFdata_modif$rf_vcact)
-summary(SQFdata_modif$cs_cloth)
-summary(SQFdata_modif$cs_drgtr)
-summary(SQFdata_modif$ac_evasv)
-summary(SQFdata_modif$ac_assoc)
-summary(SQFdata_modif$cs_furtv)
-summary(SQFdata_modif$rf_rfcmp)
-summary(SQFdata_modif$ac_cgdir)
-summary(SQFdata_modif$rf_verbl)
-summary(SQFdata_modif$cs_vcrim)
-summary(SQFdata_modif$cs_bulge)
-summary(SQFdata_modif$cs_other)
-summary(SQFdata_modif$ac_incid)
-summary(SQFdata_modif$ac_time)
-summary(SQFdata_modif$rf_knowl)
-summary(SQFdata_modif$ac_stsnd)
-summary(SQFdata_modif$ac_other)
-summary(SQFdata_modif$sb_hdobj)
-summary(SQFdata_modif$sb_outln)
-summary(SQFdata_modif$sb_admis)
-summary(SQFdata_modif$sb_other)
-summary(SQFdata_modif$rf_furt)
-summary(SQFdata_modif$rf_bulg)
-
-# Variables eliminadas
+# Eliminación de variables con 20% de NAs pero nula varianza (casos pertenecientes todos a una misma clase).
 summary(SQFdata_modif$adtlrept)
 summary(SQFdata_modif$riflshot)
 summary(SQFdata_modif$asltweap)
@@ -141,10 +75,89 @@ summary(SQFdata_modif$machgun)
 summary(SQFdata_modif$pf_baton)
 summary(SQFdata_modif$pf_pepsp)
 
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(adtlrept, riflshot, asltweap, machgun,
+                             pf_baton, pf_pepsp))
+
+
+# Eliminación de variables con demasiados niveles (strings)
+summary(SQFdata_modif$premname);summary(SQFdata_modif$stinter);
+summary(SQFdata_modif$crossst);summary(SQFdata_modif$sector)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(premname, stinter, crossst, sector))
+
+
+SQFdata_modif %>% group_by(zip) %>%
+    summarise(n())
+
+# Eliminación de variables que no aparecen en el checkDataQuality
+summary(SQFdata_modif$state);summary(SQFdata_modif$zip);summary(SQFdata_modif$addrtyp);
+summary(SQFdata_modif$rescode);summary(SQFdata_modif$premtype);
+summary(SQFdata_modif$aptnum);summary(SQFdata_modif$timestop)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(state,zip,addrtyp,rescode,premtype,aptnum,timestop))
+
+
+# Eliminación de factores con más de 53 niveles
+length(levels(SQFdata_modif$pct));length(levels(SQFdata_modif$crimsusp));
+length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(pct,crimsusp,addrpct,detailCM))
+
+# Eliminación de variables con poca varianza
+summary(SQFdata_modif$year);summary(SQFdata_modif$datestop);
+summary(SQFdata_modif$compyear);summary(SQFdata_modif$comppct);
+summary(SQFdata_modif$lineCM);summary(SQFdata_modif$dob)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(year,datestop,compyear,comppct, lineCM, dob))
+
+
+```
+
+### Eliminación de NAs
+
+```{r}
+
+# Eliminación de NAs en variable age
+SQFdata_modif %>% group_by(is.na(age)) %>%
+    summarise(n())
+
+SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
+
+dim(SQFdata)
+dim(SQFdata_modif)
+
+# Trabajo con NAs
+
+# Variables NO eliminadas
+summary(SQFdata_modif$pistol);summary(SQFdata_modif$knifcuti);summary(SQFdata_modif$othrweap);
+
+summary(SQFdata_modif$pf_hands);summary(SQFdata_modif$pf_wall);summary(SQFdata_modif$pf_grnd);
+summary(SQFdata_modif$pf_drwep);summary(SQFdata_modif$pf_ptwep);summary(SQFdata_modif$pf_hcuff);
+summary(SQFdata_modif$pf_other);
+
+summary(SQFdata_modif$ac_rept);summary(SQFdata_modif$ac_inves);summary(SQFdata_modif$rf_vcrim);
+summary(SQFdata_modif$rf_othsw);summary(SQFdata_modif$ac_proxm);summary(SQFdata_modif$rf_attir);
+summary(SQFdata_modif$cs_objcs);summary(SQFdata_modif$cs_descr);summary(SQFdata_modif$cs_casng);
+summary(SQFdata_modif$cs_lkout);summary(SQFdata_modif$rf_vcact);summary(SQFdata_modif$cs_cloth);
+summary(SQFdata_modif$cs_drgtr);summary(SQFdata_modif$ac_evasv);summary(SQFdata_modif$ac_assoc);
+summary(SQFdata_modif$cs_furtv);summary(SQFdata_modif$rf_rfcmp);summary(SQFdata_modif$ac_cgdir);
+summary(SQFdata_modif$rf_verbl);summary(SQFdata_modif$cs_vcrim);summary(SQFdata_modif$cs_bulge);
+summary(SQFdata_modif$cs_other);summary(SQFdata_modif$ac_incid);summary(SQFdata_modif$ac_time);
+summary(SQFdata_modif$rf_knowl);summary(SQFdata_modif$ac_stsnd);summary(SQFdata_modif$ac_other);
+summary(SQFdata_modif$sb_hdobj);summary(SQFdata_modif$sb_outln);summary(SQFdata_modif$sb_admis);
+summary(SQFdata_modif$sb_other);summary(SQFdata_modif$rf_furt);summary(SQFdata_modif$rf_bulg);
+
+
 # Modificación de variables no eliminadas
 SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))] <- 'N'
 SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
 SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
+
 SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
 SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))] <- 'N'
 SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))] <- 'N'
@@ -152,6 +165,7 @@ SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
 SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
 SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
 SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
+
 SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))] <- 'N'
 SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
 SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
@@ -187,43 +201,31 @@ SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))] <- 'N'
 SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))] <- 'N'
 
 
-# Variables con strings como factores
-summary(SQFdata_modif$premname)
-summary(SQFdata_modif$stinter)
-summary(SQFdata_modif$crossst)
-summary(SQFdata_modif$sector)
+# AÑADIR EXPLICACIÓN CON PAQUETE MissingDataGUI
 
-# Variables que no aparecen en el checkDataQuality
-summary(SQFdata_modif$state)
-summary(SQFdata_modif$zip)
-summary(SQFdata_modif$addrtyp)
-summary(SQFdata_modif$rescode)
-summary(SQFdata_modif$premtype)
-summary(SQFdata_modif$aptnum)
-summary(SQFdata_modif$timestop)
 
-# Factores con maś de 53 niveles
-levels(SQFdata_modif$pct)
-levels(SQFdata_modif$crimsusp)
-levels(SQFdata_modif$addrpct)
-levels(SQFdata_modif$detailCM)
+# SQFdata_modif %>% group_by(pistol) %>%
+#     group_by(pistol, knifcuti, othrweap) %>%
+#     select(pistol, knifcuti, othrweap) %>% 
+#     summarise(n())
 
-# Otras variables eliminadas
-summary(SQFdata_modif$year)
-summary(SQFdata_modif$datestop)
-summary(SQFdata_modif$compyear)
-summary(SQFdata_modif$comppct)
-summary(SQFdata_modif$lineCM)
-summary(SQFdata_modif$dob)
+# SQFdata_modif %>% group_by(pf_hands) %>%
+#     filter(is.na(pf_hands)) %>%
+#     group_by(pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>%
+#     group_by(pf_wall) %>%
+#     group_by(pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>%
+#     select(pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other) %>% 
+#     summarise(count = n())
+#     mutate(percent = 100*count/sum(count))
+
+
+```
+
+```{r}
+
 
 # Factores con menos de 2 niveles
 summary(SQFdata_modif$dettypCM)
-
-SQFdata_modif %>% group_by(dob == "1900-12-31") %>%
-    summarise(n())
-
-SQFdata %>% group_by(dob == "1900-12-31") %>%
-    summarise(n())
 
 SQFdata %>% group_by(age) %>%
     summarise(n())
