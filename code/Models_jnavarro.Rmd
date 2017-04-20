@@ -67,20 +67,21 @@ SQFdata_modif <- SQFdata %>%
                     select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
                                        forceuse, othfeatr, addrnum, stname, beat, post))
 
-# Eliminación de variables con 20% de NAs pero nula varianza (casos pertenecientes todos a una misma clase).
-summary(SQFdata_modif$adtlrept)
-summary(SQFdata_modif$riflshot)
-summary(SQFdata_modif$asltweap)
-summary(SQFdata_modif$machgun)
-summary(SQFdata_modif$pf_baton)
-summary(SQFdata_modif$pf_pepsp)
+
+
+# Eliminación de variables con 20% de NAs pero nula varianza (casos pertenecientes
+# todos a una misma clase). 6 variables eliminadas
+summary(SQFdata_modif$adtlrept);summary(SQFdata_modif$riflshot);
+summary(SQFdata_modif$asltweap);summary(SQFdata_modif$machgun);
+summary(SQFdata_modif$pf_baton);summary(SQFdata_modif$pf_pepsp)
 
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(adtlrept, riflshot, asltweap, machgun,
                              pf_baton, pf_pepsp))
 
 
-# Eliminación de variables con demasiados niveles (strings)
+
+# Eliminación de variables con demasiados niveles (strings). 4 variables eliminadas
 summary(SQFdata_modif$premname);summary(SQFdata_modif$stinter);
 summary(SQFdata_modif$crossst);summary(SQFdata_modif$sector)
 
@@ -88,10 +89,8 @@ SQFdata_modif <- SQFdata_modif %>%
                     select(-c(premname, stinter, crossst, sector))
 
 
-SQFdata_modif %>% group_by(zip) %>%
-    summarise(n())
 
-# Eliminación de variables que no aparecen en el checkDataQuality
+# Eliminación de variables que no aparecen en el checkDataQuality. 7 variables eliminadas.
 summary(SQFdata_modif$state);summary(SQFdata_modif$zip);summary(SQFdata_modif$addrtyp);
 summary(SQFdata_modif$rescode);summary(SQFdata_modif$premtype);
 summary(SQFdata_modif$aptnum);summary(SQFdata_modif$timestop)
@@ -100,14 +99,17 @@ SQFdata_modif <- SQFdata_modif %>%
                     select(-c(state,zip,addrtyp,rescode,premtype,aptnum,timestop))
 
 
-# Eliminación de factores con más de 53 niveles
+
+# Eliminación de factores con más de 53 niveles. 4 variables eliminadas.
 length(levels(SQFdata_modif$pct));length(levels(SQFdata_modif$crimsusp));
 length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
 
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(pct,crimsusp,addrpct,detailCM))
 
-# Eliminación de variables con poca varianza
+
+
+# Eliminación de variables con poca varianza. 6 variables eliminadas.
 summary(SQFdata_modif$year);summary(SQFdata_modif$datestop);
 summary(SQFdata_modif$compyear);summary(SQFdata_modif$comppct);
 summary(SQFdata_modif$lineCM);summary(SQFdata_modif$dob)
@@ -116,6 +118,36 @@ SQFdata_modif <- SQFdata_modif %>%
                     select(-c(year,datestop,compyear,comppct, lineCM, dob))
 
 
+
+# Eliminación de más variables con poca varianza. 1 variable eliminada.
+
+# Se analiza el atributo y en caso de que no sea un factor, se devuelve valor
+# 2 para que no sea eliminado.
+fun_2level <- function(x){
+    ifelse(is.factor(x),return(length(levels(x))),return(2))
+}
+
+names(SQFdata_modif)[which(sapply(SQFdata_modif, fun_2level) < 2)]
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(which(sapply(SQFdata_modif, fun_2level) < 2)))
+
+# Con nearZeroVar se eliminan más variables
+# SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+
+
+
+# Eliminación de coordenadas:
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(xcoord, ycoord))
+
+
+
+
+# Variables en duda
+summary(SQFdata_modif$ser_num)
+summary(SQFdata_modif$revcmd)
+summary(SQFdata_modif$repcmd)
 ```
 
 ### Eliminación de NAs
@@ -221,75 +253,6 @@ SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))] <- 'N'
 
 ```
 
-```{r}
-
-
-# Factores con menos de 2 niveles
-summary(SQFdata_modif$dettypCM)
-
-SQFdata %>% group_by(age) %>%
-    summarise(n())
-
-
-# Variables en duda
-summary(SQFdata_modif$ser_num)
-summary(SQFdata_modif$revcmd)
-summary(SQFdata_modif$repcmd)
-
-
-SQFdata_modif <- SQFdata_modif[,-match(c("adtlrept", "riflshot", "asltweap", "machgun", "pf_baton", "pf_pepsp", "xcoord", "ycoord", "premname", "sector", "stinter", "crossst", "state", "zip", "addrtyp", "rescode", "premtype", "aptnum", "timestop", "pct", "crimsusp", "addrpct", "detailCM","year","datestop","compyear","comppct","lineCM","dob", "dettypCM"),colnames(SQFdata_modif))]
-
-dim(SQFdata_modif)
-
-
-# Factores con menos de 2 niveles -> Eliminar
-SQFdata_modif <- SQFdata[,-c(which(sapply(X = SQFdata, fun) < 2))]
-
-dim(SQFdata)
-dim(SQFdata_modif)
-
-
-fun <- function(x){
-    length(levels(x))
-}
-
-fun_v2 <- function( x ){
-    ifelse(is.factor( x ),return(length(levels( x ))),return(2))
-}
-
-SQFdata <- SQFdata[,-c(which(sapply(SQFdata, fun_v2) < 2))]
-
-sapply(SQFdata_modif, fun)
-sapply(SQFdata_modif, fun_v2) < 2
-
-dim(SQFdata)
-dim(SQFdata_modif)
-
-dim(SQFdata[,-c(which(sapply(SQFdata, fun) < 2))])
-dim(SQFdata_modif[,-c(which(sapply(SQFdata_modif, fun) < 2))])
-
-dim(SQFdata[,-c(which(sapply(SQFdata, fun_v2) < 2))])
-dim(SQFdata_modif[,-c(which(sapply(SQFdata_modif, fun_v2) < 2))])
-
-SQFdata <- SQFdata[,-c(which(sapply(SQFdata, fun_v2) < 2))]
-
-nearZeroVar(SQFdata_modif)
-
-# dim(SQFdata_modif)
-
-dim(SQFdata_modif[-nearZeroVar(SQFdata_modif)])
-
-SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
-
-```
-
-## Trabajo con NAs
-
-```{r}
-
-```
-
-
 ## División de muestra en train/test
 
 En SMOTE perc.over determina el número de casos por caso que se añaden a la clase minoritaria, mientras que perc.under es el número de casos que se seleccionan de la clase mayoritaria por caso añadido a la minoritaria.
@@ -298,9 +261,7 @@ Es decir, en el caso que nos ocupa, la clase negativa son 4842 casos y la positi
 
 Para añadir los casos necesarios, perc.over tiene que fijarse a un múltiplo de 100, de lo contrario redondea a la baja. Para afinar el resultado, se ajusta perc.under de la siguiente forma:
 
-Sabemos que para este caso debemos añadir 4.588 casos por caso en la clase minoritaria, perc.over se fija a 400 y se calcula el número de casos que se han de seleccionar de la clase mayoritaria en base al número de casos añadidos. Se añaden 4*4842 = 19368 casos, por lo que en la clase minoritaria quedarán finalmente 19368 + 4842 = 24210 casos. Queremos que la clase mayoritaria alcance ese mismo número de casos, por lo que habrá que seleccionar *X* casos por cada caso añadido a la clase minoritaria:
-
-$$19368·X=24210$$
+Sabemos que para este caso debemos añadir 4.588 casos por caso en la clase minoritaria, perc.over se fija a 400 y se calcula el número de casos que se han de seleccionar de la clase mayoritaria en base al número de casos añadidos. Se añaden 4·4842 = 19368 casos, por lo que en la clase minoritaria quedarán finalmente 19368 + 4842 = 24210 casos. Queremos que la clase mayoritaria alcance ese mismo número de casos, por lo que habrá que seleccionar *X* casos por cada caso añadido a la clase minoritaria: $19368·X=24210$
 Quedando como resultado final un perc.under de *1.25*.
 
 ```{r}
@@ -324,12 +285,6 @@ newSQFdataTrain %>% group_by(arstmade) %>%
     summarise(count = n()) %>%
     mutate(percent = 100*count/sum(count))
 
-```
-
-## Regresión lineal: perstop -> NO APLICA
-
-```{r}
-SQFdataTrain$race <- relevel(SQFdataTrain$race, ref = "BLACK")
 ```
 
 ## Regresión logística: arstmade
