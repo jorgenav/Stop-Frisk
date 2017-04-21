@@ -352,18 +352,6 @@ df.comp.glm <- data.frame(aic = c(model_glm$aic, model_glm_DSAMP$aic, model_glm_
                           row.names = c("NORM","DSAMP","SMOTE"))
 df.comp.glm
 
-
-
-pred_glm <- predict(model_glm, SQFdataTest, type = "response")
-confusionMatrix(factor(pred_glm > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")),SQFdataTest$arstmade, positive = "Y")
-
-pred_glm_DSAMP <- predict(model_glm_DSAMP, SQFdataTest, type = "response")
-confusionMatrix(factor(pred_glm_DSAMP > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")),SQFdataTest$arstmade, positive = "Y")
-
-pred_glm_SMOTE <- predict(model_glm_SMOTE, SQFdataTest, type = "response")
-confusionMatrix(factor(pred_glm_SMOTE > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")),SQFdataTest$arstmade, positive = "Y")
-
-
 # ===================================================================
 # ¿Es interesante?
 library(ROSE)
