@@ -17,6 +17,7 @@ library(dataQualityR)
 library(DMwR)
 library(foreach)
 library(doMC)
+registerDoMC(8)
 library(class)
 ```
 
@@ -316,8 +317,10 @@ Quedando como resultado final un perc.under de *1.25*.
 set.seed(6789)
 # SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 400, perc.under = 125)
 # SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 300, perc.under = 133.33)
-# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 100, perc.under = 200)
-SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 50, perc.under = 300)
+SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 100, perc.under = 200)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 50, perc.under = 300)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 20, perc.under = 600.4)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 15, perc.under = 767.45)
 
 SQFdataTrain_SMOTE %>% group_by(arstmade) %>%
     summarise(count = n()) %>%
@@ -326,10 +329,18 @@ SQFdataTrain_SMOTE %>% group_by(arstmade) %>%
 
 ## Regresión logística: arstmade
 
-	¿Probabilidad de arresto una vez detenido? -> Variables determinantes?
+### Creación de modelos vacíos y completos
 
 ```{r}
+# CREACION DE MODELOS VACIOS
+#==========================================================================================
+model_glm_Vacio <- glm(arstmade ~ 1, data = SQFdataTrain, family = "binomial")
+model_glm_DSAMP_Vacio <- glm(arstmade ~ 1, data = SQFdataTrain_DSAMP, family = "binomial")
+model_glm_SMOTE_Vacio <- glm(arstmade ~ 1, data = SQFdataTrain_SMOTE, family = "binomial")
+#==========================================================================================
 
+# CREACION DE MODELOS COMPLETOS
+#==========================================================================================
 fun_glm <- function(x){
     model <- glm(arstmade ~ ., data = x, family = "binomial")
     print(summary(model))
@@ -345,39 +356,128 @@ fun_glm <- function(x){
 model_glm       <- fun_glm(SQFdataTrain)
 model_glm_DSAMP <- fun_glm(SQFdataTrain_DSAMP)
 model_glm_SMOTE <- fun_glm(SQFdataTrain_SMOTE)
+#==========================================================================================
+```
 
-df.comp.glm <- data.frame(aic = c(model_glm$aic, model_glm_DSAMP$aic, model_glm_SMOTE$aic),
-                          null.deviance = c(model_glm$null.deviance,model_glm_DSAMP$null.deviance,model_glm_SMOTE$null.deviance),
-                          deviance = c(model_glm$deviance,model_glm_DSAMP$deviance,model_glm_SMOTE$deviance),
-                          row.names = c("NORM","DSAMP","SMOTE"))
+### Selección de modelos mediante stepwise
+
+```{r}
+# STEPWISE MODELO NORMAL
+#==========================================================================================
+model_glm_Back <- step(model_glm, trace = 0)
+
+model_glm_Back <- step(model_glm,
+                       scope = list(lower = formula(model_glm_Vacio), upper = formula(model_glm)),
+                       direction = "backward", trace = 0)
+model_glm_Forw <- step(model_glm_Vacio,
+                       scope = list(lower = formula(model_glm_Vacio), upper = formula(model_glm)),
+                       direction = "forward", trace = 0)
+model_glm_Both <- step(model_glm_Vacio,
+                       scope = list(lower = formula(model_glm_Vacio), upper = formula(model_glm)),
+                       direction = "both", trace = 0, k = 2)
+#==========================================================================================
+
+# STEPWISE MODELO DOWN-SAMPLING
+#==========================================================================================
+model_glm_DSAMP_Back <- step(model_glm_DSAMP,
+                       scope = list(lower = formula(model_glm_DSAMP_Vacio), upper = formula(model_glm_DSAMP)),
+                       direction = "backward", trace = 0)
+model_glm_DSAMP_Forw <- step(model_glm_DSAMP_Vacio,
+                       scope = list(lower = formula(model_glm_DSAMP_Vacio), upper = formula(model_glm_DSAMP)),
+                       direction = "forward", trace = 0)
+model_glm_DSAMP_Both <- step(model_glm_DSAMP_Vacio,
+                       scope = list(lower = formula(model_glm_DSAMP_Vacio), upper = formula(model_glm_DSAMP)),
+                       direction = "both", trace = 0, k = 2)
+#==========================================================================================
+
+# STEPWISE MODELO SMOTE
+#==========================================================================================
+model_glm_SMOTE_Back <- step(model_glm_SMOTE,
+                       scope = list(lower = formula(model_glm_SMOTE_Vacio), upper = formula(model_glm_SMOTE)),
+                       direction = "backward", trace = 0)
+model_glm_SMOTE_Forw <- step(model_glm_SMOTE_Vacio,
+                       scope = list(lower = formula(model_glm_SMOTE_Vacio), upper = formula(model_glm_SMOTE)),
+                       direction = "forward", trace = 0)
+model_glm_SMOTE_Both <- step(model_glm_SMOTE_Vacio,
+                       scope = list(lower = formula(model_glm_SMOTE_Vacio), upper = formula(model_glm_SMOTE)),
+                       direction = "both", trace = 0, k = 2)
+#==========================================================================================
+
+# AUTOMATIZACION DE STEPWISE (por terminar)
+#==========================================================================================
+fun_glm_stepwise <- function(low, up){
+    # model_Back <- do.call("step", list(up, scope = list(lower = formula(low), upper = formula(up)),
+    #                    direction = "backward", trace = 0))
+        
+    # model_Back <- step(up, scope = list(lower = formula(low), upper = formula(up)),
+    #                    direction = "backward", trace = 0)
+    model_Forw <- step(low, scope = list(lower = formula(low), upper = formula(up)),
+                       direction = "forward", trace = 0)
+    model_Both <- step(low, scope = list(lower = formula(low), upper = formula(up)),
+                       direction = "both", trace = 0, k = 2)
+    models <- list(model_Forw, model_Both)
+    return(models)
+}
+
+fun_glm_stepwise <- function(low, up){
+    foreach(i=2:3) %dopar% 
+        case_when(
+        # i == 1 ~ ,
+        i == 2 ~ model_Forw <- step(low, scope = list(lower = formula(low), upper = formula(up)),
+                                        direction = "forward", trace = 0),
+        i == 3 ~ model_Both <- step(low, scope = list(lower = formula(low), upper = formula(up)),
+                                    direction = "both", trace = 0, k = 2)
+    )
+    models <- list(model_Forw, model_Both)
+    return(models)
+}
+
+models_glm <- fun_glm_stepwise(model_glm_Vacio, model_glm)
+#==========================================================================================
+```
+
+### Evaluación de modelos de regresión logística
+
+```{r}
+# FUNCION DE EVALUACION Y CREACION DE TABLA DE RESULTADOS
+#==========================================================================================
+fun_glm_eval <- function(x){return(c(x$aic, x$null.deviance, x$deviance, length(x$model)-1))}
+
+df.comp.glm <- data.frame(glm = fun_glm_eval(model_glm),
+                          # glm_Back = fun_glm_eval(model_glm_Back),
+                          glm_Forw = fun_glm_eval(model_glm_Forw),
+                          glm_Both = fun_glm_eval(model_glm_Both),
+                          glm_DSAMP = fun_glm_eval(model_glm),
+                          # glm_DSAMP_Back = fun_glm_eval(model_glm_DSAMP_Back),
+                          glm_DSAMP_Forw = fun_glm_eval(model_glm_DSAMP_Forw),
+                          glm_DSAMP_Both = fun_glm_eval(model_glm_DSAMP_Both),
+                          glm_SMOTE = fun_glm_eval(model_glm),
+                          # glm_SMOTE_Back = fun_glm_eval(model_glm_SMOTE_Back),
+                          glm_SMOTE_Forw = fun_glm_eval(model_glm_SMOTE_Forw),
+                          glm_SMOTE_Both = fun_glm_eval(model_glm_SMOTE_Both),
+                          row.names = c("AIC","Null deviance","Deviance","Nº Predictors"))
+
 df.comp.glm
+#==========================================================================================
 
-# ===================================================================
+# OTRAS EVALUACIONES (por terminar)
+#==========================================================================================
+
+sensitivity(SQFdataTest$arstmade, factor(pred_glm > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), positive = "Y")
+specificity(SQFdataTest$arstmade, factor(pred_glm > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")))
+
 # ¿Es interesante?
 library(ROSE)
 accuracy.meas(SQFdataTest$arstmade, pred_glm, threshold = 0.02)
 accuracy.meas(SQFdataTest$arstmade, pred_glm_DSAMP, threshold = 0.02)
 accuracy.meas(SQFdataTest$arstmade, pred_glm_SMOTE, threshold = 0.02)
-# ===================================================================
-
-sensitivity(SQFdataTest$arstmade, factor(pred_glm > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), positive = "Y")
-specificity(SQFdataTest$arstmade, factor(pred_glm > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")))
-
-
-# Aplicar step y ver cómo se comporta cada modelo (POR TERMINAR)
-
-# model_glm_Vacio = glm(arstmade ~ 1, data = SQFdataTrain, family = "binomial")
-
-# Hacia delante
-# model_glm_Forwards = step(model_glm_Vacio, scope = list(lower = formula(model_glm_Vacio), upper = formula(modeloCompleto)), direction = "forward", trace = 0)
-# formula(model_glm_Forwards)
+#==========================================================================================
 ```
 
-
 ## KNN: arstmade
-	¿¿¿Detenciones compartidas por condados???
 
 ```{r}
+
 model_knn <- knn(SQFdataTrain, SQFdataTest, SQFdataTest$arstmade)
 
 model_knn <- knn(SQFdataTrain, newSQFdataTest, cl = SQFdataTrain$arstmade, k = 3, prob = TRUE)
