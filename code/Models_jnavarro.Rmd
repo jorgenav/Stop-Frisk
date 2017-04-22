@@ -17,7 +17,7 @@ library(dataQualityR)
 library(DMwR)
 library(foreach)
 library(doMC)
-registerDoMC(8)
+registerDoMC(4)
 library(class)
 ```
 
@@ -536,68 +536,116 @@ newSQFdataTest <- newSQFdataTest %>% filter(!is.na(age))
 ```
 
 ## Árboles de decisión: arstmade
-	Realizar prepoda?? Fijar variables
 
 ```{r}
-model_rf <- randomForest(x = SQFdataTrain[,-which(colnames(SQFdataTrain)=="age")], y = SQFdataTrain$arstmade, ntree=100, importance=FALSE, proximity=TRUE, mtry=4, replace=FALSE)
-
-summary(SQFdataTrain$age)
-
-SQFdataTrain <- SQFdataTrain %>%
-    filter(!is.na(SQFdataTrain$age))
-    
-dim(SQFdataTrain)
-dim(SQFdata_modif)
-
-summary(SQFdataTrain)
+# model_rf <- randomForest(x = SQFdataTrain[,-which(colnames(SQFdataTrain)=="age")], y = SQFdataTrain$arstmade, ntree=100, 
+#                          importance=FALSE, proximity=TRUE, mtry=4, replace=FALSE)
 
 
-SQFdataTrain$race <- relevel(SQFdataTrain$race, ref = "BLACK")
+# RANDOM FOREST CON CARET Y REJILLA
+#==========================================================================================
+# RF_grid <- expand.grid(mtry = seq(9,54,9))
+# train_control <- trainControl(method="repeatedcv", number=10, repeats = 1, allowParallel = TRUE)
+# 
+# model_rforst <- train(arstmade ~ ., data = SQFdataTrain, method = "parRF",
+#                       tuneGriD = RF_grid, preProcess = c("center", "scale"),
+#                       trControl = train_control)
+#==========================================================================================
 
-levels(SQFdataTrain$arstmade) <- c(0,1)
 
-registerDoMC(cores = 8)
-
-train_control <- trainControl(method="repeatedcv", number=10, repeats = 1, allowParallel = TRUE)
-
-model_rforst <- train(arstmade ~ ., data = SQFdataTrain, method = "parRF",
-                  preProcess = c("center", "scale"), trControl = train_control)
-
-
-model_rf <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+#==========================================================================================
+model_rf_10 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
               .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree)
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 10)
 }
 
-model_rf_SMOTE <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+model_rf_25 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
               .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = newSQFdataTrain, ntree=ntree)
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 25)
 }
 
-confusionMatrix(predict(model_rf, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-confusionMatrix(predict(model_rf_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+model_rf_50 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+              .packages='randomForest') %dopar% {
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 50)
+}
 
-confusionMatrix(predict(model_rforst, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+model_rf_75 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+              .packages='randomForest') %dopar% {
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 75)
+}
 
-pred <- predict(model_rforst, SQFdataTest, type = "prob")
+model_rf_120 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+              .packages='randomForest') %dopar% {
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 120)
+}
 
-length(SQFdataTest$arstmade)
+model_rf_200 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+              .packages='randomForest') %dopar% {
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 200)
+}
 
-dim(predict(model_rforst, SQFdataTest, type = "prob"))
+model_rf_200 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+              .packages='randomForest') %dopar% {
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 200)
+}
 
-length(predict(model_rforst, SQFdataTest))
+confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+confusionMatrix(predict(model_rf_25, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+confusionMatrix(predict(model_rf_50, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+confusionMatrix(predict(model_rf_75, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+confusionMatrix(predict(model_rf_120, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+confusionMatrix(predict(model_rf_200, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 
-confusionMatrix(factor(pred[2] > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), SQFdataTest$arstmade, positive = "Y")
 
-length(factor(pred[2] > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")))
-length(SQFdataTest$arstmade)
+# model_rf_DSAMP <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+#               .packages='randomForest') %dopar% {
+#     randomForest(arstmade ~ ., data = SQFdataTrain_DSAMP, ntree=ntree)
+# }
+# 
+# model_rf_SMOTE <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+#               .packages='randomForest') %dopar% {
+#     randomForest(arstmade ~ ., data = SQFdataTrain_SMOTE, ntree=ntree)
+# }
+#==========================================================================================
+
+```
+
+### Evaluación de modelos de random forest
+
+```{r}
+
+#==========================================================================================
 
 
-length(predict(model_rforst, SQFdataTest))
-length(SQFdataTest$arstmade)
 
-model_rf <- randomForest(arstmade ~ ., ntree=100, importance=FALSE, proximity=TRUE, mtry=10, replace=FALSE, data = SQFdataTrain, na.action = na.omit)
+#==========================================================================================
 
+
+#==========================================================================================
+# confusionMatrix(predict(model_rf, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+# confusionMatrix(predict(model_rf_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+# 
+# confusionMatrix(predict(model_rforst, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+# 
+# pred <- predict(model_rforst, SQFdataTest, type = "prob")
+# 
+# length(SQFdataTest$arstmade)
+# 
+# dim(predict(model_rforst, SQFdataTest, type = "prob"))
+# 
+# length(predict(model_rforst, SQFdataTest))
+# 
+# confusionMatrix(factor(pred[2] > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), SQFdataTest$arstmade, positive = "Y")
+# 
+# length(factor(pred[2] > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")))
+# length(SQFdataTest$arstmade)
+# 
+# 
+# length(predict(model_rforst, SQFdataTest))
+# length(SQFdataTest$arstmade)
+# 
+# model_rf <- randomForest(arstmade ~ ., ntree=100, importance=FALSE, proximity=TRUE, mtry=10, replace=FALSE, data = SQFdataTrain, na.action = na.omit)
+#==========================================================================================
 ```
 
 
