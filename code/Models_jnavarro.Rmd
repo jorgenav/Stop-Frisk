@@ -23,6 +23,8 @@ library(class)
 
 # Creación de modelos predictivos
 
+Dado que la variable target *arstmade* muestra un desbalanceo en sus clases, 15% clase positiva frente a 85% clase negativa, es necesario tener en cuenta métricas de evaluación de los modelos que tengan en cuenta las diferencias entre clases a la hora de realizar predicciones. De esta forma, la evaluación de modelos mediante el coeficiente de *accuracy*, una de las métricas más comunes en problemas de clasificación binaria, se muestra incompleta. Por ello se tiene en cuenta otro tipo de métricas como la matriz de confusión o 
+
 ## Carga de datos
 
 ```{r,message=FALSE}
@@ -537,11 +539,9 @@ newSQFdataTest <- newSQFdataTest %>% filter(!is.na(age))
 
 ## Árboles de decisión: arstmade
 
+### Random Forest con Caret: Cross Validation (k=10) y Expand.Grid
+
 ```{r}
-# model_rf <- randomForest(x = SQFdataTrain[,-which(colnames(SQFdataTrain)=="age")], y = SQFdataTrain$arstmade, ntree=100, 
-#                          importance=FALSE, proximity=TRUE, mtry=4, replace=FALSE)
-
-
 # RANDOM FOREST CON CARET: CROSS VALIDATION Y GRID
 #==========================================================================================
 RF_grid <- expand.grid(mtry = c(9,19,27,36,45,53))
@@ -558,60 +558,38 @@ model_rforst_SMOTE <- train(arstmade ~ ., data = SQFdataTrain_SMOTE, method = "p
                       trControl = train_control)
 #==========================================================================================
 
+```
 
+### Random Forest con limite de nodos terminales
 
+```{r}
 
-
+# GENERACION DE MODELOS CON LIMITE DE NODOS TERMINALES
 #==========================================================================================
-model_rf_10 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+fun_rf_limNode <- function(x){
+    foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
               .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 10)
+    randomForest(arstmade ~ ., data = SQFdataTrain_DSAMP, ntree=ntree, mtry = 19, maxnodes = x)
+    }
 }
 
-model_rf_25 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
-              .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 25)
-}
-
-model_rf_50 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
-              .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 50)
-}
-
-model_rf_75 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
-              .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 75)
-}
-
-model_rf_120 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
-              .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 120)
-}
-
-model_rf_200 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
-              .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 200)
-}
+model_rf_10 <- fun_rf_limNode(10)
+model_rf_25 <- fun_rf_limNode(25)
+model_rf_50 <- fun_rf_limNode(50)
+model_rf_75 <- fun_rf_limNode(75)
+model_rf_120 <- fun_rf_limNode(120)
+model_rf_200 <- fun_rf_limNode(200)
+model_rf_500 <- fun_rf_limNode(500)
 
 model_rf_NOmax <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
               .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46)
+    randomForest(arstmade ~ ., data = SQFdataTrain_DSAMP, ntree=ntree, mtry = 19)
 }
 
-model_rf_NOmax_53 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+model_rf_NOmax_UNB <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
               .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 53)
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 19)
 }
-
-# model_rf_DSAMP <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
-#               .packages='randomForest') %dopar% {
-#     randomForest(arstmade ~ ., data = SQFdataTrain_DSAMP, ntree=ntree)
-# }
-# 
-# model_rf_SMOTE <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
-#               .packages='randomForest') %dopar% {
-#     randomForest(arstmade ~ ., data = SQFdataTrain_SMOTE, ntree=ntree)
-# }
 #==========================================================================================
 
 ```
@@ -622,88 +600,65 @@ model_rf_NOmax_53 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=
 
 # RANDOM FOREST CON CARET - EVALUACION
 #==========================================================================================
-confusionMatrix(predict(model_rforst, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-confusionMatrix(predict(model_rforst_DSAMP, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-confusionMatrix(predict(model_rforst_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-
-
-
+cM_rforst <- confusionMatrix(predict(model_rforst, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_rforst_DSAMP <- confusionMatrix(predict(model_rforst_DSAMP, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_rforst_SMOTE <- confusionMatrix(predict(model_rforst_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 #==========================================================================================
 
 # RESTO DE MODELOS - EVALUACION
 #==========================================================================================
-confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")$overall[1]
-confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")$byClass
-
 cM_10 <- confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 cM_25 <- confusionMatrix(predict(model_rf_25, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 cM_50 <- confusionMatrix(predict(model_rf_50, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 cM_75 <- confusionMatrix(predict(model_rf_75, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 cM_120 <- confusionMatrix(predict(model_rf_120, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 cM_200 <- confusionMatrix(predict(model_rf_200, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_500 <- confusionMatrix(predict(model_rf_500, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 cM_NOmax <- confusionMatrix(predict(model_rf_NOmax, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-cM_NOmax_53 <- confusionMatrix(predict(model_rf_NOmax_53, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_NOmax_UNB <- confusionMatrix(predict(model_rf_NOmax_UNB, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 
+cM_NOmax$overall
+cM_NOmax$byClass
 
+cM_NOmax_UNB$overall
+cM_NOmax_UNB$byClass
+
+cM_NOmax_UNB$byClass[7]
+cM_NOmax_UNB$byClass[5]
+
+fun_rf_eval <- function(x){
+    return(c(x$byClass[7],x$byClass[5:6],x$byClass[2]))
+}
 
 df.comp.rf <- data.frame(
-    
+    rf_caret = fun_rf_eval(cM_rforst),
+    rf_caret_DSAMP = fun_rf_eval(cM_rforst_DSAMP),
+    rf_caret_SMOTE = fun_rf_eval(cM_rforst_SMOTE),
+    rf_node_10 = fun_rf_eval(cM_10),
+    rf_node_25 = fun_rf_eval(cM_25),
+    rf_node_50 = fun_rf_eval(cM_50),
+    rf_node_75 = fun_rf_eval(cM_75),
+    rf_node_120 = fun_rf_eval(cM_120),
+    rf_node_200 = fun_rf_eval(cM_200),
+    rf_node_500 = fun_rf_eval(cM_500),
+    rf_node_NOmax = fun_rf_eval(cM_NOmax),
+    rf_node_NOmax_UNB = fun_rf_eval(cM_NOmax_UNB),
+    row.names = c("F-measure","Precision","Recall/Sensitivity","Specificity")
 )
 
-df.comp.glm <- data.frame(glm = fun_glm_eval(model_glm),
-                          # glm_Back = fun_glm_eval(model_glm_Back),
-                          glm_Forw = fun_glm_eval(model_glm_Forw),
-                          glm_Both = fun_glm_eval(model_glm_Both),
-                          glm_DSAMP = fun_glm_eval(model_glm),
-                          # glm_DSAMP_Back = fun_glm_eval(model_glm_DSAMP_Back),
-                          glm_DSAMP_Forw = fun_glm_eval(model_glm_DSAMP_Forw),
-                          glm_DSAMP_Both = fun_glm_eval(model_glm_DSAMP_Both),
-                          glm_SMOTE = fun_glm_eval(model_glm),
-                          # glm_SMOTE_Back = fun_glm_eval(model_glm_SMOTE_Back),
-                          glm_SMOTE_Forw = fun_glm_eval(model_glm_SMOTE_Forw),
-                          glm_SMOTE_Both = fun_glm_eval(model_glm_SMOTE_Both),
-                          row.names = c("AIC","Null deviance","Deviance","Nº Predictors"))
+df.comp.rf
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# confusionMatrix(predict(model_rf, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-# confusionMatrix(predict(model_rf_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-# 
-# confusionMatrix(predict(model_rforst, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-# 
-# pred <- predict(model_rforst, SQFdataTest, type = "prob")
-# 
-# length(SQFdataTest$arstmade)
-# 
-# dim(predict(model_rforst, SQFdataTest, type = "prob"))
-# 
-# length(predict(model_rforst, SQFdataTest))
-# 
-# confusionMatrix(factor(pred[2] > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")), SQFdataTest$arstmade, positive = "Y")
-# 
-# length(factor(pred[2] > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")))
-# length(SQFdataTest$arstmade)
-# 
-# 
-# length(predict(model_rforst, SQFdataTest))
-# length(SQFdataTest$arstmade)
-# 
-# model_rf <- randomForest(arstmade ~ ., ntree=100, importance=FALSE, proximity=TRUE, mtry=10, replace=FALSE, data = SQFdataTrain, na.action = na.omit)
 #==========================================================================================
 ```
+
+Problema al generar modelos con down-sampling: Se mejora considerablemente la métrica *recall* (que coincide con la métrica *sensitivity* de la matriz de confusión) del modelo, es decir, la tasa de arrestos reales predichos como tal. Sin embargo, se empeora la métrica *precision* o la tasa de acierto en las predicciones de arrestos.
+
+Siendo $TP=\text{True Positive}$ y $FN=\text{False Negative}$:
+
+$$\text{Sensitivity}=\frac{TP}{TP+FN}$$
+$$\text{Precision}=\frac{TP}{TP+FN}$$
+
+Por tanto, es necesario determinar cuál de ambas métricas se desea favorecer. También cabría destacar que, al reducir el número de observaciones, down-sampling permite generar los modelos de forma más rápida.
 
 
 
