@@ -542,15 +542,24 @@ newSQFdataTest <- newSQFdataTest %>% filter(!is.na(age))
 #                          importance=FALSE, proximity=TRUE, mtry=4, replace=FALSE)
 
 
-# RANDOM FOREST CON CARET Y REJILLA
+# RANDOM FOREST CON CARET: CROSS VALIDATION Y GRID
 #==========================================================================================
-# RF_grid <- expand.grid(mtry = seq(9,54,9))
-# train_control <- trainControl(method="repeatedcv", number=10, repeats = 1, allowParallel = TRUE)
-# 
-# model_rforst <- train(arstmade ~ ., data = SQFdataTrain, method = "parRF",
-#                       tuneGriD = RF_grid, preProcess = c("center", "scale"),
-#                       trControl = train_control)
+RF_grid <- expand.grid(mtry = c(9,19,27,36,45,53))
+train_control <- trainControl(method="cv", number=10, repeats = 1, allowParallel = TRUE)
+
+model_rforst <- train(arstmade ~ ., data = SQFdataTrain, method = "parRF",
+                      tuneGrid = RF_grid, preProcess = c("center", "scale"),
+                      trControl = train_control)
+model_rforst_DSAMP <- train(arstmade ~ ., data = SQFdataTrain_DSAMP, method = "parRF",
+                      tuneGrid = RF_grid, preProcess = c("center", "scale"),
+                      trControl = train_control)
+model_rforst_SMOTE <- train(arstmade ~ ., data = SQFdataTrain_SMOTE, method = "parRF",
+                      tuneGrid = RF_grid, preProcess = c("center", "scale"),
+                      trControl = train_control)
 #==========================================================================================
+
+
+
 
 
 #==========================================================================================
@@ -584,18 +593,15 @@ model_rf_200 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
     randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 200)
 }
 
-model_rf_200 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+model_rf_NOmax <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
               .packages='randomForest') %dopar% {
-    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46, maxnodes = 200)
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 46)
 }
 
-confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-confusionMatrix(predict(model_rf_25, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-confusionMatrix(predict(model_rf_50, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-confusionMatrix(predict(model_rf_75, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-confusionMatrix(predict(model_rf_120, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-confusionMatrix(predict(model_rf_200, SQFdataTest), SQFdataTest$arstmade, positive="Y")
-
+model_rf_NOmax_53 <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
+              .packages='randomForest') %dopar% {
+    randomForest(arstmade ~ ., data = SQFdataTrain, ntree=ntree, mtry = 53)
+}
 
 # model_rf_DSAMP <- foreach(ntree=rep(100, 6), .combine=combine, .multicombine=TRUE,
 #               .packages='randomForest') %dopar% {
@@ -614,14 +620,65 @@ confusionMatrix(predict(model_rf_200, SQFdataTest), SQFdataTest$arstmade, positi
 
 ```{r}
 
+# RANDOM FOREST CON CARET - EVALUACION
+#==========================================================================================
+confusionMatrix(predict(model_rforst, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+confusionMatrix(predict(model_rforst_DSAMP, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+confusionMatrix(predict(model_rforst_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+
+
+
 #==========================================================================================
 
-
-
+# RESTO DE MODELOS - EVALUACION
 #==========================================================================================
+confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")$overall[1]
+confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")$byClass
+
+cM_10 <- confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_25 <- confusionMatrix(predict(model_rf_25, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_50 <- confusionMatrix(predict(model_rf_50, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_75 <- confusionMatrix(predict(model_rf_75, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_120 <- confusionMatrix(predict(model_rf_120, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_200 <- confusionMatrix(predict(model_rf_200, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_NOmax <- confusionMatrix(predict(model_rf_NOmax, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_NOmax_53 <- confusionMatrix(predict(model_rf_NOmax_53, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 
 
-#==========================================================================================
+
+df.comp.rf <- data.frame(
+    
+)
+
+df.comp.glm <- data.frame(glm = fun_glm_eval(model_glm),
+                          # glm_Back = fun_glm_eval(model_glm_Back),
+                          glm_Forw = fun_glm_eval(model_glm_Forw),
+                          glm_Both = fun_glm_eval(model_glm_Both),
+                          glm_DSAMP = fun_glm_eval(model_glm),
+                          # glm_DSAMP_Back = fun_glm_eval(model_glm_DSAMP_Back),
+                          glm_DSAMP_Forw = fun_glm_eval(model_glm_DSAMP_Forw),
+                          glm_DSAMP_Both = fun_glm_eval(model_glm_DSAMP_Both),
+                          glm_SMOTE = fun_glm_eval(model_glm),
+                          # glm_SMOTE_Back = fun_glm_eval(model_glm_SMOTE_Back),
+                          glm_SMOTE_Forw = fun_glm_eval(model_glm_SMOTE_Forw),
+                          glm_SMOTE_Both = fun_glm_eval(model_glm_SMOTE_Both),
+                          row.names = c("AIC","Null deviance","Deviance","Nº Predictors"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # confusionMatrix(predict(model_rf, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 # confusionMatrix(predict(model_rf_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
 # 
