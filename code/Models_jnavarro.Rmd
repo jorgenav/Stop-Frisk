@@ -479,63 +479,104 @@ accuracy.meas(SQFdataTest$arstmade, pred_glm_SMOTE, threshold = 0.02)
 ## KNN: arstmade
 
 ```{r}
+# SEPARACION DE DATOS EN VARIABLES CUALITATIVAS Y CUANTITATIVAS
+#==========================================================================================
+# TRAIN
+SQFdataTrain.numeric <- SQFdataTrain[,which(sapply(SQFdataTrain,is.numeric))]
+SQFdataTrain.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain$arstmade)-1)
 
-model_knn <- knn(SQFdataTrain, SQFdataTest, SQFdataTest$arstmade)
+SQFdataTrain_DSAMP.numeric <- SQFdataTrain_DSAMP[,which(sapply(SQFdataTrain_DSAMP,is.numeric))]
+SQFdataTrain_DSAMP.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain_DSAMP$arstmade)-1)
 
-model_knn <- knn(SQFdataTrain, newSQFdataTest, cl = SQFdataTrain$arstmade, k = 3, prob = TRUE)
-model_knn1 <- knn1(SQFdataTrain, newSQFdataTest, cl = SQFdataTrain$arstmade)
+SQFdataTrain_SMOTE.numeric <- SQFdataTrain_SMOTE[,which(sapply(SQFdataTrain_SMOTE,is.numeric))]
+SQFdataTrain_SMOTE.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain_SMOTE$arstmade)-1)
 
-sapply(SQFdataTrain, function(x) {ifelse(is.factor(x),as.numeric(x) - 1,x)})
+SQFdataTrain.cat <- SQFdataTrain[,which(sapply(SQFdataTrain,is.factor))]
+SQFdataTrain_DSAMP.cat <- SQFdataTrain_DSAMP[,which(sapply(SQFdataTrain_DSAMP,is.factor))]
+SQFdataTrain_SMOTE.cat <- SQFdataTrain_SMOTE[,which(sapply(SQFdataTrain_SMOTE,is.factor))]
 
-foreach(ntree=names(SQFdataTrain), .combine=combine, .multicombine=TRUE) %dopar% {
-    ifelse(is.factor(x),as.numeric(x) - 1, x)
+
+# TEST
+SQFdataTest.numeric <- SQFdataTest[,which(sapply(SQFdataTest,is.numeric))]
+SQFdataTest.numeric$arstmade <- as.factor(as.numeric(SQFdataTest$arstmade)-1)
+
+SQFdataTest.cat <- SQFdataTest[,which(sapply(SQFdataTest,is.factor))]
+#==========================================================================================
+
+# KNN CON CARET Y EXPAND.GRID
+#==========================================================================================
+KNN_grid <- expand.grid(k = seq(3,18,5))
+train_control <- trainControl(method="cv", number=10, repeats = 1, allowParallel = TRUE)
+
+fun_knn <- function(x){
+    norm <- train(arstmade ~ ., data = x, method = "knn",
+                      tuneGrid = KNN_grid, preProcess = c("center", "scale"),
+                      trControl = train_control)
+    return(norm)
+}
+fun_knn.cat <- function(x){
+    cat <- train(arstmade ~ ., data = x, method = "knn",
+                      tuneGrid = KNN_grid, preProcess = c("center", "scale"),
+                      trControl = train_control)
+    return(cat)
+}
+fun_knn.numeric <- function(x){
+    numeric <- train(arstmade ~ ., data = x, method = "knn",
+                      tuneGrid = KNN_grid, preProcess = c("center", "scale"),
+                      trControl = train_control)
+    return(numeric)
 }
 
+model_knn <- fun_knn(SQFdataTrain)
+model_knn.cat <- fun_knn.cat(SQFdataTrain.cat)
+model_knn.numeric <- fun_knn.numeric(SQFdataTrain.numeric)
 
-ifelse(is.factor(SQFdataTrain$ser_num),as.numeric(SQFdataTrain$ser_num) - 1, c(SQFdataTrain$ser_num))
+model_knn_DSAMP <- fun_knn(SQFdataTrain_DSAMP)
+model_knn_DSAMP.cat <- fun_knn.cat(SQFdataTrain_DSAMP.cat)
+model_knn_DSAMP.numeric <- fun_knn.numeric(SQFdataTrain_DSAMP.numeric)
 
-predict(model_knn, SQFdataTest)
-
-SQFdataTrain$ser_num
-
-
-fun_factor <- function(x){
-    if(is.factor(x)){
-        return(as.integer(x) - 1)
-    }
-    else{
-        return(x)
-    }
-}
-
-SQFdataTrain.numeric <- sapply(SQFdataTrain[,-match("arstmade",colnames(SQFdataTrain))], fun_factor)
-newSQFdataTest.numeric <- sapply(newSQFdataTest[,-match("arstmade",colnames(newSQFdataTest))], fun_factor)
-
-dim(SQFdataTrain)
-dim(SQFdataTrain.numeric)
-
-SQFdataTrain.numeric.labels <- as.numeric(SQFdataTrain$arstmade) - 1
-
-newSQFdataTest.numeric.labels <- as.numeric(newSQFdataTest$arstmade) - 1
-
-
-model_knn <- knn(SQFdataTrain.numeric, newSQFdataTest.numeric, cl = SQFdataTrain.numeric.labels, k = 3, prob = TRUE)
-
-model_knn1 <- knn1(SQFdataTrain.numeric, newSQFdataTest.numeric, cl = SQFdataTrain.numeric.labels)
-
-confusionMatrix(model_knn1, newSQFdataTest.numeric.labels, positive = "1")
-
-newSQFdataTest.numeric[,"arstmade"]
-
-
-dim(SQFdataTrain)
-dim(newSQFdataTest)
-
-newSQFdataTest <- SQFdataTest
-
-newSQFdataTest <- newSQFdataTest %>% filter(!is.na(age))
-
+model_knn_SMOTE <- fun_knn(SQFdataTrain_SMOTE)
+model_knn_SMOTE.cat <- fun_knn.cat(SQFdataTrain_SMOTE.cat)
+model_knn_SMOTE.numeric <- fun_knn.numeric(SQFdataTrain_SMOTE.numeric)
+#==========================================================================================
 ```
+
+```{r}
+# EVALUACION DE KNN
+#==========================================================================================
+cM_knn <- confusionMatrix(predict(model_knn, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_knn.cat <- confusionMatrix(predict(model_knn.cat, SQFdataTest.cat), SQFdataTest.cat$arstmade, positive="Y")
+cM_knn.numeric <- confusionMatrix(predict(model_knn.numeric, SQFdataTest.numeric), SQFdataTest.numeric$arstmade, positive="1")
+
+cM_knn_DSAMP <- confusionMatrix(predict(model_knn_DSAMP, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_knn_DSAMP.cat <- confusionMatrix(predict(model_knn_DSAMP.cat, SQFdataTest.cat), SQFdataTest.cat$arstmade, positive="Y")
+cM_knn_DSAMP.numeric <- confusionMatrix(predict(model_knn_DSAMP.numeric, SQFdataTest.numeric), SQFdataTest.numeric$arstmade, positive="1")
+
+cM_knn_SMOTE <- confusionMatrix(predict(model_knn_SMOTE, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_knn_SMOTE.cat <- confusionMatrix(predict(model_knn_SMOTE.cat, SQFdataTest.cat), SQFdataTest.cat$arstmade, positive="Y")
+cM_knn_SMOTE.numeric <- confusionMatrix(predict(model_knn_SMOTE.numeric, SQFdataTest.numeric), SQFdataTest.numeric$arstmade, positive="1")
+
+fun_eval <- function(x){
+    return(c(x$byClass[7],x$byClass[5:6],x$byClass[2]))
+}
+
+df.comp.knn <- data.frame(
+    knn = fun_eval(cM_knn),
+    knn.cat = fun_eval(cM_knn.cat),
+    knn.numeric = fun_eval(cM_knn.numeric),
+    knn_DSAMP = fun_eval(cM_knn_DSAMP),
+    knn_DSAMP.cat = fun_eval(cM_knn_DSAMP.cat),
+    knn_DSAMP.numeric = fun_eval(cM_knn_DSAMP.numeric),
+    knn_SMOTE = fun_eval(cM_knn_SMOTE),
+    knn_SMOTE.cat = fun_eval(cM_knn_SMOTE.cat),
+    knn_SMOTE.numeric = fun_eval(cM_knn_SMOTE.numeric),
+    row.names = c("F-measure","Precision","Recall/Sensitivity","Specificity")
+)
+
+df.comp.knn
+#==========================================================================================
+```
+
 
 ## Árboles de decisión: arstmade
 
