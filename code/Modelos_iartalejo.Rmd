@@ -15,7 +15,6 @@ source("Cleaning_Data.R")
 ```
 
 ## 1.1 Missing Values
-
 A) Imputación con caret:
 ```{r}
 #library(caret)
@@ -35,7 +34,7 @@ Variables irrelevantes:-1,-2,-3,-6,-19,-20,-31,-74,-75,-83,-92,-95,-104,-108,-10
 ```{r}
 library(dplyr)
 SQFdata.filtered <- SQFdata %>%
-                      select(-93,-94,-100,-102,-103,-22,-91,-18,-107,-16,-80,-106,-78,-96,-97,-79,
+                      dplyr::select(-93,-94,-100,-102,-103,-22,-91,-18,-107,-16,-80,-106,-78,-96,-97,-79,
                              -1,-2,-3,-6,-19,-20,-31,-74,-75,-83,-92,-95,-104,-108,-109,-110,-111,-112)
 
 SQFdata.filtered <- na.omit(SQFdata.filtered)
@@ -43,25 +42,77 @@ SQFdata.filtered <- na.omit(SQFdata.filtered)
 
 ```{r}
 # Comprobación:
-# MissingDataGUI(data = SQFdata.filtered, width = 1000, height = 750)
+library(MissingDataGUI)
+MissingDataGUI(data = SQFdata.filtered, width = 1000, height = 750)
 ```
 
+
 ## 1.2 Reducción variables
+A) Variables con poca varianza
 ```{r}
-# Variables con poca varianza
 library(caret)
 nearZeroVar(x = SQFdata, names = TRUE)
 ```
 ATENCIÓN: Que tenga poca varianza no quiere decir que no sea relevante para la variable objetivo arstmade?? Ver en EDA, por ejemplo, las variables ...
 
+B) Variables correladas
 ```{r}
-# Variables correladas
 library(caret)
-...
-findCorrelation(x = "a correlation matrix", names = TRUE)
+library(corrplot)
+
+#findCorrelation(x = "a correlation matrix", names = TRUE)
+
+#corrplot(cor(x = SQFdata.filtered[,-11]))
 ```
+Sólo aplicable a variables numéricas
+
+**C) Variables relevantes en EDA:**
+Consideramos las variables que en el EDA mostraban alguna categoría relevante para la variable objetivo "ser arrestado". Es decir, si al menos una categoría tiene un porcentaje de arrestos diferente al resto de categorías de la variable y, además, mayor a la media de arrestos (15%).
 ```{r}
-# Variables relevantes en EDA:
+library(dplyr)
+SQFdata.filtered2 <- SQFdata.filtered %>% 
+                            dplyr::select(arstmade,
+                                          build,
+                                          frisked,
+                                          knifcuti,
+                                          othrweap,
+                                          pf_ptwep,
+                                          pf_baton,
+                                          sb_outln,
+                                          sb_admis,
+                                          explnstp,
+                                          race,
+                                          age,
+                                          contrabn,
+                                          asltweap,
+                                          pf_grnd,
+                                          cs_other,
+                                          sb_hdobj,
+                                          city,
+                                          searched,
+                                          pistol,
+                                          pf_hcuff,
+                                          pf_pepsp,
+                                          cs_drgtr,
+                                          sb_other,
+                                          inout,
+                                          trhsloc,
+                                          sex,
+                                          haircolr,
+                                          pf_hands,
+                                          cs_objcs,
+                                          ac_evasv,
+                                          offunif)
+#forceuse
+#detailCM
+#rf_oths
+SQFdata.filtered2 <- na.omit(SQFdata.filtered2)
+
+#fun_2level <- function(x) {
+#  ifelse(is.factor(x), return(length(levels(x))), return(2))
+#}
+
+#names(SQFdata.filtered2)[which(sapply(SQFdata.filtered2, fun_2level) < 2)]
 
 ```
 
@@ -70,11 +121,12 @@ findCorrelation(x = "a correlation matrix", names = TRUE)
 # A) Semimanual:
 
 #str(SQFdata)
-#for (i in c(SQFdata$explnstp, SQFdata$othpers, sumissue, offunif)) {
+#for (i in c(SQFdata$explnstp, SQFdata$othpers, sumissue, offunif,...)) {
 #  i = as.numeric(i)
 #  i[which(i == 1)] <- 0
 #  i[which(i == 2)] <- 1
 #}
+# No en todas las variables la opción 1 es N(0) y la 2 es Y(1), depende del orden. No es generalizable. Revisar caso a caso.
 ```
 
 ```{r}
@@ -84,108 +136,182 @@ findCorrelation(x = "a correlation matrix", names = TRUE)
 
 ## 1.4 Transformation – normalizing numeric data
 ```{r}
-
+#
 ```
 
 # 2 MODELS
 
+###2.0.1 Parallel Processing
 ```{r}
-# Parallel Processing
 library(doMC)
 registerDoMC(cores = 4)
 ```
 
-## 2.1 KNN
-OPCION 1:
-### 2.1.1 Creating training and test datasets
+### 2.0.2 Creating training and test datasets
 ```{r}
-# We calculate the indices for the sets
+# A) Entrenamiento/Test (without stratified holdout sampling)
+
+# # We calculate the indices for the sets
+# set.seed(123456789)
+# n_data=dim(SQFdata.filtered)[1]
+# n_train=round(0.7*n_data)
+# n_test=n_data-n_train
+# indices=1:n_data
+# indices_train= sample(indices,n_train)
+# indices_test=indices[-indices_train]
+# 
+# # We calculate the sets
+# SQFdata.filtered_train = SQFdata.filtered[indices_train,]
+# SQFdata.filtered_test = SQFdata.filtered[indices_test,]
+# 
+# SQFdata.filtered_train_labels = SQFdata.filtered_train[,11]
+# SQFdata.filtered_test_labels = SQFdata.filtered_test[,11]
+```
+
+```{r}
+# B) Entrenamiento/Test
+library(caret)
+# The caret package provides a createDataPartition() function that will create partitions based on stratified holdout sampling.
+
 set.seed(123456789)
-n_data=dim(SQFdata.filtered)[1]
-n_train=round(0.7*n_data)
-n_test=n_data-n_train
-indices=1:n_data
-indices_train= sample(indices,n_train)
-indices_test=indices[-indices_train]
+in_train <- createDataPartition(SQFdata.filtered2$arstmade, p = 0.7, list = FALSE)
 
-# We calculate the sets
-SQFdata.filtered_train = SQFdata.filtered[indices_train,]
-SQFdata.filtered_test = SQFdata.filtered[indices_test,]
+SQFdata.filtered2_train = SQFdata.filtered2[in_train,]
+SQFdata.filtered2_test = SQFdata.filtered2[-in_train,]
 
-SQFdata.filtered_train_labels = SQFdata.filtered_train[,11]
-SQFdata.filtered_test_labels = SQFdata.filtered_test[,11]
+SQFdata.filtered2_train_labels = SQFdata.filtered2_train[,1]
+SQFdata.filtered2_test_labels = SQFdata.filtered2_test[,1]
 
 ```
 
-### 2.1.2 Training a model on the data
+## 2.1 KNN
+
+### 2.1.1 Training a model on the data ("class")
 ```{r}
 library("class")
-SQFdata.filtered_test_pred <- knn(train = SQFdata.filtered_train, test = SQFdata.filtered_test, cl = SQFdata.filtered_train_labels, k = 2)
-
+SQFdata.filtered2_test_pred <- knn(train = SQFdata.filtered2_train, test = SQFdata.filtered2_test, cl = SQFdata.filtered2_train_labels, k = 9)
 ```
 
-OPCION 2 (CARET):
-### 2.1.3 Training a model on the data (caret)
+### 2.1.1 Training a model on the data ("caret")
+
+```{r}
+modelLookup(model='kknn')
+```
+
 ```{r}
 library(caret)
 set.seed(123456789)
-#2 folds de validación cruzada 
-trControl <- trainControl(method = "cv", number = 2)
+# k folds de validación cruzada 
+trControl <- trainControl(method = "cv", number = 5)
 #trControl <- trainControl(method = "repeatedcv", number = 5, repeats = 5)
-modelo1b <- train(x = SQFdata.filtered[,-c(11)], y = SQFdata.filtered$arstmade, method = "kknn", trControl = trControl)
+system.time(modelo1b <- train(x = SQFdata.filtered2_train[,-c(1)], y = SQFdata.filtered2_train$arstmade, method = "kknn", trControl = trControl))
 modelo1b
 ```
 
-### 2.1.3 Evaluating model performance
 ```{r}
-library(gmodels)
-CrossTable(x = SQFdata.filtered_test_labels, y = SQFdata.filtered_test_pred, prop.chisq=FALSE)
+plot(modelo1b)
 ```
 
-### 2.1.4 Improving model performance
+```{r}
+p.classKKNN <- predict(modelo1b$finalModel, SQFdata.filtered2_test)
+p.probKKNN <- predict(modelo1b$finalModel, SQFdata.filtered2_test, type = "prob")
+```
+### 2.1.2 Evaluating model performance
+```{r}
+#library(gmodels)
+#CrossTable(x = SQFdata.filtered_test_labels, y = SQFdata.filtered_test_pred, prop.chisq=FALSE)
+```
+
+```{r}
+library(caret)
+confusionMatrix(p.classKKNN, SQFdata.filtered2_test_labels, positive = "Y")
+```
+```{r}
+library(ROCR)
+pred0 <- prediction(predictions = p.probKKNN[,2], labels = SQFdata.filtered2_test_labels)
+perf0 <- performance(pred0, measure = "tpr", x.measure = "fpr")
+plot(perf0, main = "ROC curve", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lwd = 2, lty = 2)
+
+perf0.auc <- performance(pred0, measure = "auc")
+unlist(perf0.auc@y.values)
+```
+
+### 2.1.3 Improving model performance
 #### a) Transformation – z-score standardization
 
 #### b) Testing alternative values of k
 
-### 2.1.5 Summary
-
+### 2.1.4 Summary
 
 ## 2.2 REGRESIÓN LOGÍSTICA
 
-### 2.2.1 Creating training and test datasets
+### 2.2.1 Model
 ```{r}
-# We calculate the indices for the sets
-set.seed(123456789)
-n_data=dim(SQFdata.filtered)[1]
-n_train=round(0.7*n_data)
-n_test=n_data-n_train
-indices=1:n_data
-indices_train= sample(indices,n_train)
-indices_test=indices[-indices_train]
-
-# We calculate the sets
-SQFdata.filtered_train = SQFdata.filtered[indices_train,]
-SQFdata.filtered_test = SQFdata.filtered[indices_test,]
-
-SQFdata.filtered_train_labels = SQFdata.filtered_train[,11]
-SQFdata.filtered_test_labels = SQFdata.filtered_test[,11]
-```
-### 2.2.2 Modelo
-```{r}
-mod.fit <- glm(formula=arstmade~., data=SQFdata.filtered_train, family=binomial(link=logit))
-summary(mod.fit)
-mod.probs = predict(mod.fit, SQFdata.filtered_test, type="response")
+mod.fit <- glm(formula=arstmade~., data=SQFdata.filtered2_train, family=binomial(link=logit))
+#summary(mod.fit)
 ```
 
+```{r}
+pred.probs = predict(mod.fit, SQFdata.filtered2_test, type="response")
+pred.class = factor(pred.probs > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y"))
+```
+
+### 2.2.2 Evaluating model performance
+```{r}
+library(caret)
+confusionMatrix(pred.class, SQFdata.filtered_test_labels, positive = "Y")
+```
+
+```{r}
+library(ROCR)
+pred <- prediction(predictions = pred.probs, labels = SQFdata.filtered_test_labels)
+perf <- performance(pred, measure = "tpr", x.measure = "fpr")
+plot(perf, main = "ROC curve", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lwd = 2, lty = 2)
+
+perf.auc <- performance(pred, measure = "auc")
+unlist(perf.auc@y.values)
+```
 
 ## 2.3 RANDOM FOREST
 
+### 2.3.1 Model
 ```{r}
 library(caret)
-#3 folds de validación cruzada 
+set.seed(123456789)
+
 #trControl <- trainControl(method = "none")
 trControl <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
-modelo2 <- train(x = SQFdata.filtered[,-c(11)], y = SQFdata.filtered$arstmade, method = "parRF", trControl = trControl)
+#trControl <- trainControl(method = "cv", number = 10)
+
+system.time(modelo2 <- train(x = SQFdata.filtered2_train[,-c(1)], y = SQFdata.filtered2_train$arstmade, method = "parRF", trControl = trControl))
+
 modelo2
 ```
 
+```{r}
+plot(modelo2)
+```
+
+
+```{r}
+p.classRF <- predict(modelo2$finalModel, SQFdata.filtered2_test)
+p.probRF <- predict(modelo2$finalModel, SQFdata.filtered2_test, type = "prob")
+```
+
+### 2.3.2 Evaluating model performance
+```{r}
+library(caret)
+confusionMatrix(p.classRF, SQFdata.filtered2_test_labels, positive = "Y")
+```
+```{r}
+library(ROCR)
+pred2 <- prediction(predictions = p.probRF[,2], labels = SQFdata.filtered2_test_labels)
+perf2 <- performance(pred2, measure = "tpr", x.measure = "fpr")
+plot(perf2, main = "ROC curve", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lwd = 2, lty = 2)
+
+perf2.auc <- performance(pred2, measure = "auc")
+unlist(perf2.auc@y.values)
+```
