@@ -1,0 +1,327 @@
+---
+title: "Modelos"
+author: "Nathaly"
+date: "15 de abril de 2017"
+output: html_document
+---
+```{r, warning = FALSE, message=FALSE}
+# Carga del Dataset
+if(!exists("foo", mode="function")) source("Cleaning_Data.R")
+
+if (!"ggplot2" %in% installed.packages()){
+        install.packages("ggplot2")
+}
+if (!"caret" %in% installed.packages()){
+        install.packages("caret")
+}
+if (!"lmtest" %in% installed.packages()){
+        install.packages("lmtest")
+}
+if (!"pscl" %in% installed.packages()){
+        install.packages("pscl")
+}
+if (!"dplyr" %in% installed.packages()){
+        install.packages("dplyr")
+}
+
+if (!"plyr" %in% installed.packages()){
+        install.packages("plyr")
+}
+if (!"pROC" %in% installed.packages()){
+        install.packages("plyr")
+}
+
+if (!"ROCR" %in% installed.packages()){
+        install.packages("ROCR")
+}
+library(ggplot2)
+library(caret)
+library(lmtest)
+library(pscl)
+library(dplyr)
+library(plyr)
+library(pROC)
+library(ROCR)
+```
+
+
+
+# Datos de entrenamiento: Selecci?n de variables
+
+```{r}
+copia <- SQFdata
+data <- dplyr::select(copia,
+                  arstmade,
+                inout,  
+                trhsloc,
+                perobs,
+                crimsusp,
+                perstop,
+                typeofid,
+                explnstp,
+                othpers,
+                arstoffn,
+                sumissue,
+                sumoffen,
+                offunif,
+                frisked,
+                searched,
+                contrabn,
+                #adtlrept, en la limpieza queda Y=1
+                pistol,
+                #riflshot, no avanza el modelo logit pocos "Y"
+                #asltweap, no avanza el modelo logit pocos "Y"
+                knifcuti,
+                machgun,
+                #othrweap, no avanza el modelo logit pocos "Y"
+                radio,
+                forceuse,
+                sex,
+                race,
+                age,
+                ht_feet,
+                ht_inch,
+                weight,
+                #haircolr,
+                #eyecolor, TENGO que reducir las clases
+                build,
+                othfeatr,
+                city
+                  )
+```
+
+## Limpieza de los datos de entrenamiento
+
+```{r, warming = FALSE}
+#corregir en Cleaning_Data, lo mismo para las variables offshld offverb forceuse
+#SQFdata$officrid[which(SQFdata$officrid == " ")] <- NA
+#SQFdata$officrid <- factor(SQFdata$officrid, levels = c("I"), labels=c('Id'))
+#
+
+data$arstoffn <- as.character(data$arstoffn)
+data$arstoffn[is.na(data$arstoff)] <- "NoArrestado"
+data$arstoffn <- as.factor(data$arstoffn)
+
+data$forceuse <- as.character(data$forceuse)
+data$forceuse[is.na(data$forceuse)] <- "NoFuerza"
+data$forceuse <- as.factor(data$forceuse)
+
+#data$adtlrept <- as.character(data$adtlrept)
+#data$adtlrept[is.na(data$adtlrept)] <- "Y"
+#data$adtlrept <- as.factor(data$adtlrept)
+
+
+```
+
+
+## Eliminar variables con m?s del 50% de NA's
+```{r, warming = FALSE}
+
+miss_value<-which(colSums(is.na(data))>nrow(data) * 0.5)
+miss_value
+data <- data[ , -miss_value]
+
+```
+
+## Eliminar factores con menos de dos categor?as o con m?s de 20 categor?as
+```{r, warming = FALSE}
+fun_v2 <- function( x ){
+    ifelse(is.factor( x ),return(length(levels( x ))),return(2))
+}
+
+data <- data[,-c(which(sapply(data, fun_v2) < 2 | sapply(data, fun_v2) > 20))]
+
+```
+
+## Eliminar casos con NA's
+```{r, warming = FALSE}
+
+x <- na.omit(data)
+
+```
+Despu?s de la limpieza de datos nos quedamos con el 76%.
+
+
+# Datos de prueba: Selecci?n de variables
+
+```{r, warming = FALSE}
+# Carga del Dataset
+if(!exists("foo", mode="function")) source("Cleaning_Data_Test_nacm.R")
+y <- na.omit(data_2015)
+
+```
+
+
+# MODELO LOG?STICO 
+
+## Selecci?n de variables: Stepwise
+
+### Modelo completo y vac?o
+```{r, warming = FALSE}
+
+modelo_completo<- glm(arstmade~., family = binomial(link=logit), data = x)
+modelo_vacio<- glm(arstmade ~1, family = binomial(link=logit), data = x)
+#modelo1<- glm(formula = arstmade ~ inout + trhsloc + perstop + typeofid + 
+#    explnstp + othpers + sumissue + searched + contrabn + pistol + 
+#    knifcuti + radio + forceuse + sex + age + ht_inch + 
+#    haircolr + city, family = binomial(link = logit), data = x) # AIC 16875
+
+```
+
+### Step: Backward
+```{r, warming = FALSE}
+modelo_back <-step(modelo_completo, trace = 0)
+summary(modelo_back)
+#round(exp(cbind(Estimate=coef(modelo_back), confint(modelo_back))), 2) 
+
+```
+
+### Step: Forward
+```{r, warming = FALSE}
+modelo_for <-step(modelo_vacio, scope = list(lower=formula(modelo_vacio), upper = formula(modelo_completo)),direction="forward", trace = 0)
+summary(modelo_for)
+
+```
+
+### Step: Dos direcciones
+```{r, warming = FALSE}
+modelo_both <-step(modelo_vacio, scope = list(lower=formula(modelo_vacio), upper = formula(modelo_completo)),direction="both", trace = 0)
+summary(modelo_both)
+
+```
+
+## Selecci?n de variables por remuestro 
+```{r, warming = FALSE, message=FALSE}
+ctrl <- trainControl(method = "repeatedcv", number = 10)
+model_train<- train(arstmade~., method="glm",family = binomial(link=logit), data = x, trControl=ctrl)
+summary(model_train)
+```
+## Evaluaci?n de modelos
+
+
+### Prueba Likelihood ratio
+Dado que la hip?tesis nula sostiene que el modelo reducido es el mejor, un valor del p-value para el modelo estad?stico mayor que 0,05 nos obliga a aceptar la hip?tesis nula, es decir proporciona evidencia a favor del modelo reducido.
+
+```{r, warming = FALSE, message=FALSE}
+
+anova(modelo_completo, modelo_both,  test="Chisq")
+lrtest(modelo_completo, modelo_both)
+
+```
+
+### Pseudo R^2
+Evaluamos el R cuadrado de McFadden mientras m?s cercano a uno indica que el modelo tiene poder predictivo.
+```{r, warming = FALSE}
+pR2(modelo_both)
+
+```
+
+## Pruebas estad?sticas para predictores individuales
+
+### Importancia de la variable
+
+```{r, warming = FALSE}
+varImp(modelo_both)
+        
+```
+## Validaci?n de los valores predichos
+
+### Validación modelo step método "both"
+```{r, warming = FALSE}
+pred_modelo_both<- predict(modelo_both, y, type="response")
+pred_modelo_both_c<- factor(pred_modelo_both > 0.5,  levels = c(FALSE, TRUE), labels = c("0","1"))
+confusionMatrix(pred_modelo_both_c, y$arstmade, positive = "1")
+```
+### Validación modelo logit por remuestreo
+```{r}
+predic <- predict(model_train, newdata= y)
+confusionMatrix(predic, y$arstmade, positive = "1")
+
+```
+
+
+## Curva ROC: Datos de prueba
+La curva ROC para los datos de testeo es de 0.876 lo que indica que el modelo discrimina adecuadamente a los arrestados y no arrestados.
+```{r, warming = FALSE}
+
+prob_test <- predict(modelo_both, newdata=y, type = "response")
+g_test <- roc(arstmade ~ prob_test, data = y)
+plot(g_test)
+
+pr_test <- prediction(prob_test, y$arstmade)
+auc_test <- performance(pr_test, measure = "auc")
+auc_test <- auc_test@y.values[[1]]
+auc_test
+#acc <- performance(pr, measure = "acc")
+#plot(acc) 
+```
+
+# RANDOM FOREST
+```{r, warming = FALSE, message=FALSE}
+
+library(caret)
+set.seed(123456789)
+trControl <- trainControl(method = "repeatedcv", number = 5, repeats = 1)
+modelo2 <- train(arstmade ~ ., data = x, method= "parRF", trControl = trControl, allowParallel = TRUE)
+confusionMatrix(predict(modelo2, y), y$arstmade, positive = "Y")
+
+```
+
+# KNN
+
+## Solo variables categóricas
+```{r, warming = FALSE, message=FALSE}
+#model.matrix(~gender -1 , data=x)
+# problemas con variables que tiene varianza cero  adtlrept.N, adtlrept.Y
+library(ade4)
+x_bin<- x[,-1]
+x_bin<-x_bin[sapply(x_bin, function(x) is.factor(x))]
+x_bin<-acm.disjonctif(x_bin)
+x_bin<- data.frame(arstmade=x$arstmade,x_bin)
+
+y_bin<- y[,-1]
+y_bin<-y_bin[sapply(y_bin, function(x) is.factor(x))]
+y_bin<-acm.disjonctif(y_bin)
+y_bin<- data.frame(arstmade=y$arstmade,y_bin)
+
+library("class")
+modelo_knn <- knn(train = x_bin[,2:58], test = y_bin[,2:58], cl = x_bin$arstmade, k = 3, prob=TRUE)
+#modelo_knn5<-knn(train = x_bin[,2:58], test = y_bin[,2:58], cl = x_bin$arstmade, k = 5, prob=TRUE)
+confusionMatrix(table(y_bin[,1], modelo_knn))
+```
+
+
+```{r, warming = FALSE, message=FALSE}
+set.seed(123)
+
+control<- trainControl(method = "repeatedcv", number =3)
+knnFit <- train(arstmade ~ ., data = x_bin, method= "knn", trControl = control, tuneLength=10)
+knnFit
+plot(knnFit)
+confusionMatrix(predict(knnFit, y_bin), y_bin$arstmade)
+
+preProcess = c("center", "scale")
+
+```
+
+
+
+## Variables categóricas y numéricas
+
+```{r, warming = FALSE, message=FALSE}
+
+x_bin_1<- data.frame(arstmade=x$arstmade,perobs=x$perobs, perstop=x$perstop,age=x$age, ht_feet=x$ht_feet,
+                   ht_inch= x$ht_inch, weight=x$weight, x_bin)
+y_bin_1<- data.frame(arstmade=y$arstmade,perobs=y$perobs, perstop=y$perstop,age=y$age, ht_feet=y$ht_feet,
+                   ht_inch= y$ht_inch, weight=y$weight, y_bin)
+set.seed(123)
+
+control_1<- trainControl(method = "repeatedcv", number =3)
+knnFit_1 <- train(arstmade ~ ., data = x_bin_1, method= "knn", preProcess = c("center", "scale"),trControl = control_1, tuneLength=10)
+knnFit_1
+plot(knnFit_1)
+confusionMatrix(predict(knnFit_1, y_bin_1), y_bin_1$arstmade)
+
+
+
+```
