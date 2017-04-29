@@ -1,0 +1,430 @@
+---
+title: "Models"
+author: "Jorge Navarro Garcia"
+date: "13 de abril de 2017"
+output: pdf_document
+---
+
+```{r, message=FALSE}
+# Carga de librerías
+library(magrittr)
+library(dplyr)
+library(car)
+library(effects)
+library(randomForest)
+library(caret)
+library(dataQualityR)
+library(DMwR)
+library(foreach)
+library(doMC)
+registerDoMC(4)
+library(class)
+```
+
+# Creación de modelos predictivos
+
+## Carga de datos
+
+```{r,message=FALSE}
+# Carga del Dataset
+source('Cleaning_Data.R')
+dim(SQFdata)
+```
+
+## Análisis descriptivo
+
+```{r, message=FALSE}
+drq.num <- paste("./dqr_num.csv", sep = "")
+drq.cat <- paste("./dqr_cat.csv", sep = "")
+checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
+DQR.num <- read.csv("dqr_num.csv")
+DQR.cat <- read.csv("dqr_cat.csv")
+```
+
+### A Variables numéricas
+
+```{r}
+print(DQR.num)
+
+# Variables a tener en cuenta por NAs -> age, xcoord e ycoord
+```
+
+### B Variables categóricas
+
+```{r}
+print(DQR.cat)
+# Variables a tener en cuenta por NAs > 60% -> arstoffn, sumoffen, officrid, offverb, ¿offshld (54.62)?, forceuse, othfeatr, addrnum, stname, beat, post
+
+# Variables a tener en cuenta por NAs cercanos al 20% -> adtlrept, pistol, riflshot, asltweap, knifcuti, machgun, othrweap, pf_hands, pf_wall, pf_grnd, pf_drwep, pf_ptwep, pf_baton, pf_hcuff, pf_pepsp, pf_other, , ac_rept, ac_inves, rf_vcrim, rf_othsw, ac_proxm, rf_attir, cs_objcs, cs_descr, cs_casng, cs_lkout, rf_vcact, cs_cloth, cs_drgtr, ac_evasv, ac_assoc, cs_furtv, rf_rfcmp, , ac_cgdir, rf_verbl, cs_vcrim, cs_bulge, cs_other, ac_incid, ac_time, rf_knowl, ac_stsnd, ac_other, sb_hdobj, sb_outln, sb_admis, sb_other, rf_furt, rf_bulg, premname, stinter, crossst, sector
+```
+
+## Transformación de los datos
+
+## Ordenación de niveles en variable objetivo
+
+```{r}
+SQFdataTest$arstmade <- relevel(SQFdataTest$arstmade, ref = "Y")
+```
+
+### Eliminación de variables
+
+```{r}
+
+# Eliminación de variables con más de 60% de datos faltantes.
+SQFdata_modif <- SQFdata %>%
+                    select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
+                                       forceuse, othfeatr, addrnum, stname, beat, post))
+
+
+
+# Eliminación de variables con 20% de NAs pero nula varianza (casos pertenecientes
+# todos a una misma clase). 6 variables eliminadas
+summary(SQFdata_modif$adtlrept);summary(SQFdata_modif$riflshot);
+summary(SQFdata_modif$asltweap);summary(SQFdata_modif$machgun);
+summary(SQFdata_modif$pf_baton);summary(SQFdata_modif$pf_pepsp)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(adtlrept, riflshot, asltweap, machgun,
+                             pf_baton, pf_pepsp))
+
+
+
+# Eliminación de variables con demasiados niveles (strings). 4 variables eliminadas
+summary(SQFdata_modif$premname);summary(SQFdata_modif$stinter);
+summary(SQFdata_modif$crossst);summary(SQFdata_modif$sector)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(premname, stinter, crossst, sector))
+
+
+
+# Eliminación de variables que no aparecen en el checkDataQuality. 7 variables eliminadas.
+summary(SQFdata_modif$state);summary(SQFdata_modif$zip);summary(SQFdata_modif$addrtyp);
+summary(SQFdata_modif$rescode);summary(SQFdata_modif$premtype);
+summary(SQFdata_modif$aptnum);summary(SQFdata_modif$timestop)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(state,zip,addrtyp,rescode,premtype,aptnum,timestop))
+
+
+
+# Eliminación de factores con más de 53 niveles. 4 variables eliminadas.
+length(levels(SQFdata_modif$pct));length(levels(SQFdata_modif$crimsusp));
+length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(pct,crimsusp,addrpct,detailCM))
+
+
+
+# Eliminación de variables con poca varianza. 6 variables eliminadas.
+summary(SQFdata_modif$year);summary(SQFdata_modif$datestop);
+summary(SQFdata_modif$compyear);summary(SQFdata_modif$comppct);
+summary(SQFdata_modif$lineCM);summary(SQFdata_modif$dob)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(year,datestop,compyear,comppct, lineCM, dob))
+
+
+
+# Eliminación de más variables con poca varianza. 1 variable eliminada.
+
+# Se analiza el atributo y en caso de que no sea un factor, se devuelve valor
+# 2 para que no sea eliminado.
+fun_2level <- function(x){
+    ifelse(is.factor(x),return(length(levels(x))),return(2))
+}
+
+names(SQFdata_modif)[which(sapply(SQFdata_modif, fun_2level) < 2)]
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(which(sapply(SQFdata_modif, fun_2level) < 2)))
+
+
+
+# Eliminación de coordenadas:
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(xcoord, ycoord))
+
+
+
+# Variables en duda
+summary(SQFdata_modif$ser_num)
+summary(SQFdata_modif$revcmd)
+summary(SQFdata_modif$repcmd)
+
+
+
+# Número de variables final
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+### Eliminación de NAs
+
+```{r}
+
+# Eliminación de NAs en variable age
+SQFdata_modif %>% group_by(is.na(age)) %>%
+    summarise(n())
+
+SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
+
+dim(SQFdata)
+dim(SQFdata_modif)
+
+# Trabajo con NAs
+
+# Variables NO eliminadas
+
+# Modificación de variables no eliminadas
+
+# USO DE ARMAS
+summary(SQFdata_modif$pistol);summary(SQFdata_modif$knifcuti);summary(SQFdata_modif$othrweap);
+
+SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
+SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
+SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
+
+# USO DE FUERZA FÍSICA
+summary(SQFdata_modif$pf_hands);summary(SQFdata_modif$pf_wall);summary(SQFdata_modif$pf_grnd);
+summary(SQFdata_modif$pf_drwep);summary(SQFdata_modif$pf_ptwep);summary(SQFdata_modif$pf_hcuff);
+summary(SQFdata_modif$pf_other);
+
+SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
+SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
+SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
+SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
+SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
+SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
+SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
+
+# CIRCUNSTANCIAS ADICIONALES
+summary(SQFdata_modif$ac_rept);summary(SQFdata_modif$ac_inves);summary(SQFdata_modif$ac_proxm);
+summary(SQFdata_modif$ac_evasv);summary(SQFdata_modif$ac_assoc);summary(SQFdata_modif$ac_cgdir);
+summary(SQFdata_modif$ac_incid);summary(SQFdata_modif$ac_time);summary(SQFdata_modif$ac_stsnd);
+summary(SQFdata_modif$ac_other);
+
+SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
+SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
+SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
+SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
+SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
+SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
+SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
+SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
+SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+
+# REASON FOR FRISK
+summary(SQFdata_modif$rf_vcrim);summary(SQFdata_modif$rf_othsw);summary(SQFdata_modif$rf_attir);
+summary(SQFdata_modif$rf_vcact);summary(SQFdata_modif$rf_rfcmp);summary(SQFdata_modif$rf_verbl);
+summary(SQFdata_modif$rf_knowl);summary(SQFdata_modif$rf_furt);summary(SQFdata_modif$rf_bulg);
+
+SQFdata_modif %>% filter(is.na(cs_objcs)) %>%
+    summarise(count_rf_vcrim  = sum(rf_vcrim == "Y", na.rm = TRUE),
+            count_rf_othsw  = sum(rf_othsw == "Y", na.rm = TRUE),
+            count_rf_attir  = sum(rf_attir == "Y", na.rm = TRUE),
+            count_rf_vcact  = sum(rf_vcact == "Y", na.rm = TRUE),
+            count_rf_rfcmp  = sum(rf_rfcmp == "Y", na.rm = TRUE),
+            count_rf_furt  = sum(rf_furt == "Y", na.rm = TRUE),
+            count_rf_bulg  = sum(rf_bulg == "Y", na.rm = TRUE),
+            count_rf_verbl  = sum(rf_verbl == "Y", na.rm = TRUE),
+            count_rf_knowl = sum(rf_knowl == "Y", na.rm = TRUE),
+            tot = n()) %>%
+    mutate(percent_rf_vcrim = 100*count_rf_vcrim/tot,
+           percent_rf_othsw = 100*count_rf_othsw/tot,
+           percent_rf_attir = 100*count_rf_attir/tot,
+           percent_rf_vcact = 100*count_rf_vcact/tot,
+           percent_rf_rfcmp = 100*count_rf_rfcmp/tot,
+           percent_rf_furt = 100*count_rf_furt/tot,
+           percent_rf_bulg = 100*count_rf_bulg/tot,
+           percent_rf_verbl = 100*count_rf_verbl/tot,
+           percent_rf_knowl = 100*count_rf_knowl/tot)
+
+SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
+SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
+SQFdata_modif$rf_attir[which(is.na(SQFdata_modif$rf_attir))] <- 'N'
+SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
+SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
+SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
+SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
+
+# REASON FOR STOP
+summary(SQFdata_modif$cs_objcs);summary(SQFdata_modif$cs_descr);summary(SQFdata_modif$cs_casng);
+summary(SQFdata_modif$cs_lkout);summary(SQFdata_modif$cs_cloth);summary(SQFdata_modif$cs_drgtr);
+summary(SQFdata_modif$cs_furtv);summary(SQFdata_modif$cs_vcrim);summary(SQFdata_modif$cs_bulge);
+summary(SQFdata_modif$cs_other);
+
+SQFdata_modif %>% filter(is.na(cs_objcs)) %>%
+    summarise(count_cs_descr = sum(cs_descr == "Y", na.rm = TRUE),
+              count_cs_casng = sum(cs_casng == "Y", na.rm = TRUE),
+              count_cs_lkout = sum(cs_lkout == "Y", na.rm = TRUE),
+              count_cs_cloth = sum(cs_cloth == "Y", na.rm = TRUE),
+              count_cs_drgtr = sum(cs_drgtr == "Y", na.rm = TRUE),
+              count_cs_furtv = sum(cs_furtv == "Y", na.rm = TRUE),
+              count_cs_vcrim = sum(cs_vcrim == "Y", na.rm = TRUE),
+              count_cs_bulge = sum(cs_bulge == "Y", na.rm = TRUE),
+              count_cs_other = sum(cs_other == "Y", na.rm = TRUE),
+              tot = n()) %>%
+    mutate(percent_cs_descr = 100*count_cs_descr/tot,
+           percent_cs_casng = 100*count_cs_casng/tot,
+           percent_cs_lkout = 100*count_cs_lkout/tot,
+           percent_cs_cloth = 100*count_cs_cloth/tot,
+           percent_cs_drgtr = 100*count_cs_drgtr/tot,
+           percent_cs_furtv = 100*count_cs_furtv/tot,
+           percent_cs_vcrim = 100*count_cs_vcrim/tot,
+           percent_cs_bulge = 100*count_cs_bulge/tot,
+           percent_cs_other = 100*count_cs_other/tot)
+
+SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
+SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
+SQFdata_modif$cs_casng[which(is.na(SQFdata_modif$cs_casng))] <- 'N'
+SQFdata_modif$cs_lkout[which(is.na(SQFdata_modif$cs_lkout))] <- 'N'
+SQFdata_modif$cs_cloth[which(is.na(SQFdata_modif$cs_cloth))] <- 'N'
+SQFdata_modif$cs_drgtr[which(is.na(SQFdata_modif$cs_drgtr))] <- 'N'
+SQFdata_modif$cs_furtv[which(is.na(SQFdata_modif$cs_furtv))] <- 'N'
+SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
+SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
+SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
+
+# BASIS OF SEARCH
+summary(SQFdata_modif$sb_hdobj);summary(SQFdata_modif$sb_outln);summary(SQFdata_modif$sb_admis);
+summary(SQFdata_modif$sb_other);
+
+SQFdata_modif %>% filter(is.na(sb_hdobj)) %>%
+    summarise(count_outln = sum(sb_outln == "Y", na.rm = TRUE),
+              count_admis = sum(sb_admis == "Y", na.rm = TRUE),
+              count_other = sum(sb_other == "Y", na.rm = TRUE),
+              tot = n()) %>%
+    mutate(percent_outln = 100*count_outln/tot,
+           percent_admis = 100*count_admis/tot,
+           percent_other = 100*count_other/tot)
+
+SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
+SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
+SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
+SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
+
+
+# AÑADIR EXPLICACIÓN CON PAQUETE MissingDataGUI?
+
+# Comprobación de NAs
+sum(is.na(SQFdata))
+sum(is.na(SQFdata_modif))
+```
+
+## Eliminación de variables con varianza nula
+
+```{r}
+# Con nearZeroVar se eliminan más variables
+SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+## División de muestra en train/test
+
+```{r}
+# Creación de conjuntos train y test
+tot_obs <- dim(SQFdata_modif)[1]
+indices <- 1:tot_obs
+
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain = SQFdata_modif[indices_train, ]
+SQFdataTest = SQFdata_modif[-indices_train, ]
+
+# Datos desbalanceados
+SQFdataTrain %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### Ajuste del desbalanceo: Down-sampling
+
+- Down-Sampling:
+
+```{r}
+# Total de casos -> 4799 (si) + 27103 (no) = 31902
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberían ser 4847 casos
+training.yes <- SQFdataTrain %>% filter(arstmade == 'Y')
+training.no <- SQFdataTrain %>% filter(arstmade == 'N')
+
+set.seed(4567)
+ind_training.no <- sample(rownames(training.no),4799)
+training.no <- training.no[ind_training.no,]
+
+SQFdataTrain_DSAMP <- rbind(training.yes, training.no)
+
+SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+## Regresión logística: arstmade
+
+### Creación de modelos vacíos y completos
+
+```{r}
+# CREACION DE MODELOS VACIOS
+#==========================================================================================
+model_glm_DSAMP_Vacio <- glm(arstmade ~ 1, data = SQFdataTrain_DSAMP, family = "binomial")
+#==========================================================================================
+
+# CREACION DE MODELOS COMPLETOS
+#==========================================================================================
+fun_glm <- function(x){
+    model <- glm(arstmade ~ ., data = x, family = "binomial")
+    print(summary(model))
+    # if(deparse(substitute(x)) %in% c("SQFdataTrain_DSAMP","SQFdataTrain_SMOTE")){
+    model$xlevels$eyecolor <- levels(SQFdataTrain$eyecolor)
+    # }
+    pred <- predict(model, SQFdataTest, type = "response")
+    print(confusionMatrix(factor(pred > 0.5, levels = c(FALSE, TRUE), labels = c("N","Y")),
+    SQFdataTest$arstmade, positive = "Y"))
+    return(model)
+}
+
+model_glm_DSAMP <- fun_glm(SQFdataTrain_DSAMP)
+#==========================================================================================
+
+summary(model_glm_DSAMP)
+```
+
+### Selección de modelos mediante stepwise
+
+```{r}
+# STEPWISE MODELO DOWN-SAMPLING
+#==========================================================================================
+model_glm_DSAMP_Forw <- step(model_glm_DSAMP_Vacio,
+                       scope = list(lower = formula(model_glm_DSAMP_Vacio), upper = formula(model_glm_DSAMP)),
+                       direction = "forward", trace = 0)
+#==========================================================================================
+```
+
+### Evaluación de modelos de regresión logística
+
+```{r}
+# FUNCION DE EVALUACION Y CREACION DE TABLA DE RESULTADOS
+#==========================================================================================
+pred_DSAMP_Forw <- factor(predict(model_glm_DSAMP_Forw, SQFdataTest, type="response")>0.5,
+                          levels=c(TRUE,FALSE),
+                          labels=c("Y","N"))
+
+cM_glm_DSAMP_Forw <- confusionMatrix(pred_DSAMP_Forw, SQFdataTest$arstmade, positive="Y")
+
+eval_glm_DSAMP_Forw_metrics <- c(model_glm_DSAMP_Forw$aic,
+                   model_glm_DSAMP_Forw$null.deviance,
+                   model_glm_DSAMP_Forw$deviance,
+                   length(model_glm_DSAMP_Forw$model)-1)
+
+eval_glm_DSAMP_Forw <- c(cM_glm_DSAMP_Forw$byClass[7],
+                   cM_glm_DSAMP_Forw$byClass[5:6],
+                   cM_glm_DSAMP_Forw$byClass[2])
+#==========================================================================================
+```
+
