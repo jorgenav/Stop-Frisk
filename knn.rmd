@@ -1,0 +1,404 @@
+---
+title: "Models"
+author: "Jorge Navarro Garcia"
+date: "13 de abril de 2017"
+output: pdf_document
+---
+
+```{r, message=FALSE}
+# Carga de librerías
+library(magrittr)
+library(dplyr)
+library(car)
+library(effects)
+library(randomForest)
+library(caret)
+library(dataQualityR)
+library(DMwR)
+library(foreach)
+library(class)
+```
+
+# Creación de modelos predictivos
+
+Dado que la variable target *arstmade* muestra un desbalanceo en sus clases, 15% clase positiva frente a 85% clase negativa, es necesario tener en cuenta métricas de evaluación de los modelos que tengan en cuenta las diferencias entre clases a la hora de realizar predicciones. De esta forma, la evaluación de modelos mediante el coeficiente de *accuracy*, una de las métricas más comunes en problemas de clasificación binaria, se muestra incompleta. Por ello se tiene en cuenta otro tipo de métricas como la matriz de confusión o 
+
+## Carga de datos
+
+```{r,message=FALSE}
+# Carga del Dataset
+source('E:/apuntes Master/Mineria de datos/Stop-Frisk-master/code/Cleaning_Data.R')
+dim(SQFdata)
+```
+
+
+## Análisis descriptivo
+
+```{r, message=FALSE}
+drq.num <- paste("./dqr_num.csv", sep = "")
+drq.cat <- paste("./dqr_cat.csv", sep = "")
+checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
+DQR.num <- read.csv("dqr_num.csv")
+DQR.cat <- read.csv("dqr_cat.csv")
+```
+
+
+## Transformación de los datos
+
+### Eliminación de variables
+
+```{r}
+
+# Eliminación de variables con más de 60% de datos faltantes.
+SQFdata_modif <- SQFdata %>%
+                    select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
+                                       forceuse, othfeatr, addrnum, stname, beat, post))
+
+
+
+# Eliminación de variables con 20% de NAs pero nula varianza (casos pertenecientes
+# todos a una misma clase). 6 variables eliminadas
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(adtlrept, riflshot, asltweap, machgun,
+                             pf_baton, pf_pepsp))
+
+
+
+# Eliminación de variables con demasiados niveles (strings). 4 variables eliminadas
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(premname, stinter, crossst, sector))
+
+
+
+# Eliminación de variables que no aparecen en el checkDataQuality. 7 variables eliminadas.
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(state,zip,addrtyp,rescode,premtype,aptnum,timestop))
+
+
+
+# Eliminación de factores con más de 53 niveles. 4 variables eliminadas.
+length(levels(SQFdata_modif$pct));length(levels(SQFdata_modif$crimsusp));
+length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(pct,crimsusp,addrpct,detailCM))
+
+
+
+# Eliminación de variables con poca varianza. 6 variables eliminadas.
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(year,datestop,compyear,comppct, lineCM, dob))
+
+
+
+# Eliminación de más variables con poca varianza. 1 variable eliminada.
+
+# Se analiza el atributo y en caso de que no sea un factor, se devuelve valor
+# 2 para que no sea eliminado.
+fun_2level <- function(x){
+    ifelse(is.factor(x),return(length(levels(x))),return(2))
+}
+
+names(SQFdata_modif)[which(sapply(SQFdata_modif, fun_2level) < 2)]
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(which(sapply(SQFdata_modif, fun_2level) < 2)))
+
+# Con nearZeroVar se eliminan más variables
+# SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+
+
+
+# Eliminación de coordenadas:
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(xcoord, ycoord))
+
+```
+
+### Eliminación de NAs
+
+```{r}
+
+# Eliminación de NAs en variable age
+SQFdata_modif %>% group_by(is.na(age)) %>%
+    summarise(n())
+
+SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
+
+# Modificación de variables no eliminadas
+SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
+SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
+SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
+
+SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
+SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
+SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
+SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
+SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
+SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
+SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
+
+SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
+SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
+SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
+SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
+SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
+SQFdata_modif$rf_attir[which(is.na(SQFdata_modif$rf_attir))] <- 'N'
+SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
+SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
+SQFdata_modif$cs_casng[which(is.na(SQFdata_modif$cs_casng))] <- 'N'
+SQFdata_modif$cs_lkout[which(is.na(SQFdata_modif$cs_lkout))] <- 'N'
+SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
+SQFdata_modif$cs_cloth[which(is.na(SQFdata_modif$cs_cloth))] <- 'N'
+SQFdata_modif$cs_drgtr[which(is.na(SQFdata_modif$cs_drgtr))] <- 'N'
+SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
+SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
+SQFdata_modif$cs_furtv[which(is.na(SQFdata_modif$cs_furtv))] <- 'N'
+SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
+SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
+SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
+SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
+SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
+SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
+SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
+SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
+SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
+SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
+SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
+SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
+SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
+
+
+```
+
+## División de muestra en train/test
+
+```{r}
+# Creación de conjuntos train y test
+tot_obs <- dim(SQFdata_modif)[1]
+indices <- 1:tot_obs
+
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain = SQFdata_modif[indices_train, ]
+SQFdataTest = SQFdata_modif[-indices_train, ]
+
+# Datos desbalanceados
+SQFdataTrain %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### Ajuste del desbalanceo: Down-sampling y SMOTE
+
+- Down-Sampling:
+
+```{r}
+# Total de casos -> 4847 (si) + 27203 (no) = 32050
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberían ser 4847 casos
+training.yes <- SQFdataTrain %>% filter(arstmade == 'Y')
+training.no <- SQFdataTrain %>% filter(arstmade == 'N')
+
+set.seed(4567)
+ind_training.no <- sample(rownames(training.no),4799)
+training.no <- training.no[ind_training.no,]
+
+SQFdataTrain_DSAMP <- rbind(training.yes, training.no)
+
+SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+- SMOTE:
+
+En SMOTE perc.over determina el número de casos por caso que se añaden a la clase minoritaria, mientras que perc.under es el número de casos que se seleccionan de la clase mayoritaria por caso añadido a la minoritaria.
+
+Es decir, en el caso que nos ocupa, la clase negativa son 4799 casos y la positiva 27103 Nos interesa que ambas clases posean el mismo número de casos, por lo que la clase negativa tendrá que ser ampliada en 27103/4799 = 5.647 = 4.647 casos por cada caso que existe.
+
+Para añadir los casos necesarios, perc.over tiene que fijarse a un múltiplo de 100, de lo contrario redondea a la baja. Para afinar el resultado, se ajusta perc.under de la siguiente forma:
+
+Sabemos que para este caso debemos añadir al menos 4.647 casos por caso en la clase minoritaria, perc.over se fija a 400 y se calcula el número de casos que se han de seleccionar de la clase mayoritaria en base al número de casos añadidos. Se añaden 4·4799 = 19196 casos, por lo que en la clase minoritaria quedarán finalmente $19196+4799=23995$ casos. Queremos que la clase mayoritaria alcance ese mismo número de casos, por lo que habrá que seleccionar *X* casos por cada caso añadido a la clase minoritaria: $19196·X=23995$
+Quedando como resultado final un perc.under de *1.25*.
+
+```{r}
+# Ajuste del desbalanceo con SMOTE (se rechaza la posibilidad de realizar
+# up-sampling dado que es necesario añadir demasiados casos)
+set.seed(6789)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 400, perc.under = 125)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 300, perc.under = 133.33)
+SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 100, perc.under = 200)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 50, perc.under = 300)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 20, perc.under = 600.4)
+# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 15, perc.under = 767.45)
+
+SQFdataTrain_SMOTE %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+
+
+## KNN: arstmade
+
+```{r}
+# SEPARACION DE DATOS EN VARIABLES CUALITATIVAS Y CUANTITATIVAS
+#==========================================================================================
+# TRAIN
+SQFdataTrain.numeric <- SQFdataTrain[,which(sapply(SQFdataTrain,is.numeric))]
+SQFdataTrain.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain$arstmade)-1)
+
+SQFdataTrain_DSAMP.numeric <- SQFdataTrain_DSAMP[,which(sapply(SQFdataTrain_DSAMP,is.numeric))]
+SQFdataTrain_DSAMP.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain_DSAMP$arstmade)-1)
+
+SQFdataTrain_SMOTE.numeric <- SQFdataTrain_SMOTE[,which(sapply(SQFdataTrain_SMOTE,is.numeric))]
+SQFdataTrain_SMOTE.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain_SMOTE$arstmade)-1)
+
+SQFdataTrain.cat <- SQFdataTrain[,which(sapply(SQFdataTrain,is.factor))]
+SQFdataTrain_DSAMP.cat <- SQFdataTrain_DSAMP[,which(sapply(SQFdataTrain_DSAMP,is.factor))]
+SQFdataTrain_SMOTE.cat <- SQFdataTrain_SMOTE[,which(sapply(SQFdataTrain_SMOTE,is.factor))]
+
+
+# TEST
+SQFdataTest.numeric <- SQFdataTest[,which(sapply(SQFdataTest,is.numeric))]
+SQFdataTest.numeric$arstmade <- as.factor(as.numeric(SQFdataTest$arstmade)-1)
+
+SQFdataTest.cat <- SQFdataTest[,which(sapply(SQFdataTest,is.factor))]
+```
+## knn con variables numericas 
+```{r}
+train = SQFdataTrain
+test =SQFdataTest
+train.labels = SQFdataTrain$arstmade
+test.labels = SQFdataTest$arstmade
+
+train.numeric = train %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+test.numeric = test %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+knn_total <- knn1(train.numeric, test.numeric, train.labels)
+error = sum(knn_total != test_DSAMP.labels)/length(test.labels);error
+```
+
+```{r}
+train_DSAMP = SQFdataTrain_DSAMP
+test_DSAMP =SQFdataTest
+train_DSAMP.labels = SQFdataTrain_DSAMP$arstmade
+test_DSAMP.labels = SQFdataTest$arstmade
+
+train_DSAMP.numeric = train_DSAMP %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+test_DSAMP.numeric = test_DSAMP %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+knn_DSAMP <- knn1(train_DSAMP.numeric, test_DSAMP.numeric, train_DSAMP.labels)
+error_DSAMP = sum(knn_DSAMP != test_DSAMP.labels)/length(test_DSAMP.labels);error_DSAMP
+```
+
+```{r}
+train_SMOTE = SQFdataTrain_SMOTE
+test_SMOTE =SQFdataTest
+train_SMOTE.labels = SQFdataTrain_SMOTE$arstmade
+test_SMOTE.labels = SQFdataTest$arstmade
+
+train_SMOTE.numeric = train_SMOTE %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+test_SMOTE.numeric = test_SMOTE %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+knn_SMOTE <- knn1(train_SMOTE.numeric, test_SMOTE.numeric, train_SMOTE.labels)
+error_SMOTE = sum(knn_SMOTE != test_SMOTE.labels)/length(test_SMOTE.labels);error_SMOTE
+```
+
+## KNN con variables categoricas
+```{r}
+#=============================================== KNN categorical DSAMP FALLA POR TAMA�O, quitar variables menos significativas, el smote y el completo tambien fallaran por disponer de mas datos
+train_DSAMP.cat = SQFdataTrain_DSAMP %>%
+  select(recstat,inout,trhsloc,typeofid,explnstp,othpers,arstmade,sumissue,offunif,frisked,searched,contrabn,pistol,knifcuti,othrweap,pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_objcs,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_cloth,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,rf_verbl,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_stsnd,ac_other,sb_hdobj,sb_outln,sb_admis,sb_other,rf_furt,rf_bulg,sex,race,build,city) %>% 
+  mutate_each(funs(as.numeric))
+
+test.cat = SQFdataTest %>% 
+  select(recstat,inout,trhsloc,typeofid,explnstp,othpers,arstmade,sumissue,offunif,frisked,searched,contrabn,pistol,knifcuti,othrweap,pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_objcs,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_cloth,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,rf_verbl,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_stsnd,ac_other,sb_hdobj,sb_outln,sb_admis,sb_other,rf_furt,rf_bulg,sex,race,build,city)%>%
+  mutate_each(funs(as.numeric))
+
+train_DSAMP.labels = SQFdataTrain_DSAMP$arstmade
+test.labels = SQFdataTest$arstmade
+
+z = rep(1, dim(train_DSAMP.cat)[1]) %*% as.matrix(test.cat[1, ])
+z
+sim = apply(z - train_DSAMP.cat == 0, 1, sum)/dim(train_DSAMP.cat)[2]
+# Repetimos para todos los puntos
+ntrain = dim(train_DSAMP.cat)[1];ntrain
+ntest = dim(test.cat)[1];ntest
+d = dim(train_DSAMP.cat)[2]
+sim = matrix(0, ntest, ntrain)
+for (i in 1:ntest) {
+  z = rep(1, ntrain) %*% as.matrix(test.cat[i, ])
+  sim[i, ] = apply(z - train_DSAMP.cat == 0, 1, sum)/d
+}
+
+similaridadNumerica_DSAMP = sim
+sim = similaridadNumerica_DSAMP
+indices = apply(sim, 1, which.max)
+prediccion = rep(0, ntest)
+for (i in 1:ntest) {
+  z = table(train_DSAMP.labels[which(sim[i, ] == sim[i, indices[i]])])
+  prediccion[i] = attributes(which(z == max(z)))$names
+}
+table(prediccion, test.labels)
+
+z = table(train.labels[which(sim == max(sim))])
+attributes(which(z == max(z)))$names
+error2 = sum(prediccion != test.labels)/length(test.labels)
+error2
+
+total = rbind(test.cat, train_DSAMP.cat)
+distanciaEuclidea = as.matrix(dist(total))[1:ntest, (ntest + 1):(ntest + ntrain)]
+similaridadNumerica = 1 - distanciaEuclidea/max(distanciaEuclidea)
+similaridadFinal = (0.3 * similaridadNumerica + 0.7 * similaridadCategorica)
+sim = similaridadFinal
+indices = apply(sim, 1, which.max)
+prediccion = rep(0, ntest)
+for (i in 1:ntest) {
+z = table(train.labels[which(sim[i, ] == sim[i, indices[i]])])
+prediccion[i] = attributes(which(z == max(z)))$names
+}
+
+```
+
+
+
+# KNN CARET DSAMP
+```{r}
+# KNN CARET SQFDATA_DSAMP
+install.packages('e1071', dependencies=TRUE)
+library(caret)
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+set.seed(3333)
+knn_fit_DSAMP<- train(arstmade ~., data = SQFdataTrain_DSAMP, method = "knn",
+ trControl=trctrl,
+ preProcess = c("center", "scale"),
+ tuneLength = 10)
+knn_fit_DSAMP
+test_pred_DSAMP <- predict(knn_fit_DSAMP, newdata = SQFdataTrain_DSAMP)
+```
+# KNN CARET SMOTE
+```{r}
+# KNN CARET SQFDATA_DSAMP
+library(caret)
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+set.seed(3333)
+knn_fit <- train(arstmade ~., data = SQFdataTrain_SMOTE, method = "knn",
+ trControl=trctrl,
+ preProcess = c("center", "scale"),
+ tuneLength = 10)
+knn_fit
+test_pred <- predict(knn_fit, newdata = SQFdataTrain_SMOTE)
+```
+
+```{r}
+set.seed(3333)
+knn_fit_c<- train(arstmade ~., data = SQFdataTrain, method = "knn",
+ trControl=trctrl,
+ preProcess = c("center", "scale"),
+ tuneLength = 10)
+knn_fit_c
+test_pred <- predict(knn_fit, newdata = SQFdataTrain)
+```
+
