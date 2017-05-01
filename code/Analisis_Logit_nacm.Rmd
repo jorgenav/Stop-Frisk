@@ -1,5 +1,5 @@
 ---
-title: "An·lisis logit"
+title: "An√°lisis logit"
 author: "Nathaly"
 date: "1 de mayo de 2017"
 output: html_document
@@ -7,7 +7,7 @@ output: html_document
 
 
 ```{r, message=FALSE}
-# Carga de librerÌas
+# Carga de librer√≠as
 library(magrittr)
 library(dplyr)
 library(car)
@@ -22,7 +22,7 @@ library(foreach)
 library(class)
 ```
 
-# CreaciÛn de modelos predictivos
+# Creaci√≥n de modelos predictivos
 
 ## Carga de datos
 
@@ -32,7 +32,7 @@ source('Cleaning_Data.R')
 dim(SQFdata)
 ```
 
-## An·lisis descriptivo
+## An√°lisis descriptivo
 
 ```{r, message=FALSE}
 drq.num <- paste("./dqr_num.csv", sep = "")
@@ -42,7 +42,7 @@ DQR.num <- read.csv("dqr_num.csv")
 DQR.cat <- read.csv("dqr_cat.csv")
 ```
 
-### A Variables numÈricas
+### A Variables num√©ricas
 
 ```{r}
 print(DQR.num)
@@ -50,35 +50,35 @@ print(DQR.num)
 # Variables a tener en cuenta por NAs -> age, xcoord e ycoord
 ```
 
-### B Variables categÛricas
+### B Variables categ√≥ricas
 
 ```{r}
 print(DQR.cat)
-# Variables a tener en cuenta por NAs > 60% -> arstoffn, sumoffen, officrid, offverb, øoffshld (54.62)?, forceuse, othfeatr, addrnum, stname, beat, post
+# Variables a tener en cuenta por NAs > 60% -> arstoffn, sumoffen, officrid, offverb, ¬øoffshld (54.62)?, forceuse, othfeatr, addrnum, stname, beat, post
 
 # Variables a tener en cuenta por NAs cercanos al 20% -> adtlrept, pistol, riflshot, asltweap, knifcuti, machgun, othrweap, pf_hands, pf_wall, pf_grnd, pf_drwep, pf_ptwep, pf_baton, pf_hcuff, pf_pepsp, pf_other, , ac_rept, ac_inves, rf_vcrim, rf_othsw, ac_proxm, rf_attir, cs_objcs, cs_descr, cs_casng, cs_lkout, rf_vcact, cs_cloth, cs_drgtr, ac_evasv, ac_assoc, cs_furtv, rf_rfcmp, , ac_cgdir, rf_verbl, cs_vcrim, cs_bulge, cs_other, ac_incid, ac_time, rf_knowl, ac_stsnd, ac_other, sb_hdobj, sb_outln, sb_admis, sb_other, rf_furt, rf_bulg, premname, stinter, crossst, sector
 ```
 
-## TransformaciÛn de los datos
+## Transformaci√≥n de los datos
 
-## OrdenaciÛn de niveles en variable objetivo
+## Ordenaci√≥n de niveles en variable objetivo
 
 ```{r}
 #SQFdataTest$arstmade <- relevel(SQFdataTest$arstmade, ref = "Y")
 ```
 
-### EliminaciÛn de variables
+### Eliminaci√≥n de variables
 
 ```{r}
 
-# EliminaciÛn de variables con m·s de 60% de datos faltantes.
+# Eliminaci√≥n de variables con m√°s de 60% de datos faltantes.
 SQFdata_modif <- SQFdata %>%
                     select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
                                        forceuse, othfeatr, addrnum, stname, beat, post))
 
 
 
-# EliminaciÛn de variables con 20% de NAs pero nula varianza (casos pertenecientes
+# Eliminaci√≥n de variables con 20% de NAs pero nula varianza (casos pertenecientes
 # todos a una misma clase). 6 variables eliminadas
 summary(SQFdata_modif$adtlrept);summary(SQFdata_modif$riflshot);
 summary(SQFdata_modif$asltweap);summary(SQFdata_modif$machgun);
@@ -90,7 +90,7 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# EliminaciÛn de variables con demasiados niveles (strings). 4 variables eliminadas
+# Eliminaci√≥n de variables con demasiados niveles (strings). 4 variables eliminadas
 summary(SQFdata_modif$premname);summary(SQFdata_modif$stinter);
 summary(SQFdata_modif$crossst);summary(SQFdata_modif$sector)
 
@@ -99,7 +99,7 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# EliminaciÛn de variables que no aparecen en el checkDataQuality. 7 variables eliminadas.
+# Eliminaci√≥n de variables que no aparecen en el checkDataQuality. 7 variables eliminadas.
 summary(SQFdata_modif$state);summary(SQFdata_modif$zip);summary(SQFdata_modif$addrtyp);
 summary(SQFdata_modif$rescode);summary(SQFdata_modif$premtype);
 summary(SQFdata_modif$aptnum);summary(SQFdata_modif$timestop)
@@ -109,7 +109,7 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# EliminaciÛn de factores con m·s de 53 niveles. 4 variables eliminadas.
+# Eliminaci√≥n de factores con m√°s de 53 niveles. 4 variables eliminadas.
 length(levels(SQFdata_modif$pct));length(levels(SQFdata_modif$crimsusp));
 length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
 
@@ -118,7 +118,7 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# EliminaciÛn de variables con poca varianza. 6 variables eliminadas.
+# Eliminaci√≥n de variables con poca varianza. 6 variables eliminadas.
 summary(SQFdata_modif$year);summary(SQFdata_modif$datestop);
 summary(SQFdata_modif$compyear);summary(SQFdata_modif$comppct);
 summary(SQFdata_modif$lineCM);summary(SQFdata_modif$dob)
@@ -128,7 +128,7 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# EliminaciÛn de m·s variables con poca varianza. 1 variable eliminada.
+# Eliminaci√≥n de m√°s variables con poca varianza. 1 variable eliminada.
 
 # Se analiza el atributo y en caso de que no sea un factor, se devuelve valor
 # 2 para que no sea eliminado.
@@ -143,7 +143,7 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# EliminaciÛn de coordenadas:
+# Eliminaci√≥n de coordenadas:
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(xcoord, ycoord))
 
@@ -156,16 +156,16 @@ summary(SQFdata_modif$repcmd)
 
 
 
-# N˙mero de variables final
+# N√∫mero de variables final
 dim(SQFdata)
 dim(SQFdata_modif)
 ```
 
-### EliminaciÛn de NAs
+### Eliminaci√≥n de NAs
 
 ```{r}
 
-# EliminaciÛn de NAs en variable age
+# Eliminaci√≥n de NAs en variable age
 SQFdata_modif %>% group_by(is.na(age)) %>%
     summarise(n())
 
@@ -178,7 +178,7 @@ dim(SQFdata_modif)
 
 # Variables NO eliminadas
 
-# ModificaciÛn de variables no eliminadas
+# Modificaci√≥n de variables no eliminadas
 
 # USO DE ARMAS
 summary(SQFdata_modif$pistol);summary(SQFdata_modif$knifcuti);summary(SQFdata_modif$othrweap);
@@ -187,7 +187,7 @@ SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
 SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
 SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
 
-# USO DE FUERZA FÕSICA
+# USO DE FUERZA F√çSICA
 summary(SQFdata_modif$pf_hands);summary(SQFdata_modif$pf_wall);summary(SQFdata_modif$pf_grnd);
 summary(SQFdata_modif$pf_drwep);summary(SQFdata_modif$pf_ptwep);summary(SQFdata_modif$pf_hcuff);
 summary(SQFdata_modif$pf_other);
@@ -310,27 +310,27 @@ SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
 SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
 
 
-# A—ADIR EXPLICACI”N CON PAQUETE MissingDataGUI?
+# A√ëADIR EXPLICACI√ìN CON PAQUETE MissingDataGUI?
 
-# ComprobaciÛn de NAs
+# Comprobaci√≥n de NAs
 sum(is.na(SQFdata))
 sum(is.na(SQFdata_modif))
 ```
 
-## EliminaciÛn de variables con varianza nula
+## Eliminaci√≥n de variables con varianza nula
 
 ```{r}
-# Con nearZeroVar se eliminan m·s variables
+# Con nearZeroVar se eliminan m√°s variables
 SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
 
 dim(SQFdata)
 dim(SQFdata_modif)
 ```
 
-## DivisiÛn de muestra en train/test
+## Divisi√≥n de muestra en train/test
 
 ```{r}
-# CreaciÛn de conjuntos train y test
+# Creaci√≥n de conjuntos train y test
 tot_obs <- dim(SQFdata_modif)[1]
 indices <- 1:tot_obs
 
@@ -351,7 +351,7 @@ SQFdataTrain %>% group_by(arstmade) %>%
 
 ```{r}
 # Total de casos -> 4799 (si) + 27103 (no) = 31902
-# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberÌan ser 4847 casos
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deber√≠an ser 4847 casos
 training.yes <- SQFdataTrain %>% filter(arstmade == 'Y')
 training.no <- SQFdataTrain %>% filter(arstmade == 'N')
 
@@ -366,14 +366,14 @@ SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
     mutate(percent = 100*count/sum(count))
 ```
 
-## RegresiÛn logÌstica: arstmade
-Para encontrar los determinantes de que una persona parada sea arrestada o no, utilizamos los modelos lineales generalizados, y dado que la variable respuesta, toma valores N (no fueron arrestados) o Y (sÌ fueron arrestados), utilizamos la funciÛn de enlace logit. Este modelo es de la familia binomial 
-HipÛtesis
-1.	Los casos son independientes entre sÌ.
-2.	La probabilidad de Èxito es la misma para todos los casos que tienen los mismos valores de los regresores.
+## Regresi√≥n log√≠stica: arstmade
+Para encontrar los determinantes de que una persona parada sea arrestada o no, utilizamos los modelos lineales generalizados, y dado que la variable respuesta, toma valores N (no fueron arrestados) o Y (s√≠ fueron arrestados), utilizamos la funci√≥n de enlace logit. Este modelo es de la familia binomial 
+Hip√≥tesis
+1.	Los casos son independientes entre s√≠.
+2.	La probabilidad de √©xito es la misma para todos los casos que tienen los mismos valores de los regresores.
 
 
-### CreaciÛn de modelos vacÌo y completo
+### Creaci√≥n de modelos vac√≠o y completo
 
 ```{r}
 # CREACION DE MODELO VACIO
@@ -390,7 +390,7 @@ summary(model_glm_DSAMP)
 
 ```
 
-### SelecciÛn de modelos mediante stepwise
+### Selecci√≥n de modelos mediante stepwise
 
 ```{r}
 # STEPWISE MODELO DOWN-SAMPLING
@@ -403,10 +403,10 @@ summary(model_glm_DSAMP_Forw)
 ```
 
 
-### SelecciÛn del modelo
+### Selecci√≥n del modelo
 
 ### Prueba Likelihood ratio
-Dado que la hipÛtesis nula sostiene que el modelo reducido es el mejor, un valor del p-value para el modelo estadÌstico mayor que 0,05 nos obliga a aceptar la hipÛtesis nula, es decir, proporciona evidencia a favor del modelo reducido. Adem·s se puede verificar, seg˙n el criterio AIC, el modelo balanceado y construido en base a stepwise es el mejor. 
+Dado que la hip√≥tesis nula sostiene que el modelo reducido es el mejor, un valor del p-value para el modelo estad√≠stico mayor que 0,05 nos obliga a aceptar la hip√≥tesis nula, es decir, proporciona evidencia a favor del modelo reducido. Adem√°s se puede verificar, seg√∫n el criterio AIC, el modelo balanceado y construido en base a stepwise es el mejor. 
 
 ```{r, warming = FALSE, message=FALSE}
 
@@ -415,17 +415,17 @@ c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic)
 
 ```
 
-### EvaluaciÛn de los par·metros del modelo seleccionado
-Como la respuesta es binaria, la funciÛn de salida es la probabilidad condicionada de que la respuesta sea un acierto dado los valores de los predictores. Los betas estimados son los log- odds, donde la probabilidad (odds) de que el suceso ocurra se da como la probabilidad de acierto dividido por la probabilidad de fallo.
-En cuanto a la interpretaciÛn de los par·metros estimados del modelo *model_glm_DSAMP_Forw*, el signo de los mismos indica que ese predictor aumenta o disminuye la probabilidad de que una persona sea arrestada y para evaluar la magnitud de la variaciÛn se calculÛ el exponencial de cada beta. AsÌ se puede determinar por ejemplo: si aumenta  una unidad en la edad, la probabilidad de ser arrestado  se incrementa en un factor de 1,01
+### Evaluaci√≥n de los par√°metros del modelo seleccionado
+Como la respuesta es binaria, la funci√≥n de salida es la probabilidad condicionada de que la respuesta sea un acierto dado los valores de los predictores. Los betas estimados son los log- odds, donde la probabilidad (odds) de que el suceso ocurra se da como la probabilidad de acierto dividido por la probabilidad de fallo.
+En cuanto a la interpretaci√≥n de los par√°metros estimados del modelo *model_glm_DSAMP_Forw*, el signo de los mismos indica que ese predictor aumenta o disminuye la probabilidad de que una persona sea arrestada y para evaluar la magnitud de la variaci√≥n se calcul√≥ el exponencial de cada beta. As√≠ se puede determinar por ejemplo: si aumenta  una unidad en la edad, la probabilidad de ser arrestado  se incrementa en un factor de 1,01
 
 ```{r}
 round(exp(cbind(Estimate=coef(model_glm_DSAMP_Forw),
-                confint(model_glm_DSAMP_Forw, level = 0.95))), 2)
+                confint(model_glm_DSAMP_Forw))), 2)
 ```
 
 ### Pseudo R^2
-Evaluamos el R cuadrado de McFadden mientras m·s cercano a uno indica que el modelo tiene poder predictivo, es este caso el valor es de 0.587.
+Evaluamos el R cuadrado de McFadden mientras m√°s cercano a uno indica que el modelo tiene poder predictivo, es este caso el valor es de 0.587.
 ```{r, warming = FALSE}
 library(pscl)
 pR2(model_glm_DSAMP_Forw)
@@ -433,9 +433,9 @@ pR2(model_glm_DSAMP_Forw)
 ```
 
 ### Importancia de la variable
-Si bien el mÈtodo stepwise selecciona el modelo por criterio AIC, es necesario verificar si al eliminar una variable que no es significativa afecta mucho al modelo, en este caso se valora la opciÛn de eliminar la variable *haircolr*, dado que seg˙n el estadÌstico de Wald a un nivel de significancia de *0.05*, est· en el umbral de no rechazar la hipÛtesis nula de que el coeficiente de una variable independiente en el modelo no es significativamente diferente de cero. Se eval˙a un nuevo modelo eliminando esta variable y a priori observando el criterio AIC, no causa un gran efecto en el modelo. Esto se comprueba al analizar tabla *anova* en la que se demuestra que no hay suficiente evidencia para rechazar Ho. 
+Si bien el m√©todo stepwise selecciona el modelo por criterio AIC, es necesario verificar si al eliminar una variable que no es significativa afecta mucho al modelo, en este caso se valora la opci√≥n de eliminar la variable *haircolr*, dado que seg√∫n el estad√≠stico de Wald a un nivel de significancia de *0.05*, est√° en el umbral de no rechazar la hip√≥tesis nula de que el coeficiente de una variable independiente en el modelo no es significativamente diferente de cero. Se eval√∫a un nuevo modelo eliminando esta variable y a priori observando el criterio AIC, no causa un gran efecto en el modelo. Esto se comprueba al analizar tabla *anova* en la que se demuestra que no hay suficiente evidencia para rechazar Ho. 
 
-El an·lisis se repite para la variable *race*, dado que es un factor, a priori, relacionado con la controversia que ampara esta ley. DespuÈs de evaluar los estadÌsticos vemos que hay suficiente evidencia para considerar importante la variable dentro del modelo.
+El an√°lisis se repite para la variable *race*, dado que es un factor, a priori, relacionado con la controversia que ampara esta ley. Despu√©s de evaluar los estad√≠sticos vemos que hay suficiente evidencia para considerar importante la variable dentro del modelo.
 
 ```{r, warming = FALSE}
 #varImp(model_glm_DSAMP_Forw)
@@ -458,8 +458,8 @@ c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic, model_glm_DSAMP_hair_back$aic, 
 anova(model_glm_DSAMP_race_back, model_glm_DSAMP_Forw,  test="Chisq")
 ```
 
-### ValidaciÛn cruzada
-Dado que nuestro objetivo es construir un modelo de predicciÛn, la mÈtrica m·s importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificaciÛn donde se cruza el verdadero valor de la observaciÛn, con la predicciÛn de la misma seg˙n el modelo seleccionado, tomando como referencia una preddicciÛn mayor a 0.5. Como resultado se obtiene que el modelo predijo con exactitud 1671 personas paradas que fueron arrestadas, de un total de 2091 lo que representa un **sensitivity** de 0.7991, en cuanto a la predicciÛn de los que no fueron arrestados **specificity** corresponde a un acierto de 0.8607
+### Validaci√≥n cruzada
+Dado que nuestro objetivo es construir un modelo de predicci√≥n, la m√©trica m√°s importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificaci√≥n donde se cruza el verdadero valor de la observaci√≥n, con la predicci√≥n de la misma seg√∫n el modelo seleccionado, tomando como referencia una preddicci√≥n mayor a 0.5. Como resultado se obtiene que el modelo predijo con exactitud 1671 personas paradas que fueron arrestadas, de un total de 2091 lo que representa un **sensitivity** de 0.7991, en cuanto a la predicci√≥n de los que no fueron arrestados **specificity** corresponde a un acierto de 0.8607
 
 
 ```{r}
@@ -483,7 +483,7 @@ eval_DSAMP_hair_back <- c(cM_DSAMP_hair_back$byClass[7],
 ```
 
 #### Curva ROC
-La curva ROC es un gr·fico que muestra la relaciÛn entre los datos que se predicen correctamente con la tasa de los datos negativos que se consideran errÛneamente como positivos. Esta mÈtrica ofrece un mejor resumen de la capacidad predictiva que una tabla de clasificaciÛn, porque presenta la potencia predictiva para todos los posibles valores sin establecer una referencia arbitraria, permitiendo asÌ evaluar el rendimiento del clasificador. El ·rea bajo la curva ROC para los datos de testeo es de 0.8977 lo que indica que el modelo discrimina adecuadamente a los arrestados y no arrestados.
+La curva ROC es un gr√°fico que muestra la relaci√≥n entre los datos que se predicen correctamente con la tasa de los datos negativos que se consideran err√≥neamente como positivos. Esta m√©trica ofrece un mejor resumen de la capacidad predictiva que una tabla de clasificaci√≥n, porque presenta la potencia predictiva para todos los posibles valores sin establecer una referencia arbitraria, permitiendo as√≠ evaluar el rendimiento del clasificador. El √°rea bajo la curva ROC para los datos de testeo es de 0.8977 lo que indica que el modelo discrimina adecuadamente a los arrestados y no arrestados.
 ```{r, warming = FALSE, message=FALSE}
 library(ROCR)
 
@@ -501,9 +501,9 @@ auc_test
 
 # Conclusiones
 
-En los modelos estadÌsticos analizados, en principio se determina que la variable "race" que corresponde a la raza de las personas paradas  resulta significativa en la probabilidad de que sean arrestados, sin embargo, resultarÌa interesante verificar si efectivamente este es un factor determinante para que una persona sea parada o no, es decir, verificar la hipÛtesis de que esta ley es un "polÌtica de discriminaciÛn racial indirecta".  
+En los modelos estad√≠sticos analizados, en principio se determina que la variable "race" que corresponde a la raza de las personas paradas  resulta significativa en la probabilidad de que sean arrestados, sin embargo, resultar√≠a interesante verificar si efectivamente este es un factor determinante para que una persona sea parada o no, es decir, verificar la hip√≥tesis de que esta ley es un "pol√≠tica de discriminaci√≥n racial indirecta".  
 
-Seg˙n las estadÌsticas presentadas por el Departamento de PolicÌa (NYPD), en el aÒo 2016,  Nueva York ha experimentado una reducciÛn en todas las categorÌas de delitos. Adem·s, de la reducciÛn de uso de la tÈcnica de "Stop and Frisk". Ante estos resultados, resulta interesante conocer el impacto que tiene esta ley en las estadÌsticas de delincuencia.
+Seg√∫n las estad√≠sticas presentadas por el Departamento de Polic√≠a (NYPD), en el a√±o 2016,  Nueva York ha experimentado una reducci√≥n en todas las categor√≠as de delitos. Adem√°s, de la reducci√≥n de uso de la t√©cnica de "Stop and Frisk". Ante estos resultados, resulta interesante conocer el impacto que tiene esta ley en las estad√≠sticas de delincuencia.
 
 
 
