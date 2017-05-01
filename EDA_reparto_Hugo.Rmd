@@ -1,0 +1,439 @@
+---
+title: "EDA"
+author: "Jorge Navarro Garcia"
+date: "13 de marzo de 2017"
+output: html_document
+---
+
+##HUGO
+```{r sex-perstop}
+SQFdata %>% group_by(sex) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r sex-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(sex)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sex,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sex)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+
+```{r sex-arstmade}
+SQFdata %>% group_by(sex, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# weight
+# Weight in pounds
+```{r weight-perstop}
+SQFdata %>% group_by(weight) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r weight-plot, fig.height=5, fig.width=15}
+
+p1 = ggplot(data = SQFdata, aes(weight)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(weight,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(weight)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r weight-arstmade}
+SQFdata %>% group_by(weight, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+# haircolr
+# 
+```{r haircolr-perstop}
+SQFdata %>% group_by(haircolr) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r haircolr-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(haircolr,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+```
+```{r haircolr-arstmade}
+SQFdata %>% group_by(haircolr, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# riflshot
+```{r riflshot-perstop}
+SQFdata %>% group_by(riflshot) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r riflshot-plot, fig.height=5, fig.width=15}
+
+p1 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(riflshot,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r riflshot-arstmade}
+SQFdata %>% group_by(riflshot, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+# sumissue
+# Was summons issued?
+
+```{r sumissue-perstop}
+SQFdata %>% group_by(sumissue) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r sumissue-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sumissue,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+```
+```{r sumissue-arstmade}
+SQFdata %>% group_by(sumissue, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# pf_hands
+```{r pf_hands-perstop}
+SQFdata %>% group_by(pf_hands) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r pf_hands-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_hands,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r pf_hands-arstmade}
+SQFdata %>% group_by(pf_hands, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# pf_wall
+```{r pf_wall-perstop}
+SQFdata %>% group_by(pf_wall) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r pf_wall-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_wall,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r pf_wall-arstmade}
+SQFdata %>% group_by(pf_wall, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# pf_other
+```{r pf_other-perstop}
+SQFdata %>% group_by(pf_other) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r pf_other-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_other,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r pf_other-arstmade}
+SQFdata %>% group_by(pf_other, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# cs_objcs
+```{r cs_objcs-perstop}
+SQFdata %>% group_by(cs_objcs) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r cs_objcs-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_objcs,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r cs_objcs-arstmade}
+SQFdata %>% group_by(cs_objcs, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# cs_bulge
+```{r cs_bulge-perstop}
+SQFdata %>% group_by(cs_bulge) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r cs_bulge-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_bulge,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r cs_bulge-arstmade}
+SQFdata %>% group_by(cs_bulge, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# rf_vcrim
+```{r rf_vcrim-perstop}
+SQFdata %>% group_by(rf_vcrim) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r rf_vcrim-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_vcrim,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r rf_vcrim-arstmade}
+SQFdata %>% group_by(rf_vcrim, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# rf_knowl
+```{r rf_knowl-perstop}
+SQFdata %>% group_by(rf_knowl) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r rf_knowl-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_knowl,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r rf_knowl-arstmade}
+SQFdata %>% group_by(rf_knowl, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# rf_furt
+```{r rf_furt-perstop}
+SQFdata %>% group_by(rf_furt) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r rf_furt-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_furt,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r rf_furt-arstmade}
+SQFdata %>% group_by(rf_furt, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# ac_evasv
+```{r ac_evasv-perstop}
+SQFdata %>% group_by(ac_evasv) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r ac_evasv-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_evasv,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r ac_evasv-arstmade}
+SQFdata %>% group_by(ac_evasv, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# ac_assoc
+```{r ac_assoc-perstop}
+SQFdata %>% group_by(ac_assoc) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r ac_assoc-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_assoc,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r ac_assoc-arstmade}
+SQFdata %>% group_by(ac_assoc, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# ac_inves
+```{r ac_inves-perstop}
+SQFdata %>% group_by(ac_inves) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r ac_inves-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_inves,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r ac_inves-arstmade}
+SQFdata %>% group_by(ac_inves, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# stname
+# String -> location of stop street name -> Es interesante?
+```{r stname-perstop}
+SQFdata %>% group_by(stname) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r stname-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(stname)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(stname,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(stname)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+```
+```{r stname-arstmade}
+SQFdata %>% group_by(stname, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# offunif
+```{r offunif-perstop}
+SQFdata %>% group_by(offunif) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r offunif-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(offunif)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offunif,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offunif)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+
+```
+```{r offunif-arstmade}
+SQFdata %>% group_by(offunif, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# offverb
+# verbal statement provided by officer (if not in uniform) -> Limpiar datos
+```{r offverb-perstop}
+SQFdata %>% group_by(offverb) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r offverb-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(offverb)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offverb,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offverb)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r offverb-arstmade}
+SQFdata %>% group_by(offverb, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# officrid
+# id card provided by officer (if not in uniform) -> Limpiar datos
+```{r officrid-perstop}
+SQFdata %>% group_by(officrid) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r officrid-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(officrid)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(officrid,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(officrid)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r officrid-arstmade}
+SQFdata %>% group_by(officrid, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# offshld
+# shield provided by officer (if not in uniform) -> Limpiar datos
+```{r offshld-perstop}
+SQFdata %>% group_by(offshld) %>%
+        summarise(n=n(),
+                  perStop_media= round(mean(perstop),2),
+                  perStop_mediana= round(median(perstop),2)) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+```{r offshld-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(offshld)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offshld,perstop)) + geom_boxplot()
+p3 = ggplot(data = SQFdata, aes(offshld)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,p3,cols=2)
+```
+```{r offshld-arstmade}
+SQFdata %>% group_by(offshld, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
