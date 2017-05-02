@@ -1,0 +1,19 @@
+---
+title: "Problematica"
+author: "Jorge Navarro Garcia"
+date: "29 de abril de 2017"
+output: pdf_document
+---
+
+# Descripción del problema
+
+## Introducción
+
+El programa ***[Stop and frisk](https://en.wikipedia.org/wiki/Stop-and-frisk_in_New_York_City)*** de la ciudad de Nueva York consiste en la práctica de detenciones temporales, interrogatorios e incluso cacheos a ciudadanos en busca de armas o cualquier tipo de contrabando. Los motivos en los cuales la policía puede ampararse para llevar a cabo estas prácticas se encuentran dentro de la ley criminal estadounidense.
+
+La mayoría de detenciones producidas se centran en la población afroamericana y latina de la ciudad de edades comprendidas entre los 15 y los 25 años, lo cual ha generado gran controversia en torno a dicha ley. También contribuye al rechazo generado por la ley determinados **[estudios](https://www.washingtonpost.com/politics/2016/live-updates/general-election/real-time-fact-checking-and-analysis-of-the-first-presidential-debate/fact-check-trump-on-crime-statistics-and-stop-and-frisk/?utm_term=.52808601905f)** que demuestran que no existe relación entre el número de detenidos y la tasa de criminalidad de la ciudad. 
+
+El departamento de policía de NY facilita de forma periódica **[datos](https://www.nyclu.org/en/stop-and-frisk-data)** sobre las detenciones realizadas en la ciudad. 9 de cada 10 personas detenidas son inocentes y aunque el número de detenciones se ha visto reducido considerablemente, pasando en 2011 de 685,724 detenciones a 22,939 en 2015, las proporciones según la etnia de las personas detenidas se han mantenido constantes.
+
+Se generan distintos modelos a lo largo del trabajo para poder determinar la necesidad o no de arrestar a las personas detenidas.
+
