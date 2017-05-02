@@ -1,0 +1,538 @@
+---
+title: "Untitled"
+author: "Nahaly_Cardenas"
+date: "16 de marzo de 2017"
+output: html_document
+---
+
+## Problemática
+
+
+
+## Hipóteis inicial
+Se plantea como hipótesis la  demanda publicada en New York Liberty Civils <https://www.nyclu.org/en/stop-and-frisk-data> , es decir verificar si la ley Stop-Frisk está siendo aplicada bajo conceptos de discriminación.  El análisis inicial se fundamentó en el tiempo de observación, sin embargo se desechó la posibilidad, dado que no se tiene registro de personas observadas que no fueron paradas.
+
+
+## Pregunta 1
+Cuáles son los factores que determinan el tiempo de parada `perstop`, interesa verificar si está influenciado por características discriminatorias.
+
+```{r, message=FALSE}
+# Carga de librerías
+library(dplyr)
+library(ggplot2)
+library(PASWR2)
+library("dataQualityR")
+library(mixtools)
+library(fitdistrplus)
+```
+
+```{r, message=FALSE}
+# Carga del Dataset
+#SQFdata <- read.csv("2014.csv")
+# buscar attach???? o similar
+if(!exists("foo", mode="function")) source("Cleaning_Data.R")
+```
+
+# 0. SELECCION DE VARIABLES (para este informe):
+```{r}
+SQFdata <- dplyr::select(SQFdata,
+                  perstop,
+                  perobs,
+                  arstmade,
+                  pct,
+                  ser_num,
+                  city,
+                  searched,
+                  pistol,
+                  pf_hcuff,
+                  pf_pepsp,
+                  cs_drgtr,
+                  cs_furtv,
+                  cs_vcrim,
+                  rf_rfcmp,
+                  rf_verbl,
+                  sb_other,
+                  ac_proxm,
+                  ac_rept,
+                  inout,
+                  trhsloc,
+                  addrpct,
+                  repcmd,
+                  revcmd
+                  )
+```
+
+```{r}
+str(SQFdata)
+```
+
+# 1. DATA QUALITY REPORT
+```{r}
+drq.num <- paste("./dqr_num.csv", sep = "")
+drq.cat <- paste("./dqr_cat.csv", sep = "")
+checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
+DQR.num <- read.csv("dqr_num.csv")
+DQR.cat <- read.csv("dqr_cat.csv")
+```
+
+
+# 2. ANÁLISIS EXPLORATORIO VARIABLES
+
+## VARIABLE DEPENDIENTE
+## Tiempo de parada (perstop)
+```{r, fig.height=5, fig.width=15}
+#hist(SQFdata$perstop, breaks = 20,  prob=F, xlim=c(0,87))
+plotdist(SQFdata$perstop , histo = TRUE, demp = TRUE)
+
+stop <- SQFdata$perstop
+mixmdl <- normalmixEM(stop, k=2)
+plot(mixmdl,which=2)
+lines(density(stop), lty=2, lwd=2)
+```
+## VARIABLES INDEPENDIENTES
+
+## Tiempo de observación (perobs)
+```{r, fig.height=5, fig.width=15}
+obs <- SQFdata$perobs
+SQFdata %>% filter(perobs<150) %>%
+        ggplot(aes(perobs, perstop)) +
+        geom_point() +
+        labs(x="Período de observación ", y="Período de parada") +
+        geom_smooth(method = 'lm') +
+        scale_size_area() +
+        ggtitle("Relación entre tiempo de observación y parada")
+```
+
+```{r, fig.height=5, fig.width=15}
+cor(obs, stop)
+```
+
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% 
+        group_by(arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% filter(perobs<150)%>% 
+        ggplot(aes(arstmade, log(perobs))) +
+        geom_boxplot()
+        ggtitle("Relación entre tiempo de observación y parada")
+```
+
+## Condados (city)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(city) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(city)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(city)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+
+```{r}
+SQFdata %>% group_by(arstmade,city) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+
+## Registrado (searched)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(searched) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(searched)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(searched)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(arstmade,searched) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## Pistola (pistol)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(pistol) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pistol)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pistol)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(pistol, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## El oficial usa fuerza física - esposas (pf_hcuff)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(pf_hcuff) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_hcuff)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_hcuff)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(arstmade, pf_hcuff) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## El oficial usa fuerza física - spray pimienta (pf_pepsp)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(pf_pepsp) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_pepsp)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_pepsp)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(pf_pepsp, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## Razón para la parada - acciones indicaban transacción de drogas (cs_drgtr)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(cs_drgtr) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_drgtr)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_drgtr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(cs_drgtr, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+
+## Razón para la parada - movimientos sospechosos (cs_furtv)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by( cs_furtv) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_furtv)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_furtv)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+
+```{r}
+SQFdata %>% group_by(cs_furtv, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+
+## Razón para la parada - acciones que indican estar involucrado en un crimen violento (cs_vcrim)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(cs_vcrim) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_vcrim)) + geom_bar() + ylab("Frecuencia")
+p3 = ggplot(data = SQFdata, aes(cs_vcrim)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+
+```{r}
+SQFdata %>% group_by(cs_vcrim, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## Razón para la parada - rehusarse a cumplir con las instrucciones del oficial (rf_rfcmp)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(rf_rfcmp) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_rfcmp)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_rfcmp)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(rf_rfcmp, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## Razón para la parada - amenazas verbales por parte del sospechoso (rf_verbl)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(rf_verbl) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_verbl)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_verbl)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(rf_verbl, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## Razón de busqueda - otros (sb_other)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(sb_other) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(sb_other)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sb_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(sb_other, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## Circunstancias adicionales - proximidad a la escena del delito (ac_proxm)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by( ac_proxm) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_proxm)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_proxm)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(ac_proxm, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## Circunstancias adicionales - informe de la víctima / testigo / oficial (ac_rept)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(ac_rept) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_rept)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_rept)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(ac_rept, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+## Fue parado dentro o fuera (inout)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(inout) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(inout)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(inout)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(inout, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+
+## Fue ubicado por la autoridad tránsito o local (trhsloc)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(trhsloc) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(trhsloc)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(trhsloc)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(trhsloc, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+
+## Recinto donde se realizó la parada (pct)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(pct) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))%>%
+        arrange(desc(n))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pct)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pct)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% filter(city=="BRONX" & arstmade=="Y")%>%
+        group_by(pct) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))%>%
+        arrange(desc(n))
+```
+
+## Dirección del recinto donde se realizó la parada (addrpct)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(addrpct) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))%>%
+        arrange(desc(n))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(addrpct)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(addrpct)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% filter(city=="BRONX" & arstmade=="Y")%>%
+        group_by(addrpct) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))%>%
+        arrange(desc(n))
+```
+
+## Comando del oficial que hace el informe  (repcmd)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by( repcmd) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))%>%
+        arrange(desc(n))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(repcmd)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(repcmd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% filter(city=="MANHATTAN" & arstmade=="Y")%>%
+        group_by( repcmd) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))%>%
+        arrange(desc(n))
+```
+
+## Comando del oficial que revisa  (revcmd)
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(revcmd) %>%
+        summarise(n=n()) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(revcmd)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(revcmd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+
+```{r}
+SQFdata %>% group_by(revcmd, arstmade) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+# Análisis
+La mayor frecuencia de paradas fueron en los condados: Brooklyn (29.2%) y Queens (29.12%), el menor número en Staten Island (10,92%), sin embargo  en relación a la población es el condado con mayor número de paradas.
+
+De las 45.787 paradas registradas en 2014, el  15% concluyeron en arrestos, de estos el 29%  fueron en Manhattan, principalmente en los recintos: 25, 9 y 23. En Bronx el 25.08% principalmente en los recintos 40, 42 y 44. El comando oficial que más informes realiza es el 826 ubicado en Bronx.
+
+Solo el 15.91% de personas paradas fueron registradas por el oficial de policía y  más de la mitad fueron arrestadas  (53.81%). 
+Un porcentaje bajo de los parados estuvo en posesión de un arma de fuego (0.43%) pero de estos la mayoría fueron arrestados (87.82%), caso contrario sucede con los que no tenían una pistola. Es importante resaltar que a diferencia de las demás variables el tiempo medio de parada es más alto cuando no tienen una pistola 43.75 minutos. 
+
+Las paradas realizadas en el interior de alguna construcción son más probables que terminen en un arresto que las realizadas fuera, 35.43% y 10.45%  respectivamente. Cabe mencionar que más del 80% de paradas son realizadas fuera.
+El oficial necesita recurrir a algún tipo de fuerza física como uso de esposas en 10 de cada 100 casos, de las cuales son arrestadas el 50%. El gas pimienta fue usado en tan solo  el 0.02% pero de estos el 63.64% fueron detenidos.
+
+El 39.15% fueron parados por que el oficial detectó movimientos sospechosos, sin embargo, un bajo porcentaje fueron arrestados (14.29%), algo muy parecido sucede cuando la persona se rehusa a cumplir las instrucciones del oficial o cuando amenza verbalmente, lo que a priori, puede significar que no son razones tan relevantes para parar a una persona. Es importante resaltar que cuando la parada se efectúa bajo la sospecha que el individuo ha participado en un crimen violento tan solo el 10% son arrestados, esto da indicios que los parámetros bajo los que se determina esta sospecha no son efectivas. Otras razones para efectuar la parada como la sospecha de que el individuo estaba comercializando drogas (7.64%) da cuenta que puede ser un factor un tanto más relevante que los anteriores ya que aumenta la detención al 24.76%.
+
+Las paradas efectuadas en circunstancias como: la declaración de una víctima o la proximidad a la escena de un delito no superan el 30% y del total de estos el 17% son arrestados.
+
+
