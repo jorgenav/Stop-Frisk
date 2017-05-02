@@ -7,6 +7,7 @@ output: pdf_document
 
 ```{r, message=FALSE}
 # Carga de librer铆as
+# Carga de librer韆s
 library(magrittr)
 library(dplyr)
 library(car)
@@ -17,6 +18,9 @@ library(dataQualityR)
 library(DMwR)
 library(foreach)
 library(class)
+library(doMC)
+registerDoMC(4)
+
 ```
 
 # Creaci贸n de modelos predictivos
@@ -48,15 +52,14 @@ DQR.cat <- read.csv("dqr_cat.csv")
 ### Eliminaci贸n de variables
 
 ```{r}
-
-# Eliminaci贸n de variables con m谩s de 60% de datos faltantes.
+# Eliminaci髇 de variables con m醩 de 60% de datos faltantes.
 SQFdata_modif <- SQFdata %>%
                     select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
                                        forceuse, othfeatr, addrnum, stname, beat, post))
 
 
 
-# Eliminaci贸n de variables con 20% de NAs pero nula varianza (casos pertenecientes
+# Eliminaci髇 de variables con 20% de NAs pero nula varianza (casos pertenecientes
 # todos a una misma clase). 6 variables eliminadas
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(adtlrept, riflshot, asltweap, machgun,
@@ -64,19 +67,19 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# Eliminaci贸n de variables con demasiados niveles (strings). 4 variables eliminadas
+# Eliminaci髇 de variables con demasiados niveles (strings). 4 variables eliminadas
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(premname, stinter, crossst, sector))
 
 
 
-# Eliminaci贸n de variables que no aparecen en el checkDataQuality. 7 variables eliminadas.
+# Eliminaci髇 de variables que no aparecen en el checkDataQuality. 7 variables eliminadas.
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(state,zip,addrtyp,rescode,premtype,aptnum,timestop))
 
 
 
-# Eliminaci贸n de factores con m谩s de 53 niveles. 4 variables eliminadas.
+# Eliminaci髇 de factores con m醩 de 53 niveles. 4 variables eliminadas.
 length(levels(SQFdata_modif$pct));length(levels(SQFdata_modif$crimsusp));
 length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
 
@@ -85,13 +88,13 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# Eliminaci贸n de variables con poca varianza. 6 variables eliminadas.
+# Eliminaci髇 de variables con poca varianza. 6 variables eliminadas.
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(year,datestop,compyear,comppct, lineCM, dob))
 
 
 
-# Eliminaci贸n de m谩s variables con poca varianza. 1 variable eliminada.
+# Eliminaci髇 de m醩 variables con poca varianza. 1 variable eliminada.
 
 # Se analiza el atributo y en caso de que no sea un factor, se devuelve valor
 # 2 para que no sea eliminado.
@@ -104,12 +107,7 @@ names(SQFdata_modif)[which(sapply(SQFdata_modif, fun_2level) < 2)]
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(which(sapply(SQFdata_modif, fun_2level) < 2)))
 
-# Con nearZeroVar se eliminan m谩s variables
-# SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
-
-
-
-# Eliminaci贸n de coordenadas:
+# Eliminaci髇 de coordenadas:
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(xcoord, ycoord))
 
@@ -118,18 +116,17 @@ SQFdata_modif <- SQFdata_modif %>%
 ### Eliminaci贸n de NAs
 
 ```{r}
-
-# Eliminaci贸n de NAs en variable age
+# Eliminaci髇 de NAs en variable age
 SQFdata_modif %>% group_by(is.na(age)) %>%
     summarise(n())
 
 SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
 
-# Modificaci贸n de variables no eliminadas
 SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
 SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
 SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
 
+# USO DE FUERZA F蚐ICA
 SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
 SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
 SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
@@ -138,41 +135,99 @@ SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
 SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
 SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
 
+# CIRCUNSTANCIAS ADICIONALES
 SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
 SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
+SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
+SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
+SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
+SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
+SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
+SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
+SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+
+SQFdata_modif %>% filter(is.na(cs_objcs)) %>%
+    summarise(count_rf_vcrim  = sum(rf_vcrim == "Y", na.rm = TRUE),
+            count_rf_othsw  = sum(rf_othsw == "Y", na.rm = TRUE),
+            count_rf_attir  = sum(rf_attir == "Y", na.rm = TRUE),
+            count_rf_vcact  = sum(rf_vcact == "Y", na.rm = TRUE),
+            count_rf_rfcmp  = sum(rf_rfcmp == "Y", na.rm = TRUE),
+            count_rf_furt  = sum(rf_furt == "Y", na.rm = TRUE),
+            count_rf_bulg  = sum(rf_bulg == "Y", na.rm = TRUE),
+            count_rf_verbl  = sum(rf_verbl == "Y", na.rm = TRUE),
+            count_rf_knowl = sum(rf_knowl == "Y", na.rm = TRUE),
+            tot = n()) %>%
+    mutate(percent_rf_vcrim = 100*count_rf_vcrim/tot,
+           percent_rf_othsw = 100*count_rf_othsw/tot,
+           percent_rf_attir = 100*count_rf_attir/tot,
+           percent_rf_vcact = 100*count_rf_vcact/tot,
+           percent_rf_rfcmp = 100*count_rf_rfcmp/tot,
+           percent_rf_furt = 100*count_rf_furt/tot,
+           percent_rf_bulg = 100*count_rf_bulg/tot,
+           percent_rf_verbl = 100*count_rf_verbl/tot,
+           percent_rf_knowl = 100*count_rf_knowl/tot)
+
 SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
 SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
-SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
 SQFdata_modif$rf_attir[which(is.na(SQFdata_modif$rf_attir))] <- 'N'
+SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
+SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
+SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
+SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
+
+SQFdata_modif %>% filter(is.na(cs_objcs)) %>%
+    summarise(count_cs_descr = sum(cs_descr == "Y", na.rm = TRUE),
+              count_cs_casng = sum(cs_casng == "Y", na.rm = TRUE),
+              count_cs_lkout = sum(cs_lkout == "Y", na.rm = TRUE),
+              count_cs_cloth = sum(cs_cloth == "Y", na.rm = TRUE),
+              count_cs_drgtr = sum(cs_drgtr == "Y", na.rm = TRUE),
+              count_cs_furtv = sum(cs_furtv == "Y", na.rm = TRUE),
+              count_cs_vcrim = sum(cs_vcrim == "Y", na.rm = TRUE),
+              count_cs_bulge = sum(cs_bulge == "Y", na.rm = TRUE),
+              count_cs_other = sum(cs_other == "Y", na.rm = TRUE),
+              tot = n()) %>%
+    mutate(percent_cs_descr = 100*count_cs_descr/tot,
+           percent_cs_casng = 100*count_cs_casng/tot,
+           percent_cs_lkout = 100*count_cs_lkout/tot,
+           percent_cs_cloth = 100*count_cs_cloth/tot,
+           percent_cs_drgtr = 100*count_cs_drgtr/tot,
+           percent_cs_furtv = 100*count_cs_furtv/tot,
+           percent_cs_vcrim = 100*count_cs_vcrim/tot,
+           percent_cs_bulge = 100*count_cs_bulge/tot,
+           percent_cs_other = 100*count_cs_other/tot)
+
 SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
 SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
 SQFdata_modif$cs_casng[which(is.na(SQFdata_modif$cs_casng))] <- 'N'
 SQFdata_modif$cs_lkout[which(is.na(SQFdata_modif$cs_lkout))] <- 'N'
-SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
 SQFdata_modif$cs_cloth[which(is.na(SQFdata_modif$cs_cloth))] <- 'N'
 SQFdata_modif$cs_drgtr[which(is.na(SQFdata_modif$cs_drgtr))] <- 'N'
-SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
-SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
 SQFdata_modif$cs_furtv[which(is.na(SQFdata_modif$cs_furtv))] <- 'N'
-SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
-SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
-SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
 SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
 SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
 SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
-SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
-SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
-SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
-SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
-SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+
+SQFdata_modif %>% filter(is.na(sb_hdobj)) %>%
+    summarise(count_outln = sum(sb_outln == "Y", na.rm = TRUE),
+              count_admis = sum(sb_admis == "Y", na.rm = TRUE),
+              count_other = sum(sb_other == "Y", na.rm = TRUE),
+              tot = n()) %>%
+    mutate(percent_outln = 100*count_outln/tot,
+           percent_admis = 100*count_admis/tot,
+           percent_other = 100*count_other/tot)
+
 SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
 SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
 SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
 SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
-SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
-SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
 
-
+# Con nearZeroVar se eliminan m醩 variables
+SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+dim(SQFdata)
+dim(SQFdata_modif)
 ```
 
 ## Divisi贸n de muestra en train/test
@@ -276,10 +331,10 @@ test =SQFdataTest
 train.labels = SQFdataTrain$arstmade
 test.labels = SQFdataTest$arstmade
 
-train.numeric = train %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
-test.numeric = test %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+train.numeric = train %>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+test.numeric = test %>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
 knn_total <- knn1(train.numeric, test.numeric, train.labels)
-error = sum(knn_total != test_DSAMP.labels)/length(test.labels);error
+error = sum(knn_total != test.labels)/length(test.labels);error
 ```
 
 ```{r}
@@ -288,8 +343,8 @@ test_DSAMP =SQFdataTest
 train_DSAMP.labels = SQFdataTrain_DSAMP$arstmade
 test_DSAMP.labels = SQFdataTest$arstmade
 
-train_DSAMP.numeric = train_DSAMP %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
-test_DSAMP.numeric = test_DSAMP %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+train_DSAMP.numeric = train_DSAMP %>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+test_DSAMP.numeric = test_DSAMP %>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
 knn_DSAMP <- knn1(train_DSAMP.numeric, test_DSAMP.numeric, train_DSAMP.labels)
 error_DSAMP = sum(knn_DSAMP != test_DSAMP.labels)/length(test_DSAMP.labels);error_DSAMP
 ```
@@ -308,20 +363,16 @@ error_SMOTE = sum(knn_SMOTE != test_SMOTE.labels)/length(test_SMOTE.labels);erro
 
 ## KNN con variables categoricas
 ```{r}
-#=============================================== KNN categorical DSAMP FALLA POR TAMA袿, quitar variables menos significativas, el smote y el completo tambien fallaran por disponer de mas datos
+#=============================================== KNN categorical DSAMP FALLA POR TAMA袿, quitar variables menos significativas
 train_DSAMP.cat = SQFdataTrain_DSAMP %>%
-  select(recstat,inout,trhsloc,typeofid,explnstp,othpers,arstmade,sumissue,offunif,frisked,searched,contrabn,pistol,knifcuti,othrweap,pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_objcs,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_cloth,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,rf_verbl,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_stsnd,ac_other,sb_hdobj,sb_outln,sb_admis,sb_other,rf_furt,rf_bulg,sex,race,build,city) %>% 
-  mutate_each(funs(as.numeric))
+  select(recstat,inout,trhsloc,typeofid,othpers,arstmade,offunif,frisked,searched,pf_hands,pf_hcuff,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_other,sb_hdobj,sb_other,rf_furt,rf_bulg,sex,race,build,city)%>%
+mutate_each(funs(as.numeric)) 
 
 test.cat = SQFdataTest %>% 
-  select(recstat,inout,trhsloc,typeofid,explnstp,othpers,arstmade,sumissue,offunif,frisked,searched,contrabn,pistol,knifcuti,othrweap,pf_hands,pf_wall,pf_grnd,pf_drwep,pf_ptwep,pf_hcuff,pf_other,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_objcs,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_cloth,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,rf_verbl,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_stsnd,ac_other,sb_hdobj,sb_outln,sb_admis,sb_other,rf_furt,rf_bulg,sex,race,build,city)%>%
-  mutate_each(funs(as.numeric))
-
-train_DSAMP.labels = SQFdataTrain_DSAMP$arstmade
-test.labels = SQFdataTest$arstmade
+  select(recstat,inout,trhsloc,typeofid,othpers,arstmade,offunif,frisked,searched,pf_hands,pf_hcuff,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_other,sb_hdobj,sb_other,rf_furt,rf_bulg,sex,race,build,city)%>%
+mutate_each(funs(as.numeric))
 
 z = rep(1, dim(train_DSAMP.cat)[1]) %*% as.matrix(test.cat[1, ])
-z
 sim = apply(z - train_DSAMP.cat == 0, 1, sum)/dim(train_DSAMP.cat)[2]
 # Repetimos para todos los puntos
 ntrain = dim(train_DSAMP.cat)[1];ntrain
@@ -332,17 +383,15 @@ for (i in 1:ntest) {
   z = rep(1, ntrain) %*% as.matrix(test.cat[i, ])
   sim[i, ] = apply(z - train_DSAMP.cat == 0, 1, sum)/d
 }
-
-similaridadNumerica_DSAMP = sim
-sim = similaridadNumerica_DSAMP
+similaridadCategirica_DSAMP = sim
 indices = apply(sim, 1, which.max)
+
+
 prediccion = rep(0, ntest)
 for (i in 1:ntest) {
   z = table(train_DSAMP.labels[which(sim[i, ] == sim[i, indices[i]])])
   prediccion[i] = attributes(which(z == max(z)))$names
 }
-table(prediccion, test.labels)
-
 z = table(train.labels[which(sim == max(sim))])
 attributes(which(z == max(z)))$names
 error2 = sum(prediccion != test.labels)/length(test.labels)
@@ -351,54 +400,50 @@ error2
 total = rbind(test.cat, train_DSAMP.cat)
 distanciaEuclidea = as.matrix(dist(total))[1:ntest, (ntest + 1):(ntest + ntrain)]
 similaridadNumerica = 1 - distanciaEuclidea/max(distanciaEuclidea)
-similaridadFinal = (0.3 * similaridadNumerica + 0.7 * similaridadCategorica)
-sim = similaridadFinal
+similaridadFinal_DSAMP = (0.3 * similaridadNumerica + 0.7 * similaridadCategorica)
+sim = similaridadFinal_DSAMP
+```
+
+```{r}
+#=============================================== KNN categorical completo
+train.cat = SQFdataTrain %>%
+  select(recstat,inout,trhsloc,typeofid,othpers,arstmade,offunif,frisked,searched,pf_hands,pf_hcuff,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_other,sb_hdobj,sb_other,rf_furt,rf_bulg,sex,race,build,city)%>%
+mutate_each(funs(as.numeric)) 
+
+test.cat = SQFdataTest %>% 
+  select(recstat,inout,trhsloc,typeofid,othpers,arstmade,offunif,frisked,searched,pf_hands,pf_hcuff,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_other,sb_hdobj,sb_other,rf_furt,rf_bulg,sex,race,build,city)%>%
+mutate_each(funs(as.numeric))
+
+z = rep(1, dim(train.cat)[1]) %*% as.matrix(test.cat[1, ])
+sim = apply(z - train.cat == 0, 1, sum)/dim(train.cat)[2]
+# Repetimos para todos los puntos
+ntrain = dim(train.cat)[1];ntrain
+ntest = dim(test.cat)[1];ntest
+d = dim(train.cat)[2]
+sim = matrix(0, ntest, ntrain)
+for (i in 1:ntest) {
+  z = rep(1, ntrain) %*% as.matrix(test.cat[i, ])
+  sim[i, ] = apply(z - train.cat == 0, 1, sum)/d
+}
+similaridadCategirica = sim
 indices = apply(sim, 1, which.max)
+
+
 prediccion = rep(0, ntest)
 for (i in 1:ntest) {
-z = table(train.labels[which(sim[i, ] == sim[i, indices[i]])])
-prediccion[i] = attributes(which(z == max(z)))$names
+  z = table(train.labels[which(sim[i, ] == sim[i, indices[i]])])
+  prediccion[i] = attributes(which(z == max(z)))$names
 }
+z = table(train.labels[which(sim == max(sim))])
+attributes(which(z == max(z)))$names
+error2 = sum(prediccion != test.labels)/length(test.labels)
+error2
 
+total = rbind(test.cat, train.cat)
+distanciaEuclidea = as.matrix(dist(total))[1:ntest, (ntest + 1):(ntest + ntrain)]
+similaridadNumerica = 1 - distanciaEuclidea/max(distanciaEuclidea)
+similaridadFinal = (0.3 * similaridadNumerica + 0.7 * similaridadCategorica)
+sim = similaridadFinal
 ```
 
-
-
-# KNN CARET DSAMP
-```{r}
-# KNN CARET SQFDATA_DSAMP
-install.packages('e1071', dependencies=TRUE)
-library(caret)
-trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
-set.seed(3333)
-knn_fit_DSAMP<- train(arstmade ~., data = SQFdataTrain_DSAMP, method = "knn",
- trControl=trctrl,
- preProcess = c("center", "scale"),
- tuneLength = 10)
-knn_fit_DSAMP
-test_pred_DSAMP <- predict(knn_fit_DSAMP, newdata = SQFdataTrain_DSAMP)
-```
-# KNN CARET SMOTE
-```{r}
-# KNN CARET SQFDATA_DSAMP
-library(caret)
-trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
-set.seed(3333)
-knn_fit <- train(arstmade ~., data = SQFdataTrain_SMOTE, method = "knn",
- trControl=trctrl,
- preProcess = c("center", "scale"),
- tuneLength = 10)
-knn_fit
-test_pred <- predict(knn_fit, newdata = SQFdataTrain_SMOTE)
-```
-
-```{r}
-set.seed(3333)
-knn_fit_c<- train(arstmade ~., data = SQFdataTrain, method = "knn",
- trControl=trctrl,
- preProcess = c("center", "scale"),
- tuneLength = 10)
-knn_fit_c
-test_pred <- predict(knn_fit, newdata = SQFdataTrain)
-```
 
