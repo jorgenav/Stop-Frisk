@@ -6,434 +6,467 @@ output: html_document
 ---
 
 ##HUGO
+# VARIABLES INDEPENDIENTES
+## Sexo (Sex)
+- sexo frente a tiempo de parada
 ```{r sex-perstop}
-SQFdata %>% group_by(sex) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
-```{r sex-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(sex)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(sex,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(sex)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
+library(ggplot2)
+library(PASWR2)
 ```
 
+```{r sex}
+SQFdata %>% group_by(sex) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+- Sexo frente a arrestos
 ```{r sex-arstmade}
 SQFdata %>% group_by(sex, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# weight
-# Weight in pounds
-```{r weight-perstop}
-SQFdata %>% group_by(weight) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+- Graficos
+```{r sex-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(sex)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sex)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
 ```
-```{r weight-plot, fig.height=5, fig.width=15}
+la mayor frecuencia de paradas fueron en los hombres 42528 frente a las 2865 mujeres que fueron paradas, donde el 14.56% de los hombres fueron detenidos y el 22.44% de las mujeres, pero en terminos numericos detuvieron a 6190 hombres frente a las 643 mujeres
 
-p1 = ggplot(data = SQFdata, aes(weight)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(weight,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(weight)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+## Peso (weight) en libras
+- Peso frente a arrestos
 ```{r weight-arstmade}
+weight <- SQFdata$weight[which(!is.na(SQFdata$weight))]
+z = cut(SQFdata$weight, c(min(weight)-1, 50,250, 500, max(weight)))
+SQFdata_weigth <- SQFdata
+SQFdata_weigth$weigth <- factor(relevel(z, ref = 3))
+
 SQFdata %>% group_by(weight, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
-# haircolr
-# 
-```{r haircolr-perstop}
-SQFdata %>% group_by(haircolr) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+
+SQFdata_weigth %>% group_by(weight, arstmade) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r haircolr-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(haircolr,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
+- Graficos
+```{r weight-plot, fig.height=5, fig.width=15}
 
+p1 = ggplot(data = SQFdata, aes(weight)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(weight)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+
+p1 = ggplot(data = SQFdata_weigth, aes(weight)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata_weigth, aes(weight)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
 ```
+
+
+## Color del pelo (Haircolor)
+```{r haircolr}
+SQFdata %>% group_by(haircolr) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
+- Color del pelo frente a color del pelo
 ```{r haircolr-arstmade}
 SQFdata %>% group_by(haircolr, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# riflshot
-```{r riflshot-perstop}
+- Graficos
+```{r haircolr-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+
+```
+la mayor frecuencia de paradas se produjeron en los que tienen el color de pelo moreno y castaño, donde se produjeron arrestos en el 15.08% y en el 12.84% respectivamente. Aunque el mayor porcentaje de arrestos se han producido en 
+
+## Sospechoso portanndo rifle (riflshot)
+```{r riflshot-arstmade}
 SQFdata %>% group_by(riflshot) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r riflshot-plot, fig.height=5, fig.width=15}
 
-p1 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(riflshot,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+- Sospechoso portando rifle frente a arresto:
 ```{r riflshot-arstmade}
 SQFdata %>% group_by(riflshot, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-# sumissue
-# Was summons issued?
 
-```{r sumissue-perstop}
+- Graficos:
+```{r riflshot-plot, fig.height=5, fig.width=15}
+
+p1 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+La mayor frecuencia de paradas se han producido en los que no llevaban rifles de asalto, con 34926 paradas, 5238 o el 15-5 de estos fueron arrestados, aunque lo importante es que los 3 que si portaban rifles de asalto si han sido arrestados.
+
+## Sospechoso fue a una citacion previa (sumissue)
+```{r sumissue}
 SQFdata %>% group_by(sumissue) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r sumissue-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(sumissue,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
 
-```
+- Sospechoso con citacion previa frente a arresto:
 ```{r sumissue-arstmade}
 SQFdata %>% group_by(sumissue, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# pf_hands
-```{r pf_hands-perstop}
+- Graficos:
+```{r sumissue-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+
+```
+La mayor frecuencia de paradas fueron a los sospechosos que no habian ido a una citacion previa, de estos el 15.32% fueron arrestados. De los 1214 que si habian ido a una citacion previa, solo el 5.68% fueron arrestados.
+
+# Fuerza fisica usada por el oficial - manos (pf_hands)
+```{r pf_hands}
 SQFdata %>% group_by(pf_hands) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r pf_hands-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pf_hands,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r pf_hands-arstmade}
 SQFdata %>% group_by(pf_hands, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# pf_wall
-```{r pf_wall-perstop}
+- Graficos
+```{r pf_hands-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+La mayor frecuencia de las paradas han sido en los oficiales que no usaron como fuerza fisica las manos, de las 27449 personas el 14.33% fueron arrestadas, en cuanto a los 7205 personas en el que los oficiales usaron la fuerza fisica, el 18.61% de estos fueron arrestados.
+
+
+# Fuerza fisica usada por el oficial - sospechoso en tierra (pf_wall)
+```{r pf_wall}
 SQFdata %>% group_by(pf_wall) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r pf_wall-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pf_wall,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r pf_wall-arstmade}
 SQFdata %>% group_by(pf_wall, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# pf_other
-```{r pf_other-perstop}
+- Graficos
+```{r pf_wall-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+La mayor frecuencia de las paradas se han producido en las que el oficial no pidio al sospechoso ir al suelo con 33325 personas, de estas el 14.94% han sido arrestos, en cuanto a las 2050 personas que los oficiales si han pedido a los sospechosos ir al suelo, el 16.39% si han sido arrestados.
+ 
+# Fuerza fisica usada por el oficial - otros (pf_other)
+```{r pf_other}
 SQFdata %>% group_by(pf_other) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r pf_other-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pf_other,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r pf_other-arstmade}
 SQFdata %>% group_by(pf_other, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# cs_objcs
-```{r cs_objcs-perstop}
+- Graficos
+```{r pf_other-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+entre todas las paradass en las que los oficiales usaron otro tipo de fuerza fisica, se han producido un 14.39% de arrestos.
+
+# Sospechoso lleva objetos sospechosos (cs_objcs)
+```{r cs_objcs}
 SQFdata %>% group_by(cs_objcs) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r cs_objcs-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(cs_objcs,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r cs_objcs-arstmade}
 SQFdata %>% group_by(cs_objcs, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+-graficos
+```{r cs_objcs-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De los 1589 paradas en las que los sospechosos llevaban objetos sospechosos, han arrestado al 31.53% de estos.
 
-# cs_bulge
-```{r cs_bulge-perstop}
+# Sospechoso con bulto sospechoso (cs_bulge)
+```{r cs_bulge}
 SQFdata %>% group_by(cs_bulge) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r cs_bulge-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(cs_bulge,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r cs_bulge-arstmade}
 SQFdata %>% group_by(cs_bulge, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# rf_vcrim
-```{r rf_vcrim-perstop}
+-graficos
+```{r cs_bulge-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De las 3476 paradas que realizaron los agentes que encontraron bultos sospechosos, han arrestado al 15.25%.
+
+# Sospechoso de crimen violento (rf_vcrim)
+```{r rf_vcrim}
 SQFdata %>% group_by(rf_vcrim) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r rf_vcrim-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(rf_vcrim,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r rf_vcrim-arstmade}
 SQFdata %>% group_by(rf_vcrim, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# rf_knowl
-```{r rf_knowl-perstop}
+- Graficos
+```{r rf_vcrim-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De las 10096 paradas que han realizado los oficiales de los sospechosos de crimen violento, han arrestado al 10.92% de las personas.
+
+# Sospechoso con antecendentes (rf_knowl)
+```{r rf_knowl}
 SQFdata %>% group_by(rf_knowl) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r rf_knowl-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(rf_knowl,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r rf_knowl-arstmade}
 SQFdata %>% group_by(rf_knowl, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# rf_furt
-```{r rf_furt-perstop}
+- Graficos
+```{r rf_knowl-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+de las 2313 paradas que han realizado los agentes a los sospechosos que tenian antecedentes, han arrestado al 10.12%.
+
+# Sospechoso con movimientos furtivos (rf_furt)
+```{r rf_furt}
 SQFdata %>% group_by(rf_furt) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r rf_furt-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(rf_furt,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r rf_furt-arstmade}
 SQFdata %>% group_by(rf_furt, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# ac_evasv
-```{r ac_evasv-perstop}
+· Graficos
+```{r rf_furt-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De las 16359 paradas realizadas a los sospechosos que hicieron movimientos furtivos,  han arrrestado al 14.9%.
+
+# Respuestas evasivas en el cuestionario (ac_evasv)
+```{r ac_evasv}
 SQFdata %>% group_by(ac_evasv) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r ac_evasv-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(ac_evasv,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r ac_evasv-arstmade}
 SQFdata %>% group_by(ac_evasv, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# ac_assoc
-```{r ac_assoc-perstop}
+- Graficos:
+```{r ac_evasv-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+de las 9980 paradas realizadas a las personas que tuvieron respuestas evasivas en los cuestionarios, han arrestado al 19.28%.
+
+# Sospechoso relacionado con un criminal (ac_assoc)
+```{r ac_assoc}
 SQFdata %>% group_by(ac_assoc) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r ac_assoc-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(ac_assoc,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r ac_assoc-arstmade}
 SQFdata %>% group_by(ac_assoc, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# ac_inves
-```{r ac_inves-perstop}
+- Graficos
+```{r ac_assoc-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De las 3316 paradas realizadas a los sospechosos de estar relacionados con criminales, han arrestado al 11.1%.
+
+# Sospechoso bajo investigacion (ac_inves)
+
+```{r ac_inves}
 SQFdata %>% group_by(ac_inves) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r ac_inves-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(ac_inves,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r ac_inves-arstmade}
 SQFdata %>% group_by(ac_inves, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# stname
-# String -> location of stop street name -> Es interesante?
-```{r stname-perstop}
+- Graficos
+```{r ac_inves-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De las 6813 paradas realizadas por los agentes a los sospechosos que estan bajo una investigacion, han arrestado al 12.12%.
+
+# Nombre de la calle donde el sospechoso fue parado (stname)
+```{r stname}
 SQFdata %>% group_by(stname) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r stname-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(stname)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(stname,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(stname)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
 
-```
 ```{r stname-arstmade}
 SQFdata %>% group_by(stname, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# offunif
-```{r offunif-perstop}
-SQFdata %>% group_by(offunif) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
-        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
-```
-```{r offunif-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(offunif)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(offunif,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(offunif)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
+- Graficos
+```{r stname-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(stname)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(stname)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
 
 ```
+
+
+# El oficial iba uniformado (offunif)
+```{r offunif}
+SQFdata %>% group_by(offunif) %>%
+        summarise(n=n()) %>%
+        mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
+```
+
 ```{r offunif-arstmade}
 SQFdata %>% group_by(offunif, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# offverb
-# verbal statement provided by officer (if not in uniform) -> Limpiar datos
-```{r offverb-perstop}
+- Graficos
+```{r offunif-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(offunif)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offunif)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+
+```
+De las 24804 paradas en las que el agente iba uniformado, han arrestado al 17.39%.
+
+# Declaracion verbal proporcionada por el oficial uniformada (offverb)
+```{r offverb}
 SQFdata %>% group_by(offverb) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r offverb-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(offverb)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(offverb,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(offverb)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r offverb-arstmade}
 SQFdata %>% group_by(offverb, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# officrid
-# id card provided by officer (if not in uniform) -> Limpiar datos
-```{r officrid-perstop}
+- Graficos
+```{r offverb-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(offverb)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offverb)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De las 14575 paradas en las que los agentes uniformados hicieron la declaracion verbal, el 13.39% fueron arrestados.
+
+# Identificacion proporcionada por el oficial uniformado (officrid)
+```{r officrid}
 SQFdata %>% group_by(officrid) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r officrid-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(officrid)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(officrid,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(officrid)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r officrid-arstmade}
 SQFdata %>% group_by(officrid, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
 
-# offshld
-# shield provided by officer (if not in uniform) -> Limpiar datos
-```{r offshld-perstop}
+- Graficos
+```{r officrid-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(officrid)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(officrid)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De las 889 paradas realizadas por los agentes que proporcionaron su identificacion, detuvieron al 21.26% de las personas.
+
+# El oficial llevaba escudo protector (offshld)
+```{r offshld}
 SQFdata %>% group_by(offshld) %>%
-        summarise(n=n(),
-                  perStop_media= round(mean(perstop),2),
-                  perStop_mediana= round(median(perstop),2)) %>%
+        summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
-```{r offshld-plot, fig.height=5, fig.width=15}
-p1 = ggplot(data = SQFdata, aes(offshld)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(offshld,perstop)) + geom_boxplot()
-p3 = ggplot(data = SQFdata, aes(offshld)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
-multiplot(p1,p2,p3,cols=2)
-```
+
 ```{r offshld-arstmade}
 SQFdata %>% group_by(offshld, arstmade) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
 ```
+
+- Graficos
+```{r offshld-plot, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(offshld)) + geom_bar() + ylab("Frecuencia")
+p2 = ggplot(data = SQFdata, aes(offshld)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+multiplot(p1,p2,cols=2)
+```
+De las 20778 paradas que realizaron los agentes que llevaban escudo, detuvieron al 12.26% de las personas.
