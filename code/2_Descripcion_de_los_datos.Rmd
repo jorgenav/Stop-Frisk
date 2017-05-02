@@ -1,0 +1,49 @@
+---
+title: "2. Descripción de los datos"
+output:
+  html_document: default
+  pdf_document: default
+---
+# 2. DESCRIPCIÓN DE LOS DATOS
+
+# 2.1 Diccionario de datos
+```{r, message=FALSE, warning=FALSE}
+if(!file.exists("data_dictionary.csv")) download.file("https://raw.githubusercontent.com/jorgenav/Stop-Frisk/master/data/data_dictionary.csv", "data_dictionary.csv")
+
+SQFdataDictionary <- read.csv("data_dictionary.csv")
+ 
+if (! "knitr" %in% installed.packages()) install.packages("knitr", depend = TRUE)
+library("knitr")
+
+kable(SQFdataDictionary, caption="NYPD Stop Question Frisk Database 2014")
+```
+
+
+# 2.2 Data Quality Report
+```{r, warning=FALSE}
+source("Cleaning_Data.R")
+
+if (! "dataQualityR" %in% installed.packages()) install.packages("dataQualityR", depend = TRUE)
+library("dataQualityR")
+drq.num <- paste("./dqr_num.csv", sep = "")
+drq.cat <- paste("./dqr_cat.csv", sep = "")
+checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
+DQR.num <- read.csv("dqr_num.csv")
+DQR.cat <- read.csv("dqr_cat.csv")
+```
+
+## 2.2.a Variables numéricas
+```{r, message=FALSE, warning=FALSE}
+if (! "knitr" %in% installed.packages()) install.packages("knitr", depend = TRUE)
+library("knitr")
+
+kable(DQR.num, caption="Data Quality Report (Variables numéricas)")
+```
+
+## 2.2.b Variables categóricas
+```{r, message=FALSE, warning=FALSE}
+if (! "knitr" %in% installed.packages()) install.packages("knitr", depend = TRUE)
+library("knitr")
+
+kable(DQR.cat, caption="Data Quality Report (Variables categóricas)")
+```
