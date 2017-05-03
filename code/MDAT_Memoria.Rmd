@@ -118,10 +118,13 @@ grid.table(DQR.cat[46:86,1:15],
 
 Se genera un dataset a partir de diversas transformaciones aplicadas a las variables del dataset original. Se busca seleccionar las variables y las observaciones que puedan aportar información a los modelos y eliminar todos aquellos casos que no permitan trabajar con ellos.
 
-### 3.3.1 Ordenación de niveles en variable objetivo
+### 3.3.1 Creación de dataset transformado y ordenación de niveles en variable objetivo
 
 ```{r}
-SQFdata$arstmade <- relevel(SQFdata$arstmade, ref = "Y")
+# source("code/Cleaning_Data.R")
+source("Cleaning_Data.R")
+SQFdata_modif <- SQFdata
+SQFdata_modif$arstmade <- relevel(SQFdata_modif$arstmade, ref = "Y")
 ```
 
 ### 3.3.2 Eliminación de variables
@@ -133,33 +136,33 @@ En las tablas obtenidas en el segundo apartado del presente documento se puede o
     - Factores con demasiados niveles.
     - Otros aspectos.
 
-```{r, eval = FALSE}
-
-source("code/Cleaning_Data.R")
-
-
+```{r}
+#
 # Eliminación de variables con más de ~60% de datos faltantes.
+#
 perc_NA <- function(x) {
     perc <- sum(is.na(x))*100/length(x)
     paste(perc,"%")
 }
 
-SQFdata_modif <- SQFdata %>%
+perc_NA(SQFdata_modif$arstoffn);perc_NA(SQFdata_modif$sumoffen);perc_NA(SQFdata_modif$officrid)
+perc_NA(SQFdata_modif$offverb);perc_NA(SQFdata_modif$offshld);perc_NA(SQFdata_modif$forceuse)
+perc_NA(SQFdata_modif$othfeatr);perc_NA(SQFdata_modif$addrnum);perc_NA(SQFdata_modif$stname)
+perc_NA(SQFdata_modif$beat);perc_NA(SQFdata_modif$post);perc_NA(SQFdata_modif$state)
+perc_NA(SQFdata_modif$zip);perc_NA(SQFdata_modif$rescode);perc_NA(SQFdata_modif$premtype)
+perc_NA(SQFdata_modif$aptnum);
+
+SQFdata_modif <- SQFdata_modif %>%
                     select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
                               forceuse, othfeatr, addrnum, stname, beat,
                               post, state, zip, rescode, premtype, aptnum))
 
-perc_NA(SQFdata$arstoffn);perc_NA(SQFdata$sumoffen);perc_NA(SQFdata$officrid);perc_NA(SQFdata$offverb);
-perc_NA(SQFdata$offshld);perc_NA(SQFdata$forceuse);perc_NA(SQFdata$othfeatr);perc_NA(SQFdata$addrnum);
-perc_NA(SQFdata$stname);perc_NA(SQFdata$beat);perc_NA(SQFdata$post);perc_NA(SQFdata$state);
-perc_NA(SQFdata$zip);perc_NA(SQFdata$rescode);perc_NA(SQFdata$premtype);perc_NA(SQFdata$aptnum);
 
 
-
-
-
+#
 # Eliminación de variables con poca o nula varianza (casos pertenecientes
 # todos a una misma clase). 7 variables eliminadas
+#
 summary(SQFdata_modif$adtlrept);summary(SQFdata_modif$riflshot);
 summary(SQFdata_modif$asltweap);summary(SQFdata_modif$machgun);
 summary(SQFdata_modif$pf_baton);summary(SQFdata_modif$pf_pepsp)
@@ -168,22 +171,20 @@ summary(SQFdata_modif$compyear);summary(SQFdata_modif$comppct);
 summary(SQFdata_modif$lineCM);summary(SQFdata_modif$dob);
 summary(SQFdata_modif$dettypCM)
 
-
-
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(adtlrept, riflshot, asltweap, machgun,
                              pf_baton, pf_pepsp, addrtyp, year,
                              compyear, comppct, lineCM, dob, dettypCM))
 
 
-# Eliminación de variables con demasiados niveles (strings). 8 variables eliminadas
-summary(SQFdata_modif$premname);summary(SQFdata_modif$stinter);
-summary(SQFdata_modif$crossst);summary(SQFdata_modif$sector)
 
-length(levels(SQFdata_modif$premname))
-length(levels(SQFdata_modif$stinter))
-length(levels(SQFdata_modif$crossst))
-length(levels(SQFdata_modif$sector))
+# 
+# Eliminación de variables con demasiados niveles (strings). 8 variables eliminadas
+# 
+length(levels(SQFdata_modif$premname));length(levels(SQFdata_modif$stinter))
+length(levels(SQFdata_modif$crossst));length(levels(SQFdata_modif$sector))
+length(levels(SQFdata_modif$pct));length(levels(SQFdata_modif$crimsusp))
+length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
 
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(premname, stinter, crossst, sector,
@@ -191,48 +192,59 @@ SQFdata_modif <- SQFdata_modif %>%
 
 
 
-# Variables asociadas a series temporales o  coordenadas
+# 
+# Variables asociadas a series temporales o coordenadas -> No son de interés para
+# el problema que ocupa
+# 
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(datestop, timestop, xcoord, ycoord))
 
 
 
+# 
 # Número de variables final
+# 
 dim(SQFdata)
 dim(SQFdata_modif)
 ```
 
 ### 3.3.3 Imputación de NAs
 
-```{r, eval = FALSE}
+Nos encontramos ante dos casos distintos de NAs después de haber realizado la eliminación previa de variables:
 
+
+* Variable *age*: Presenta 212 casos sin valor frente a los 45787 totales disponibles en el dataset original. Dado que se trata de un porcentaje ínfimo de casos, se opta por eliminarlos del conjunto de datos.
+    
+* Variables asociadas a distintos aspectos de la dentención (armas, fuerza física, circunstancias adicionales, etc): Se consideran dichas variables como información complementaria a la detención. De esta forma se asume que, en aquellos casos donde no existe información sobre la variable, o bien el agente no ha rellenado la casilla o ha rellenado alguna de las otras clases de la variable. Por tanto, se asigna a todas esas observaciones el nivel NO. Esta decisión permitirá volver a eliminar variables que presenten varianza casi nula.
+
+
+```{r}
+# 
 # Eliminación de NAs en variable age
+#
 SQFdata_modif %>% group_by(is.na(age)) %>%
     summarise(n())
 
-SQFdata_modif %>% filter(!is.na(age))
-
 SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
 
-dim(SQFdata)
-dim(SQFdata_modif)
 
-# Trabajo con NAs
 
-# Variables NO eliminadas
-
+# 
 # Modificación de variables no eliminadas
+# 
 
-# USO DE ARMAS
-summary(SQFdata_modif$pistol);summary(SQFdata_modif$knifcuti);summary(SQFdata_modif$othrweap);
+# Uso de armas
+summary(SQFdata_modif$pistol);summary(SQFdata_modif$knifcuti);
+summary(SQFdata_modif$othrweap);
 
 SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
 SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
 SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
 
-# USO DE FUERZA FÍSICA
-summary(SQFdata_modif$pf_hands);summary(SQFdata_modif$pf_wall);summary(SQFdata_modif$pf_grnd);
-summary(SQFdata_modif$pf_drwep);summary(SQFdata_modif$pf_ptwep);summary(SQFdata_modif$pf_hcuff);
+# Uso de fuerza física
+summary(SQFdata_modif$pf_hands);summary(SQFdata_modif$pf_wall);
+summary(SQFdata_modif$pf_grnd);summary(SQFdata_modif$pf_drwep);
+summary(SQFdata_modif$pf_ptwep);summary(SQFdata_modif$pf_hcuff);
 summary(SQFdata_modif$pf_other);
 
 SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
@@ -243,11 +255,12 @@ SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
 SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
 SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
 
-# CIRCUNSTANCIAS ADICIONALES
-summary(SQFdata_modif$ac_rept);summary(SQFdata_modif$ac_inves);summary(SQFdata_modif$ac_proxm);
-summary(SQFdata_modif$ac_evasv);summary(SQFdata_modif$ac_assoc);summary(SQFdata_modif$ac_cgdir);
-summary(SQFdata_modif$ac_incid);summary(SQFdata_modif$ac_time);summary(SQFdata_modif$ac_stsnd);
-summary(SQFdata_modif$ac_other);
+# Circunstancias adicionales
+summary(SQFdata_modif$ac_rept);summary(SQFdata_modif$ac_inves);
+summary(SQFdata_modif$ac_proxm);summary(SQFdata_modif$ac_evasv);
+summary(SQFdata_modif$ac_assoc);summary(SQFdata_modif$ac_cgdir);
+summary(SQFdata_modif$ac_incid);summary(SQFdata_modif$ac_time);
+summary(SQFdata_modif$ac_stsnd);summary(SQFdata_modif$ac_other);
 
 SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
 SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
@@ -260,31 +273,12 @@ SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
 SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
 SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
 
-# REASON FOR FRISK
-summary(SQFdata_modif$rf_vcrim);summary(SQFdata_modif$rf_othsw);summary(SQFdata_modif$rf_attir);
-summary(SQFdata_modif$rf_vcact);summary(SQFdata_modif$rf_rfcmp);summary(SQFdata_modif$rf_verbl);
-summary(SQFdata_modif$rf_knowl);summary(SQFdata_modif$rf_furt);summary(SQFdata_modif$rf_bulg);
-
-SQFdata_modif %>% filter(is.na(cs_objcs)) %>%
-    summarise(count_rf_vcrim  = sum(rf_vcrim == "Y", na.rm = TRUE),
-            count_rf_othsw  = sum(rf_othsw == "Y", na.rm = TRUE),
-            count_rf_attir  = sum(rf_attir == "Y", na.rm = TRUE),
-            count_rf_vcact  = sum(rf_vcact == "Y", na.rm = TRUE),
-            count_rf_rfcmp  = sum(rf_rfcmp == "Y", na.rm = TRUE),
-            count_rf_furt  = sum(rf_furt == "Y", na.rm = TRUE),
-            count_rf_bulg  = sum(rf_bulg == "Y", na.rm = TRUE),
-            count_rf_verbl  = sum(rf_verbl == "Y", na.rm = TRUE),
-            count_rf_knowl = sum(rf_knowl == "Y", na.rm = TRUE),
-            tot = n()) %>%
-    mutate(percent_rf_vcrim = 100*count_rf_vcrim/tot,
-           percent_rf_othsw = 100*count_rf_othsw/tot,
-           percent_rf_attir = 100*count_rf_attir/tot,
-           percent_rf_vcact = 100*count_rf_vcact/tot,
-           percent_rf_rfcmp = 100*count_rf_rfcmp/tot,
-           percent_rf_furt = 100*count_rf_furt/tot,
-           percent_rf_bulg = 100*count_rf_bulg/tot,
-           percent_rf_verbl = 100*count_rf_verbl/tot,
-           percent_rf_knowl = 100*count_rf_knowl/tot)
+# Razones para el cacheo
+summary(SQFdata_modif$rf_vcrim);summary(SQFdata_modif$rf_othsw);
+summary(SQFdata_modif$rf_attir);summary(SQFdata_modif$rf_vcact);
+summary(SQFdata_modif$rf_rfcmp);summary(SQFdata_modif$rf_verbl);
+summary(SQFdata_modif$rf_knowl);summary(SQFdata_modif$rf_furt);
+summary(SQFdata_modif$rf_bulg);
 
 SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
 SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
@@ -296,32 +290,12 @@ SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
 SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
 SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
 
-# REASON FOR STOP
-summary(SQFdata_modif$cs_objcs);summary(SQFdata_modif$cs_descr);summary(SQFdata_modif$cs_casng);
-summary(SQFdata_modif$cs_lkout);summary(SQFdata_modif$cs_cloth);summary(SQFdata_modif$cs_drgtr);
-summary(SQFdata_modif$cs_furtv);summary(SQFdata_modif$cs_vcrim);summary(SQFdata_modif$cs_bulge);
-summary(SQFdata_modif$cs_other);
-
-SQFdata_modif %>% filter(is.na(cs_objcs)) %>%
-    summarise(count_cs_descr = sum(cs_descr == "Y", na.rm = TRUE),
-              count_cs_casng = sum(cs_casng == "Y", na.rm = TRUE),
-              count_cs_lkout = sum(cs_lkout == "Y", na.rm = TRUE),
-              count_cs_cloth = sum(cs_cloth == "Y", na.rm = TRUE),
-              count_cs_drgtr = sum(cs_drgtr == "Y", na.rm = TRUE),
-              count_cs_furtv = sum(cs_furtv == "Y", na.rm = TRUE),
-              count_cs_vcrim = sum(cs_vcrim == "Y", na.rm = TRUE),
-              count_cs_bulge = sum(cs_bulge == "Y", na.rm = TRUE),
-              count_cs_other = sum(cs_other == "Y", na.rm = TRUE),
-              tot = n()) %>%
-    mutate(percent_cs_descr = 100*count_cs_descr/tot,
-           percent_cs_casng = 100*count_cs_casng/tot,
-           percent_cs_lkout = 100*count_cs_lkout/tot,
-           percent_cs_cloth = 100*count_cs_cloth/tot,
-           percent_cs_drgtr = 100*count_cs_drgtr/tot,
-           percent_cs_furtv = 100*count_cs_furtv/tot,
-           percent_cs_vcrim = 100*count_cs_vcrim/tot,
-           percent_cs_bulge = 100*count_cs_bulge/tot,
-           percent_cs_other = 100*count_cs_other/tot)
+# Razones para la detención
+summary(SQFdata_modif$cs_objcs);summary(SQFdata_modif$cs_descr);
+summary(SQFdata_modif$cs_casng);summary(SQFdata_modif$cs_lkout);
+summary(SQFdata_modif$cs_cloth);summary(SQFdata_modif$cs_drgtr);
+summary(SQFdata_modif$cs_furtv);summary(SQFdata_modif$cs_vcrim);
+summary(SQFdata_modif$cs_bulge);summary(SQFdata_modif$cs_other);
 
 SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
 SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
@@ -334,37 +308,30 @@ SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
 SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
 SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
 
-# BASIS OF SEARCH
-summary(SQFdata_modif$sb_hdobj);summary(SQFdata_modif$sb_outln);summary(SQFdata_modif$sb_admis);
-summary(SQFdata_modif$sb_other);
-
-SQFdata_modif %>% filter(is.na(sb_hdobj)) %>%
-    summarise(count_outln = sum(sb_outln == "Y", na.rm = TRUE),
-              count_admis = sum(sb_admis == "Y", na.rm = TRUE),
-              count_other = sum(sb_other == "Y", na.rm = TRUE),
-              tot = n()) %>%
-    mutate(percent_outln = 100*count_outln/tot,
-           percent_admis = 100*count_admis/tot,
-           percent_other = 100*count_other/tot)
+# Motivos de búsqueda
+summary(SQFdata_modif$sb_hdobj);summary(SQFdata_modif$sb_outln);
+summary(SQFdata_modif$sb_admis);summary(SQFdata_modif$sb_other);
 
 SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
 SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
 SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
 SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
 
-
 # Comprobación de NAs
 sum(is.na(SQFdata))
 sum(is.na(SQFdata_modif))
-
 ```
 
 ### 3.3.4 Eliminación de variables con varianza nula
 
-```{r, eval = FALSE}
-# Con nearZeroVar se eliminan más variables
-SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+```{r}
+# 
+# Con caret::nearZeroVar se elimina el resto de variables que presentan varianza
+# nula después de aplicar la imputación de NAs
+#
+sapply(SQFdata_modif[nearZeroVar(SQFdata_modif)], summary)
 
+SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
 
 dim(SQFdata)
 dim(SQFdata_modif)
