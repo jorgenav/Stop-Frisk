@@ -43,7 +43,15 @@ kable(SQFdataDictionary, caption="NYPD Stop Question Frisk Database 2014")
 # 2.2 Data Quality Report
 
 ```{r, message=FALSE, warning=FALSE}
-source("Cleaning_Data.R")
+# CARGA DE DATOS DEL PROYECTO
+
+if(!file.exists("../data/2014.csv")) {
+  download.file("http://www.nyc.gov/html/nypd/downloads/zip/analysis_and_planning/2014_sqf_csv.zip",
+                "../data/2014_sqf_csv.zip")
+  unzip("../data/2014_sqf_csv.zip", exdir = "../data/")
+}
+
+SQFdata <- read.csv("../data/2014.csv")
 
 drq.num <- paste("./dqr_num.csv", sep = "")
 drq.cat <- paste("./dqr_cat.csv", sep = "")
@@ -54,26 +62,130 @@ DQR.cat <- read.csv("dqr_cat.csv")
 
 ## 2.2.a Variables numéricas
 
-Data Quality Report (Variables numéricas)
-
-![](../data/DQR_num.png)
-
-```{r, message=FALSE, warning=FALSE, echo = FALSE, eval = FALSE}
+```{r, message=FALSE, warning=FALSE, eval = FALSE}
 kable(DQR.num, caption="Data Quality Report (Variables numéricas)", format = "markdown")
 ```
 
+![](../data/DQR_num.png)
+
 ## 2.2.b Variables categóricas
 
-```{r, message=FALSE, warning=FALSE, echo = FALSE, eval = FALSE}
+```{r, message=FALSE, warning=FALSE, eval = FALSE}
 kable(DQR.cat, caption="Data Quality Report (Variables categóricas)", format = "markdown")
 ```
 
-Data Quality Report (Variables categóricas)
-
 ![](../data/DQR_cat_1.png)
+
 ![](../data/DQR_cat_2.png)
+
+
+
 
 # 3. PREPARACIÓN DE LOS DATOS
 
+Blalaablaba balbalbalba balblab
+
 # 3.1 Depuración de los datos
+
+```{r, message=FALSE, warning=FALSE, eval = FALSE}
+kable(DQR.cat, caption="Data Quality Report (Variables categóricas)", format = "markdown")
+```
+
+# 3.2 Análisis exploratorio
+
+
+## 3.2.1 VARIABLE DEPENDIENTE
+
+
+
+## 3.2.2 VARIABLES INDEPENDIENTES
+
+
+
+## 3.2.3 Conclusiones
+
+
+
+# 3.3 Transformación de variables
+
+
+
+# 3.4 Creación de conjuntos de *train* y *test*
+
+```{r}
+# Creación de conjuntos train y test
+tot_obs <- dim(SQFdata_modif)[1]
+indices <- 1:tot_obs
+
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain = SQFdata_modif[indices_train, ]
+SQFdataTest = SQFdata_modif[-indices_train, ]
+
+# Datos desbalanceados
+SQFdataTrain %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+## 3.4.1 Ajuste del desbalanceo: Down-Sampling
+
+Tal y como se puede observar en la tabla anterior, de los casos seleccionados para el conjunto de train, el caso positivo o arresto de la persona detenida corresponde únicamente a un 15\% de ellos. Al disponer de un número reducidos en nuestro conjunto de train, el modelo tenderá a predecir más casos negativos que positivos, lo que supone dejar marchar a personas que deberían ser arrestadas.
+
+Esta situación, conocida como clases desbalanceadas, es muy típica en problemas de clasificación binaria. Para tratar de resolver este problema se pueden adoptar diferentes medidas:
+    - Conseguir más datos.
+    - Remuestreo del dataset con diferentes técnicas: Up-Sampling, Down-Sampling, SMOTE, etc.
+    - Uso de modelos con peso.
+
+En la realización del presente trabajo se han empleado las técnicas de remuestreo expuestas. Únicamente se muestran los resultados obtenidos tras emplear Down-Sampling dado que el resto de técnicas suponían mejoras menores.
+
+Cabe destacar que, a pesar de mejorar en la predicción de los casos positivos, también conlleva desventajas frente al dataset desbalanceado. De las métricas empleadas para evaluar los modelos, la técnica de Down-Sampling mejora el *recall* del modelo pero empeora su *precision*. Dichas métricas se corresponden con:
+    
+    - ***Recall***: Tasa de arrestos reales predichos como tal.
+
+$$\text{Recall}=\frac{TP}{TP+FN}$$    
+
+    - ***Precision***: Tasa de acierto en la predicción de arrestos.
+
+$$\text{Precision}=\frac{TP}{TP+FP}$$
+
+Siendo $TP=\text{True Positive}$ y $FN=\text{False Negative}$.
+
+Como se dijo anteriormente, al aplicar la técnica de Down-Sampling se mejora la predicción de casos positivos. Dicha mejora se basa en una mayor predicción de casos positivos a costa de una reducción de casos negativos predichos. Esto conlleva un menor número de $FN$ y un mayor número de $TP$ en la matriz de confusión, pero también un mayor número de $FP$.
+
+Analizando las dos situaciones, el hecho de que el modelo empeore su *precision* supone arrestar a gente que no debería ser arrestada. Por el contrario, que mejore su *recall* implica reducir el número de sospechosos que deberían ser arrestados y sin embargo se les permite marchar.
+
+Dado que se considera más perjudicial para la ciudad el hecho de dejar marchar a un sospechoso que debiera ser arrestado, se opta finalmente por las soluciones aportadas por la ténica Down-Sampling.
+
+$$"All\ models\ are\ wrong,\ but\ some\ are\ useful"$$
+
+
+```{r}
+# Total de casos -> 4847 (si) + 27203 (no) = 32050
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberían ser 4847 casos
+training.yes <- SQFdataTrain %>% filter(arstmade == 'Y')
+training.no <- SQFdataTrain %>% filter(arstmade == 'N')
+
+set.seed(4567)
+ind_training.no <- sample(rownames(training.no),4799)
+training.no <- training.no[ind_training.no,]
+
+SQFdataTrain_DSAMP <- rbind(training.yes, training.no)
+
+SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
