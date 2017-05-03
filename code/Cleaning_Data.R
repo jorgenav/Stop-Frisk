@@ -3,13 +3,13 @@
 
 # CARGA DE DATOS DEL PROYECTO
 
-if(!file.exists("2014.csv")) {
+if(!file.exists("../data/2014.csv")) {
   download.file("http://www.nyc.gov/html/nypd/downloads/zip/analysis_and_planning/2014_sqf_csv.zip",
-                "2014_sqf_csv")
-  unzip("2014_sqf_csv")
+                "../data/2014_sqf_csv.zip")
+  unzip("../data/2014_sqf_csv.zip", exdir = "../data/")
 }
 
-SQFdata <- read.csv("2014.csv")
+SQFdata <- read.csv("../data/2014.csv")
 
 # LIMPIEZA DE DATOS
 
