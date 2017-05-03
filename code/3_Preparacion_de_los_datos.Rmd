@@ -2214,7 +2214,174 @@ De las 20778 paradas que realizaron los agentes que llevaban escudo, detuvieron 
 
 ## 3.2.3 Conclusiones
 
-   *falta introducir*
+**NYPD Stop Question Frisk Database 2014**
+	112     variables 
+	45.787  casos registrados
+
+### Variable objetivo: arstmade (WAS AN ARREST MADE?)
+
+Del total de casos parados (45.787) durante el año 2104, fueron arrestados 6.898, es decir el 15,07%
+```{r, fig.height=5, fig.width=15}
+tot <- length(SQFdata$arstmade)
+SQFdata %>% group_by(Arresto = arstmade) %>%
+    summarise(Casos = n(),
+              Porcentaje = paste(round(n()/tot*100,2),'%'))
+```
+
+### Variables explicativas:
+De todas las variables analizadas, existe un gran número de ellas en las que la tasa de arresto no muestra grandes diferencias según el valor que toman, por lo que no son relevantes a la hora de decidir el arresto del sospechoso.
+
+Respecto a las variables en las que sí se aprecian diferencias respecto al arresto, resuminos a continuación los insights encontrados más significativos:
+
+#### Grupo de variables sobre la razón de la parada:
+explnstp	DID OFFICER EXPLAIN REASON FOR STOP ?
+cs_drgtr	REASON FOR STOP - ACTIONS INDICATIVE OF A DRUG TRANSACTION
+cs_vcrim	REASON FOR STOP - ACTIONS OF ENGAGING IN A VIOLENT CRIME
+cs_objcs	REASON FOR STOP - CARRYING SUSPICIOUS OBJECT
+cs_casng	REASON FOR STOP - CASING A VICTIM OR LOCATION
+cs_descr	REASON FOR STOP - FITS A RELEVANT DESCRIPTION
+cs_furtv	REASON FOR STOP - FURTIVE MOVEMENTS
+cs_other	REASON FOR STOP - OTHER
+cs_lkout	REASON FOR STOP - SUSPECT ACTING AS A LOOKOUT
+cs_bulge	REASON FOR STOP - SUSPICIOUS BULGE
+cs_cloth	REASON FOR STOP - WEARING CLOTHES COMMONLY USED IN A CRIME
+
+* En la práctica totalidad de los casos, 99.85%, el oficial de policía explicó la razón de la parada según la base de datos anallizada.
+* El 39.15% fueron parados por que el oficial detectó movimientos sospechosos, sin embargo, un bajo porcentaje fueron arrestados (14.29%), algo muy parecido sucede cuando la persona se rehusa a cumplir las instrucciones del oficial o cuando amenza verbalmente, lo que a priori, puede significar que no son razones tan relevantes para parar a una persona. 
+* Es importante resaltar que cuando la parada se efectúa bajo la sospecha que el individuo ha participado en un crimen violento (10.56%) de los casos tan solo el 9,96% de ellos son arrestados, esto da indicios que los parámetros bajo los que se determina esta sospecha no son efectivas.
+* Cuando la parada es por sospecha de llevar objetos sospechos (3,47% de los casos), terminan arrestando al 31.56% de ellos.
+* Otras razones para efectuar la parada como la sospecha de que el individuo estaba comercializando drogas (7.64%) da cuenta que puede ser un factor un tanto más relevante que los anteriores ya que aumenta la detención al 24.76%.
+* Como nota llamativa, el 4,78% son parados por llevar ropa usada frecuentemente en un crimen, aunque la media de arrestos para estos casos baja hasta el 9,69%.
+
+#### Grupo de variables sobre las características físicas de los sospechosos:
+sex		    SUSPECT’S SEX
+race	    SUSPECT’S RACE
+dob		    SUSPECT’S DATE OF BIRTH (CCYY-MM-DD)
+age		    SUSPECT’S AGE
+ht_feet		SUSPECT’S HEIGHT (FEET)
+ht_inch	  SUSPECT’S HEIGHT (INCHES)
+weight		SUSPECT’S WEIGHT
+haircolr	SUSPECT’S HAIRCOLOR
+eyecolor	SUSPECT’S EYE COLOR
+build		  SUSPECT’S BUILD
+othfeatr	SUSPECT’S OTHER FEATURES (SCARS, TATOOS ETC.)
+
+Respecto a la variables que aglutinan las diferentes características físicas de los sopechosos hemos detectado que:
+
+* Si nos fijamos en el sexo, se paran mucho más a hombres que a mujeres, un 92,88% frente al 6.26%. En cambio, mientras que la media de arrestos en hombres es del 15.56% en las mujeres aumenta hasta el 22.44%.
+* Si observamos la variable raza: se observa una clara diferencia en cuanto al número de casos para cada uno de los niveles. Mientras que más de un 50% de los casos se dan para el nivel _Black_, tan solo un 0.42% son de tipo _American indian_. En cuanto al número de arrestos realizados, _Black-hispanic_ y _White-hispanic_ parecen presentar una tasa ligeramente superior que el resto.
+
+#### Grupo de variables sobre la localización de la parada:
+inout		  WAS STOP INSIDE OR OUTSIDE ?
+trhsloc		WAS LOCATION HOUSING OR TRANSIT AUTHORITY ?
+addrtyp	  LOCATION OF STOP ADDRESS TYPE
+rescode	  LOCATION OF STOP RESIDENT CODE
+premtype	LOCATION OF STOP PREMISE TYPE
+premname	LOCATION OF STOP PREMISE NAME
+addrnum	  LOCATION OF STOP ADDRESS NUMBER
+stname		LOCATION OF STOP STREET NAME
+stinter		LOCATION OF STOP INTERSECTION
+crossst		LOCATION OF STOP CROSS STREET
+aptnum	  LOCATION OF STOP APT NUMBER
+city		  LOCATION OF STOP CITY
+state		  LOCATION OF STOP STATE
+zip		    LOCATION OF STOP ZIP CODE
+addrpct	  LOCATION OF STOP ADDRESS PRECINCT
+sector		LOCATION OF STOP SECTOR
+beat		  LOCATION OF STOP BEAT
+post		  LOCATION OF STOP POST
+xcoord		LOCATION OF STOP X COORD
+ycoord		LOCATION OF STOP Y COORD
+
+Respecto a estas variables lo más significativo es:
+* Las paradas realizadas en el interior de alguna construcción son más probables que terminen en un arresto que las realizadas fuera, 35.43% y 10.45% respectivamente. Cabe mencionar que más del 80% de paradas son realizadas fuera.
+* La mayor frecuencia de paradas fueron en los condados: Brooklyn (29.2%) y Queens (29.12%); el menor número en Staten Island (10,92%), sin embargo,  en relación a la población es el condado con mayor número de paradas. 
+* De las 45.787 paradas en 2014, el  15% concluyeron en arrestos, de estos el 29%  fueron en Manhattan, principalmente en los recintos: 25, 9 y 23. En Bronx el 25.08% principalmente en los recintos 40, 42 y 44. El comando oficial que más informes realiza es el 826 ubicado en Bronx.
+
+#### Grupo de variables sobre el cacheo:
+frisked		WAS SUSPECT FRISKED ?
+rf_furt		REASON FOR FRISK - FURTIVE MOVEMENTS
+rf_attir	REASON FOR FRISK - INAPPROPRIATE ATTIRE FOR SEASON
+rf_knowl	REASON FOR FRISK - KNOWLEDGE OF SUSPECT'S PRIOR CRIM BEHAV
+rf_othsw	REASON FOR FRISK - OTHER SUSPICION OF WEAPONS
+rf_rfcmp	REASON FOR FRISK - REFUSE TO COMPLY W OFFICER'S DIRECTIONS
+rf_bulg		REASON FOR FRISK - SUSPICIOUS BULGE
+rf_verbl	REASON FOR FRISK - VERBAL THREATS BY SUSPECT
+rf_vcrim	REASON FOR FRISK - VIOLENT CRIME SUSPECTED
+rf_vcact	REASON FOR FRISK-  ACTIONS OF ENGAGING IN A VIOLENT CRIME
+
+Respecto a estas variables lo más significativo ha sido:
+* Se puede apreciar en la distribución de la variable "frisked", que de los sospechos parados se cachean al doble de individuos (66.27%) respecto a los que no son cacheados (33.73%). En cuanto a la variable dependiente "arstmade", se aprecia que no hay grandes diferencias en los porcentajes de arrestos en función de si el sospechoso ha sido previamente cacheado o no.
+* rf_furt 35.73% - rf_attir 7.7% - rf_knowl 5.05% - rf_othsw 9,92% - rf_rfcmp 12.95% - rf_bulg	 7.83% - rf_verbl 0,99% - rf_vcrim 22,05% - rf_vcact 9,05%
+* Otras sospechas de armas (rf_othsw):  Con el 9.92 % de los casos se muestran diferencias en las tasas de arresto. De la misma forma que para otras variables, puede ser debido a que si existe la sospecha de que se esté portando un arma y se confirma, se produce el arresto con mayor probabilidad, 35.56%.
+
+#### Grupo de variables sobre el registro:
+searched	WAS SUSPECT SEARCHED ?
+sb_admis	BASIS OF SEARCH - ADMISSION BY SUSPECT OF WEAPONS POSSESION
+sb_hdobj	BASIS OF SEARCH - HARD OBJECT
+sb_outln	BASIS OF SEARCH - OUTLINE OF WEAPON
+sb_other	BASIS OF SEARCH - OTHER
+knifcuti	WAS A KNIFE OR CUTTING INSTRUMENT FOUND ON SUSPECT ?
+pistol		WAS A PISTOL FOUND ON SUSPECT ?
+riflshot	WAS A RIFLE FOUND ON SUSPECT ?
+asltweap	WAS AN ASSAULT WEAPON FOUND ON SUSPECT ?
+machgun	  WAS A MACHINE GUN FOUND ON SUSPECT ?
+othrweap	WAS ANOTHER TYPE OF WEAPON FOUND ON SUSPECT
+contrabn	WAS CONTRABAND FOUND ON SUSPECT ?
+
+Respecto a estas variables lo más significativo ha sido:
+* Solo el 15.91% de personas paradas fueron registradas (paso posterior al cacheo) por el oficial de policía y más de la mitad fueron arrestadas (53.81%)
+* Tan solo en el 0.83% de las ocasiones (380 ocasiones en total) la razón para que el sospechoso fuese registrado o inspeccionado fue las declaraciones del sospechoso, quedando arrestado en el 65.26% de las ocasiones.
+* Tan solo en el 0.92% de las ocasiones (419 ocasiones en total) la razón para que el sospechoso fuese registrado o inspeccionado fue que se percibió una silueta de arma en el cacheo. el porcentaje de arrestos aumenta hasta el 50.36% en los casos donde se registra al sospecho porque se aprecia una silueta de arma.
+* En el 6.69% el motivo de la busqueda fue un objeto contundente, siendo arrestado el 23,82%. 
+* De los sospechos parados tan solo el 2.33% portan un cuchillo o similar pero el porcentaje de arrestos se dispara hasta el 64.14% en caso de ser encontrado un cuchillo. Por lo que se puede concluir que, a priori, éste es un factor relevante a la hora de ser arrestado.
+* Un porcentaje bajo de los parados estuvo en posesión de un arma de fuego (0.43%) pero de estos la mayoría fueron arrestados (87.82%).
+* De los sospechos parados tan solo el 0.79% portaban otro tipo de arma no catalogada y se aprecia que el porcentaje de arrestos se dispara hasta el 61.71% en caso de ser encontrado un arma de otro tipo no catalogada.
+* Si el sospechoso lleva contrabando encima (3.97%), es muy probable que se le arreste (82.52%).
+
+#### Grupo de variables sobre la fuerza física usada por el oficial de policía:
+forceuse	REASON FORCE USED
+pf_baton	PHYSICAL FORCE USED BY OFFICER - BATON
+pf_hcuff	PHYSICAL FORCE USED BY OFFICER - HANDCUFFS
+pf_hands	PHYSICAL FORCE USED BY OFFICER - HANDS
+pf_other	PHYSICAL FORCE USED BY OFFICER - OTHER
+pf_pepsp	PHYSICAL FORCE USED BY OFFICER - PEPPER SPRAY
+pf_wall	  PHYSICAL FORCE USED BY OFFICER - SUSPECT AGAINST WALL
+pf_grnd	  PHYSICAL FORCE USED BY OFFICER - SUSPECT ON GROUND
+pf_drwep	PHYSICAL FORCE USED BY OFFICER - WEAPON DRAWN
+pf_ptwep	PHYSICAL FORCE USED BY OFFICER - WEAPON POINTED
+
+* Dentro de los casos donde se utilizó la fuerza contra el sospechoso, destacan la defensa propia y la huida del sospecho sobre el resto de razones para usarla (sospechoso con arma, ofrecimiento de resistencia y la defensa de otros). En cuanto a la variable dependiente "arstmade", se aprecia un mayor porcentaje de arrestos en los casos "Ofreció resistencia a la autoridad" (40.25%), "Otros" (39.34%) y "Huida del sospechoso" (24.82%) comparado con el resto de casos, siendo el grupo con menor porcentaje de arrestos el grupo "NA (no se utilizó la fuerza)" (12.28%).
+* El oficial de policía tuvo que utilizar la porra contra el sospecho tan solo en el 0.02% de las ocasiones (10 ocasiones en total). Por lo que, se puede concluir que es un tipo de defensa muy poco usada por los oficiales de policía que en caso de tener que utilizar la fuerza optan por otro tipo de armas antes que por ésta.
+* El oficial necesita recurrir a algún tipo de fuerza física como uso de esposas en 10 de cada 100 casos, de las cuales son arrestadas el 50%.
+* Tan sólo el 15,74% uso las manos como fuerza, arrestando en estos casos al 16,49%.
+* Sospechoso contra la pared (4.48%), siendo arrestados (16.49%)
+* Se muestra una tasa de arrestos mayor (42.12%) para los casos en los que se reduce al sospechoso en el suelo, cosa que ocurre el 0.93%.
+* Tan solo el policía tuvo que desenfundar su arma el 0,98%, arrestando al sospechoso el 20.04% de las ocasiones.
+* El oficial de policía tuvo que apuntar con su arma al sospecho parado tan solo el 0.73% (332 de las ocasiones) y se aprecia que el porcentaje de arrestos aumenta hasta el 23.49% cuando el oficial de policía tuvo que apuntar con su arma al sospecho siendo el 14.94% cuando no ocurrió esto último. Por lo que se puede concluir que, a priori, éste puede ser un factor relevante a la hora de ser arrestado aunque no lo es tanto como sucede en otras variables.
+* El gas pimienta fue usado en tan solo  el 0.02% pero de estos el 63.64% fueron detenidos.
+
+#### Grupo de variables sobre otras circunstancias de la parada:
+othpers		WERE OTHER PERSONS STOPPED, QUESTIONED OR FRISKED ?
+offunif		WAS OFFICER IN UNIFORM ?
+offverb		VERBAL STATEMENT PROVIDED BY OFFICER (IF NOT IN UNIFORM)
+offshld		SHIELD PROVIDED BY OFFICER (IF NOT IN UNIFORM)
+officrid	ID CARD PROVIDED BY OFFICER (IF NOT IN UNIFORM)
+ac_rept		ADDITIONAL CIRCUMSTANCES - REPORT BY VICTIM/WITNESS/OFFICER
+ac_incid	ADDITIONAL CIRCUMSTANCES - AREA HAS HIGH CRIME INCIDENCE
+ac_time	  ADDITIONAL CIRCUMSTANCES - TIME OF DAY FITS CRIME INCIDENCE
+ac_assoc	ADDITIONAL CIRCUMSTANCES - ASSOCIATING WITH KNOWN CRIMINALS
+ac_proxm	ADDITIONAL CIRCUMSTANCES - PROXIMITY TO SCENE OF OFFENSE
+ac_evasv	ADDITIONAL CIRCUMSTANCES - EVASIVE RESPONSE TO QUESTIONING
+ac_cgdir	ADDITIONAL CIRCUMSTANCES - CHANGE DIRECTION AT SIGHT OF OFFICER
+ac_inves	ADDITIONAL CIRCUMSTANCES - ONGOING INVESTIGATION
+ac_stsnd	ADDITIONAL CIRCUMSTANCES - SIGHTS OR SOUNDS OF CRIMINAL ACTIVITY
+ac_other	ADDITIONAL CIRCUMSTANCES – OTHER
+
+* En el 25% de los casos se paran, interrogan o cachean a más de una persona, pero los procentajes de arrestos son practicamente iguales o ligeramente inferior que cuando se para a una sola. 
+* En el 54% el policía iba uniformado, siendo ligeramente superior la tasa de arrestos en estos casos 17.39% frente al 12.31%.
+* Las paradas efectuadas en circunstancias como: la declaración de una víctima o la proximidad a la escena de un delito no superan el 30% y del total de estos el 17% son arrestados.
+* El resto de circunstancias adicionales no presentan tasas de arresto muy diferentes a la media. 
 
 # 3.3 Down-Sampling
 
