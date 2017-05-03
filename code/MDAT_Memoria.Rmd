@@ -24,7 +24,13 @@ library(caret)
 library(pscl)
 library(survey)
 library(ROCR)
+library(foreach)
+library(doMC)
+registerDoMC(8)
+library(rpart)
+
 library(dplyr)
+
 ```
 
 # 1. DESCRIPCIÓN DEL PROBLEMA
@@ -418,15 +424,14 @@ SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
 
 # 4. Modelado
 
-## 4.1 Regresión logística: arstmade
+## 4.1 Regresión logística
 
-Para encontrar los determinantes de que una persona parada sea arrestada o no, utilizamos los modelos lineales generalizados, y dado que la variable respuesta, toma valores N (no fueron arrestados) o Y (sí fueron arrestados), utilizamos la función de enlace logit. Este modelo es de la familia binomial 
+Para encontrar los determinantes de que una persona parada sea arrestada o no, utilizamos los modelos lineales generalizados, y dado que la variable respuesta, toma valores N (no fueron arrestados) o Y (sí fueron arrestados), utilizamos la función de enlace logit. Este modelo es de la familia binomial.
 
 Hipótesis
 
 1.	Los casos son independientes entre sí.
 2.	La probabilidad de éxito es la misma para todos los casos que tienen los mismos valores de los regresores.
-
 
 ### 4.1.1 Creación de modelos vacío y completo
 
@@ -554,7 +559,7 @@ auc_test
 ```
 
 
-# Conclusiones
+#### 4.1.9 Conclusiones
 
 En los modelos estadísticos analizados, en principio se determina que la variable *race* que corresponde a la raza de las personas paradas resulta significativa en la probabilidad de que sean arrestados, sin embargo, resultaría interesante verificar si efectivamente este es un factor determinante para que una persona sea parada o no, es decir, verificar la hipótesis de que esta ley es un "política de discriminación racial indirecta".  
 
@@ -563,6 +568,280 @@ Según las estadísticas presentadas por el Departamento de Policía (NYPD) en e
 ## 4.2 Knn
 
 ## 4.3 Random Forest
+
+A continuación se recurre al uso de árboles de decisión para predecir la variable objetivo del problema planteado. Se seguirá el código programado por Javier Moguerza y como complemento al mismo, se compara el procesado de dicho código de forma secuencial y en paralelo.
+
+<!-- ## Árboles de decisión: arstmade -->
+
+<!-- ### Decision tree -->
+
+<!-- ```{r} -->
+
+<!-- ``` -->
+
+### 4.3.1 Selección de predictores
+
+La función `randomForest::rfcv` permite realizar una evaluación del comportamiento del modelo según el número de variables a escoger para cada rama. Dado que el conjunto de train cuenta con relativamente pocos predictores, se emplea un step elevado para comprobar todas las particiones posibles y seleccionar la óptima a la hora de generar el modelo. Una vez realizado el cálculo, se escoge el valor óptimo para generar el conjunto de árboles.
+
+```{r}
+# 
+# Random Forest con Cross-Validation para selección de predictores
+#
+cv.model_rf_10 <- rfcv(trainx=SQFdataTrain_DSAMP[,-match("arstmade",
+                                                         colnames(SQFdataTrain_DSAMP))],
+                       trainy=SQFdataTrain_DSAMP$arstmade, cv.fold=10,
+                       step=0.99, mtry=function(p) max(1, floor(sqrt(p))), ntree = 100)
+```
+
+### 4.3.2 Preparación de datos para la generación de modelos
+
+```{r}
+# importance(model_rf_10)
+
+# varImpPlot(model_rf_10)
+
+# Preparación de datasets con target en última columna
+SQFdataTrain_DSAMP_RF <- SQFdataTrain_DSAMP %>% select(-arstmade)
+SQFdataTrain_DSAMP_RF <- cbind(SQFdataTrain_DSAMP_RF,
+                               arstmade = SQFdataTrain_DSAMP$arstmade)
+
+SQFdataTest_RF <- SQFdataTest %>% select(-arstmade)
+SQFdataTest_RF <- cbind(SQFdataTest_RF, arstmade = SQFdataTest$arstmade)
+
+# Parámetros para el bosque (N - Nº arboles, K - Nº predictores, M - Nº muestras)
+N = 600
+K = as.integer(names(cv.model_rf_10$error.cv[which.min(cv.model_rf_10$error.cv)])) 
+M = round(dim(SQFdataTrain_DSAMP_RF)[1]*0.7)
+
+# Posición de la variable respuesta en el dataset
+res = which(colnames(SQFdataTrain_DSAMP_RF)=="arstmade")
+
+# Vectores de modelos
+moguerza.forest.sec <- vector("list", N)
+moguerza.forest.par <- vector("list", N)
+ 
+# Matrices de predictores
+vars.sec = matrix(0,K,N)
+vars.par = matrix(0,K,N)
+
+# Tamaño total de la muestra de train y test
+k = dim(SQFdataTrain_DSAMP_RF)[1]
+m = dim(SQFdataTest_RF)[1]
+```
+
+### 4.3.3 Generación de modelos
+
+Se combina la generación de los modelos secuencial y paralelo con el cálculo del tiempo requerido para cada uno de ellos.
+
+* Código secuencial:
+
+```{r}
+start.time <- Sys.time()
+
+for(i in 1:N) {
+    # Selección de predictores y observaciones para el árbol
+    a = sort(sample(1:(dim(SQFdataTrain_DSAMP_RF)[2]-1),K))
+    b = sort(sample(1:k, M, replace=TRUE))
+    
+    # Datos para el árbol
+    SQFdataTrain_DSAMP.vot = SQFdataTrain_DSAMP_RF[b,c(a,res)]
+    
+    # Creación de los árboles
+    model.rp <- rpart(SQFdataTrain_DSAMP.vot[,K+1] ~., data = SQFdataTrain_DSAMP.vot[,1:K],
+                      cp=0.0001, control = rpart.control(maxdepth = 10),
+                      parms=list(split="gini"))
+    
+    # Almacenamiento de árboles en modelo secuencial
+    moguerza.forest.sec[[i]] = model.rp
+    
+    # Almacenamiento de los predictores seleccionados por árbol
+    vars.sec[,i] = as.vector(a)
+}
+end.time <- Sys.time()
+
+time.taken.sec <- Sys.time() - start.time
+```
+
+* Código paralelo:
+
+```{r}
+start.time <- Sys.time()
+
+# Creación de conjuntos aleatorios de train
+SQFdataTrain_DSAMP.vot <- foreach(n = 1:N) %dopar% {
+    # Selección de predictores y observaciones para el árbol
+    a = sort(sample(1:(dim(SQFdataTrain_DSAMP_RF)[2]-1),K))
+    b = sort(sample(1:k, M, replace=TRUE))
+
+    # Datos para el árbol
+    SQFdataTrain_DSAMP_RF[b,c(a,res)]
+}
+
+# Creación de árboles
+moguerza.forest.par <- foreach(i=1:N) %dopar% {
+    model.rp <- rpart(SQFdataTrain_DSAMP.vot[[i]][,K+1] ~., data = SQFdataTrain_DSAMP.vot[[i]][,1:K],
+                      cp=0.0001, control = rpart.control(maxdepth = 10),
+                      parms=list(split="gini"))
+}
+
+# Almacenamiento de predictores por árbol
+for (i in 1:N) {
+    vars.par[,i] <- which(is_in(colnames(SQFdataTrain_DSAMP_RF), attr(moguerza.forest.par[[i]]$terms,"term.labels")))
+}
+
+foreach (i=1:N) %dopar% {
+    vars.par[,i] <- which(is_in(colnames(SQFdataTrain_DSAMP_RF), attr(moguerza.forest.par[[i]]$terms,"term.labels")))
+}
+
+end.time <- Sys.time()
+
+time.taken.par <- end.time - start.time
+#==========================================================================================
+
+time.taken.sec - time.taken.par
+
+
+```
+
+### 4.3.4 Evaluación del error
+
+```{r}
+#==================================Error en train==========================================
+# Matriz de predicciones
+pred.matrix.train.sec = matrix(0,k,N)
+
+for (j in 1:N)
+{
+    prediction = predict(moguerza.forest.sec[[j]], SQFdataTrain_DSAMP_RF[,vars.sec[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+    pred.matrix.train.sec[,j] = prediction.fact
+}
+
+# Vector de probabilidades
+p.arstmade.train.sec = rowSums(pred.matrix.train.sec==factores[2])/N
+
+pred.train.fact.sec = factores[round(p.arstmade.train.sec)+1]
+real.train.fact = SQFdataTrain_DSAMP_RF[,res]
+pred.train.fact.sec <- relevel(as.factor(pred.train.fact.sec), ref = "Y")
+
+table.moguerza.train.sec = table(pred.train.fact.sec, real.train.fact)
+confusionMatrix(table.moguerza.train.sec)
+#==========================================================================================
+
+
+
+
+
+
+
+#==================================Error en train==========================================
+# Matriz de predicciones
+pred.matrix.train.par = matrix(0,k,N)
+
+pred.vect.train.par <- foreach(j = 1:N) %dopar% {
+    prediction <- predict(moguerza.forest.par[[j]], SQFdataTrain_DSAMP_RF[,vars.par[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+}
+
+for(j in 1:N){
+    pred.matrix.train.par[,j] = pred.vect.train.par[[j]]
+}
+
+# Vector de probabilidades
+p.arstmade.train.par = rowSums(pred.matrix.train.par==factores[2])/N
+
+pred.train.fact.par = factores[round(p.arstmade.train.par)+1]
+real.train.fact = SQFdataTrain_DSAMP_RF[,res]
+pred.train.fact.par <- relevel(as.factor(pred.train.fact.par), ref = "Y")
+
+table.moguerza.train.par = table(pred.train.fact.par, real.train.fact)
+confusionMatrix(table.moguerza.train.par)
+#==========================================================================================
+
+
+
+
+#==================================Error en test===========================================
+# Matriz de predicciones
+pred.matrix.test.sec = matrix(0,m,N)
+
+pred.vect.test.sec <- foreach(j = 1:N) %dopar% {
+    prediction <- predict(moguerza.forest.sec[[j]], SQFdataTest_RF[,vars.sec[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+}
+
+for(j in 1:N){
+    pred.matrix.test.sec[,j] = pred.vect.test.sec[[j]]
+}
+
+p.arstmade.test.sec = rowSums(pred.matrix.test.sec==factores[2])/N # Almacena la probabilidad
+# (definida según cuantos modelos de los 100 dan resultado positivo) de que el individuo x esté enfermo
+
+pred.test.fact.sec = factores[round(p.arstmade.test.sec)+1]
+real.train.fact = SQFdataTest_RF[,res]
+pred.test.fact.sec <- relevel(as.factor(pred.test.fact.sec), ref = "Y")
+
+table.moguerza.test.sec = table(pred.test.fact.sec,real.train.fact)
+cM_moguerza_sec <- confusionMatrix(table.moguerza.test.sec)
+#==========================================================================================
+
+
+
+
+#==================================Error en test===========================================
+# Matriz de predicciones
+pred.matrix.test.par = matrix(0,m,N)
+
+pred.vect.test.par <- foreach(j = 1:N) %dopar% {
+    prediction <- predict(moguerza.forest.par[[j]], SQFdataTest_RF[,vars.par[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+}
+
+for(j in 1:N){
+    pred.matrix.test.par[,j] = pred.vect.test.par[[j]]
+}
+
+p.arstmade.test.par = rowSums(pred.matrix.test.par==factores[2])/N # Almacena la probabilidad
+# (definida según cuantos modelos de los 100 dan resultado positivo) de que el individuo x esté enfermo
+
+pred.test.fact.par = factores[round(p.arstmade.test.par)+1]
+real.train.fact = SQFdataTest_RF[,res]
+pred.test.fact.par <- relevel(as.factor(pred.test.fact.par), ref = "Y")
+
+table.moguerza.test.par = table(pred.test.fact.par,real.train.fact)
+#==========================================================================================
+```
+
+### Evaluación de modelos de random forest
+
+```{r}
+
+# RESTO DE MODELOS - EVALUACION
+#==========================================================================================
+cM_10 <- confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_moguerza_sec <- confusionMatrix(table.moguerza.test.sec)
+cM_moguerza_par <- confusionMatrix(table.moguerza.test.par)
+
+
+
+fun_rf_eval <- function(x){
+    return(c(x$byClass[7],x$byClass[5:6],x$byClass[2]))
+}
+
+df.comp.rf <- data.frame(
+    rf_node_10 = fun_rf_eval(cM_10),
+    rf_moguerza_sec = fun_rf_eval(cM_moguerza_sec),
+    rf_moguerza_par = fun_rf_eval(cM_moguerza_par),
+    row.names = c("F-measure","Precision","Recall/Sensitivity","Specificity")
+)
+
+df.comp.rf
+#==========================================================================================
+```
 
 # 5. EVALUACIÓN
 
