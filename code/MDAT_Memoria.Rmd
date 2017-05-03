@@ -9,19 +9,22 @@ output:
 
 ```{r, message = FALSE, warning = FALSE}
 # Apartado 2
-if (! "dataQualityR" %in% installed.packages()) install.packages("dataQualityR", depend = TRUE)
 library(dataQualityR)
-if (! "knitr" %in% installed.packages()) install.packages("knitr", depend = TRUE)
 library(knitr)
 library(grid)
 library(gridExtra)
 
 # Apartado 3
 library(magrittr)
-library(dplyr)
+
 
 
 library(caret)
+
+library(pscl)
+library(survey)
+library(ROCR)
+library(dplyr)
 ```
 
 # 1. DESCRIPCIÓN DEL PROBLEMA
@@ -131,10 +134,10 @@ SQFdata_modif$arstmade <- relevel(SQFdata_modif$arstmade, ref = "Y")
 
 En las tablas obtenidas en el segundo apartado del presente documento se puede obtener información sobre qué variables sería interesante eliminar del dataset teniendo en cuenta distintos aspectos:
 
-    - Porcentaje de datos faltantes.
-    - Casos con varianza nula o casi nula.
-    - Factores con demasiados niveles.
-    - Otros aspectos.
+* Porcentaje de datos faltantes.
+* Casos con varianza nula o casi nula.
+* Factores con demasiados niveles.
+* Otros aspectos.
 
 ```{r}
 #
@@ -213,7 +216,7 @@ dim(SQFdata_modif)
 Nos encontramos ante dos casos distintos de NAs después de haber realizado la eliminación previa de variables:
 
 
-* Variable *age*: Presenta 212 casos sin valor frente a los 45787 totales disponibles en el dataset original. Dado que se trata de un porcentaje ínfimo de casos, se opta por eliminarlos del conjunto de datos.
+* Variable *age*: Presenta 212 casos sin valor frente a los 45.787 totales disponibles en el dataset original. Dado que se trata de un porcentaje ínfimo de casos, se opta por eliminarlos del conjunto de datos.
     
 * Variables asociadas a distintos aspectos de la dentención (armas, fuerza física, circunstancias adicionales, etc): Se consideran dichas variables como información complementaria a la detención. De esta forma se asume que, en aquellos casos donde no existe información sobre la variable, o bien el agente no ha rellenado la casilla o ha rellenado alguna de las otras clases de la variable. Por tanto, se asigna a todas esas observaciones el nivel NO. Esta decisión permitirá volver a eliminar variables que presenten varianza casi nula.
 
@@ -339,8 +342,12 @@ dim(SQFdata_modif)
 
 ## 3.4 Creación de conjuntos de *train* y *test*
 
-```{r, eval = FALSE}
+Tras haber realizado las transformaciones necesarias a las variables, se crean los conjuntos de *train* y *test* a partir del dataset modificado. Tras crear los conjuntos se comprueba la proporción de clases que existe en la variable objetivo.
+
+```{r}
+# 
 # Creación de conjuntos train y test
+# 
 tot_obs <- dim(SQFdata_modif)[1]
 indices <- 1:tot_obs
 
@@ -357,28 +364,29 @@ SQFdataTrain %>% group_by(arstmade) %>%
 
 ### 3.4.1 Ajuste del desbalanceo: Down-Sampling
 
-Tal y como se puede observar en la tabla anterior, de los casos seleccionados para el conjunto de train, el caso positivo o arresto de la persona detenida corresponde únicamente a un 15\% de ellos. Al disponer de un número reducidos en nuestro conjunto de train, el modelo tenderá a predecir más casos negativos que positivos, lo que supone dejar marchar a personas que deberían ser arrestadas.
+Tal y como se puede observar en la tabla anterior, de los casos seleccionados para el conjunto de train, el caso positivo o arresto de la persona detenida corresponde únicamente a un 15\% de ellos. Al disponer de un número tan reducido en nuestro conjunto de train, el modelo tenderá a predecir más casos negativos que positivos, lo que supone dejar marchar a personas que deberían ser arrestadas.
 
 Esta situación, conocida como clases desbalanceadas, es muy típica en problemas de clasificación binaria. Para tratar de resolver este problema se pueden adoptar diferentes medidas:
-    - Conseguir más datos.
-    - Remuestreo del dataset con diferentes técnicas: Up-Sampling, Down-Sampling, SMOTE, etc.
-    - Uso de modelos con peso.
 
-En la realización del presente trabajo se han empleado las técnicas de remuestreo expuestas. Únicamente se muestran los resultados obtenidos tras emplear Down-Sampling dado que el resto de técnicas suponían mejoras menores.
+* Conseguir más datos.
+* Remuestreo del conjunto de train con diferentes técnicas: Up-Sampling, Down-Sampling, SMOTE, etc.
+* Uso de modelos con peso.
+
+En la realización del presente trabajo se han empleado las técnicas de remuestreo expuestas. Únicamente se muestran los resultados obtenidos tras emplear Down-Sampling dado que el resto de técnicas suponían mejoras menores, lo cual es lógico teniendo en cuenta que el dataset original cuenta con un total de 45.787 observaciones y por tanto es posible eliminar observaciones sin arriesgarse a perser demasiada información para generar los modelos.
 
 Cabe destacar que, a pesar de mejorar en la predicción de los casos positivos, también conlleva desventajas frente al dataset desbalanceado. De las métricas empleadas para evaluar los modelos, la técnica de Down-Sampling mejora el *recall* del modelo pero empeora su *precision*. Dichas métricas se corresponden con:
     
-    - ***Recall***: Tasa de arrestos reales predichos como tal.
+* ***Recall***: Tasa de arrestos reales predichos como tal.
 
-$$\text{Recall}=\frac{TP}{TP+FN}$$    
+$$\text{Recall}=\frac{TP}{TP+FN}$$
 
-    - ***Precision***: Tasa de acierto en la predicción de arrestos.
+* ***Precision***: Tasa de acierto en la predicción de arrestos.
 
 $$\text{Precision}=\frac{TP}{TP+FP}$$
 
 Siendo $TP=\text{True Positive}$ y $FN=\text{False Negative}$.
 
-Como se dijo anteriormente, al aplicar la técnica de Down-Sampling se mejora la predicción de casos positivos. Dicha mejora se basa en una mayor predicción de casos positivos a costa de una reducción de casos negativos predichos. Esto conlleva un menor número de $FN$ y un mayor número de $TP$ en la matriz de confusión, pero también un mayor número de $FP$.
+La mejora en la predicción de casos positivos se basa en el incremento de las predicciones para dicha clase a costa de una reducción en la contraria. Esto conlleva un menor número de $FN$ y un mayor número de $TP$ en la matriz de confusión, pero también un mayor número de $FP$.
 
 Analizando las dos situaciones, el hecho de que el modelo empeore su *precision* supone arrestar a gente que no debería ser arrestada. Por el contrario, que mejore su *recall* implica reducir el número de sospechosos que deberían ser arrestados y sin embargo se les permite marchar.
 
@@ -387,9 +395,11 @@ Dado que se considera más perjudicial para la ciudad el hecho de dejar marchar 
 $$"All\ models\ are\ wrong,\ but\ some\ are\ useful"$$
 
 
-```{r, eval = FALSE}
-# Total de casos -> 4847 (si) + 27203 (no) = 32050
-# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberían ser 4847 casos
+```{r}
+# 
+# Total de casos -> 4799 (SI) + 27103 (NO) = 32050
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberían ser 4799 casos
+# 
 training.yes <- SQFdataTrain %>% filter(arstmade == 'Y')
 training.no <- SQFdataTrain %>% filter(arstmade == 'N')
 
@@ -406,11 +416,157 @@ SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
 
 \newpage
 
+# 4. Modelado
+
+## 4.1 Regresión logística: arstmade
+
+Para encontrar los determinantes de que una persona parada sea arrestada o no, utilizamos los modelos lineales generalizados, y dado que la variable respuesta, toma valores N (no fueron arrestados) o Y (sí fueron arrestados), utilizamos la función de enlace logit. Este modelo es de la familia binomial 
+
+Hipótesis
+
+1.	Los casos son independientes entre sí.
+2.	La probabilidad de éxito es la misma para todos los casos que tienen los mismos valores de los regresores.
 
 
+### 4.1.1 Creación de modelos vacío y completo
+
+```{r}
+# 
+# Creación de modelo vacío
+#
+model_glm_DSAMP_Vacio <- glm(arstmade ~ 1, data = SQFdataTrain_DSAMP, family = "binomial")
+
+# 
+# Creación de modelo completo
+#
+model_glm_DSAMP <- glm(arstmade ~ ., data = SQFdataTrain_DSAMP, family = "binomial")
+```
+
+### 4.1.2 Selección de modelos mediante stepwise
+
+```{r}
+# 
+# Stepwise modelo con Down-Sampling
+#
+model_glm_DSAMP_Forw <- step(model_glm_DSAMP_Vacio,
+                       scope = list(lower = formula(model_glm_DSAMP_Vacio), upper = formula(model_glm_DSAMP)),
+                       direction = "forward", trace = 0)
+summary(model_glm_DSAMP_Forw)
+```
+
+### 4.1.3 Prueba Likelihood ratio
+
+Dado que la hipótesis nula sostiene que el modelo reducido es el mejor, un valor del p-value para el modelo estadístico mayor que 0,05 nos obliga a aceptar la hipótesis nula, es decir, proporciona evidencia a favor del modelo reducido. Además se puede verificar, según el criterio AIC, el modelo balanceado y construido en base a stepwise es el mejor. 
+
+```{r, warming = FALSE, message=FALSE}
+anova(model_glm_DSAMP, model_glm_DSAMP_Forw,  test="Chisq")
+c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic)
+```
+
+### 4.1.4 Evaluación de los parámetros del modelo seleccionado
+
+Como la respuesta es binaria, la función de salida es la probabilidad condicionada de que la respuesta sea un acierto dado los valores de los predictores. Los betas estimados son los log- odds, donde la probabilidad (odds) de que el suceso ocurra se da como la probabilidad de acierto dividido por la probabilidad de fallo.
+En cuanto a la interpretación de los parámetros estimados del modelo *model_glm_DSAMP_Forw*, el signo de los mismos indica que ese predictor aumenta o disminuye la probabilidad de que una persona sea arrestada y para evaluar la magnitud de la variación se calculó el exponencial de cada beta. Así se puede determinar por ejemplo: si aumenta  una unidad en la edad, la probabilidad de ser arrestado  se incrementa en un factor de 1,01
+
+```{r}
+round(exp(cbind(Estimate=coef(model_glm_DSAMP_Forw),
+                confint(model_glm_DSAMP_Forw))), 2)
+```
+
+### 4.1.5 Pseudo R^2
+
+Evaluamos el R cuadrado de McFadden mientras más cercano a uno indica que el modelo tiene poder predictivo, es este caso el valor es de 0.587.
+
+```{r, warming = FALSE}
+pR2(model_glm_DSAMP_Forw)
+```
+
+### 4.1.6 Importancia de la variable
+
+Si bien el método stepwise selecciona el modelo por criterio AIC, es necesario verificar si al eliminar una variable que no es significativa afecta mucho al modelo, en este caso se valora la opción de eliminar la variable *haircolr*, dado que según el estadístico de Wald a un nivel de significancia de *0.05*, está en el umbral de no rechazar la hipótesis nula de que el coeficiente de una variable independiente en el modelo no es significativamente diferente de cero. Se evalúa un nuevo modelo eliminando esta variable y a priori observando el criterio AIC, no causa un gran efecto en el modelo. Esto se comprueba al analizar tabla *anova* en la que se demuestra que no hay suficiente evidencia para rechazar Ho. 
+
+El análisis se repite para la variable *race*, dado que es un factor, a priori, relacionado con la controversia que ampara esta ley. Después de evaluar los estadísticos vemos que hay suficiente evidencia para considerar importante la variable dentro del modelo.
+
+```{r, warming = FALSE}
+#varImp(model_glm_DSAMP_Forw)
+
+# 
+# Eliminar haircolr
+# 
+regTermTest(model_glm_DSAMP_Forw, "haircolr")
+model_glm_DSAMP_hair<- glm(arstmade ~ .-haircolr, data = SQFdataTrain_DSAMP, family = "binomial")
+model_glm_DSAMP_hair_back<-step(model_glm_DSAMP_hair, direction = "backward", trace = 0)
+#summary(model_glm_DSAMP_hair_back)
+c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic, model_glm_DSAMP_hair_back$aic)
+anova(model_glm_DSAMP_hair_back, model_glm_DSAMP_Forw,  test="Chisq")
+
+# 
+# Eliminar race
+# 
+regTermTest(model_glm_DSAMP_Forw, "race")
+model_glm_DSAMP_race<- glm(arstmade ~ .-race, data = SQFdataTrain_DSAMP, family = "binomial")
+model_glm_DSAMP_race_back<-step(model_glm_DSAMP_race, direction = "backward", trace = 0)
+#summary(model_glm_DSAMP_race_back)
+c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic, model_glm_DSAMP_hair_back$aic, model_glm_DSAMP_race_back$aic)
+anova(model_glm_DSAMP_race_back, model_glm_DSAMP_Forw,  test="Chisq")
+```
+
+### 4.1.7 Validación cruzada
+
+Dado que nuestro objetivo es construir un modelo de predicción, la métrica más importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificación donde se cruza el verdadero valor de la observación, con la predicción de la misma según el modelo seleccionado, tomando como referencia una predicción mayor a 0.5. Como resultado se obtiene que el modelo predijo con exactitud 1671 personas paradas que fueron arrestadas, de un total de 2091 lo que representa un **sensitivity** de 0.7991, en cuanto a la predicción de los que no fueron arrestados **specificity** corresponde a un acierto de 0.8607
 
 
+```{r}
+# 
+# Evaluación del modelo y creación de tabla de resultados
+#
+pred_DSAMP_hair_back <- factor(predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")>0.5,
+                          levels=c(FALSE, TRUE),
+                          labels=c("N","Y"))
 
+cM_DSAMP_hair_back <- confusionMatrix(pred_DSAMP_hair_back, SQFdataTest$arstmade, positive="Y")
+
+eval_DSAMP_hair_back_metrics <- c(model_glm_DSAMP_hair_back$aic,
+                                  model_glm_DSAMP_hair_back$null.deviance,
+                                  model_glm_DSAMP_hair_back$deviance,
+                                  length(model_glm_DSAMP_hair_back$model)-1)
+
+eval_DSAMP_hair_back <- c(cM_DSAMP_hair_back$byClass[7],
+                          cM_DSAMP_hair_back$byClass[5:6],
+                          cM_DSAMP_hair_back$byClass[2])
+```
+
+#### 4.1.8 Curva ROC
+
+La curva ROC es un gráfico que muestra la relación entre los datos que se predicen correctamente con la tasa de los datos negativos que se consideran erróneamente como positivos. Esta métrica ofrece un mejor resumen de la capacidad predictiva que una tabla de clasificación, porque presenta la potencia predictiva para todos los posibles valores sin establecer una referencia arbitraria, permitiendo así evaluar el rendimiento del clasificador. El área bajo la curva ROC para los datos de testeo es de 0.8977 lo que indica que el modelo discrimina adecuadamente a los arrestados y no arrestados.
+
+```{r, warming = FALSE, message=FALSE}
+
+prob_test <- predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")
+pr_test <- prediction(prob_test, SQFdataTest$arstmade)
+pred_tpr_fpr <- performance(pr_test, measure = "tpr", x.measure = "fpr")
+plot(pred_tpr_fpr, main = "ROC curve", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lwd = 2, lty = 2)
+
+auc_test <- performance(pr_test, measure = "auc")
+auc_test <- auc_test@y.values[[1]]
+auc_test
+```
+
+
+# Conclusiones
+
+En los modelos estadísticos analizados, en principio se determina que la variable *race* que corresponde a la raza de las personas paradas resulta significativa en la probabilidad de que sean arrestados, sin embargo, resultaría interesante verificar si efectivamente este es un factor determinante para que una persona sea parada o no, es decir, verificar la hipótesis de que esta ley es un "política de discriminación racial indirecta".  
+
+Según las estadísticas presentadas por el Departamento de Policía (NYPD) en el año 2016, Nueva York ha experimentado una reducción en todas las categorías de delitos, además de la reducción de uso de la técnica de "Stop and Frisk". Ante estos resultados, resulta interesante conocer el impacto que tiene esta ley en las estadísticas de delincuencia.
+
+## 4.2 Knn
+
+## 4.3 Random Forest
+
+# 5. EVALUACIÓN
+
+# 6. CONCLUSIONES
 
 
 
