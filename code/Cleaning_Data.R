@@ -305,21 +305,21 @@ SQFdata$crossst[which(SQFdata$crossst == " ")] <- NA
 
 # Corregir NAs y unificar valores en forceuse
 SQFdata$forceuse[which(SQFdata$forceuse == " ")] <- NA
-SQFdata$forceuse <- factor(SQFdata$forceuse, levels = c(" ", "DO", "DS", "OR", "OT", "SF", "SW"),
-                           labels=c('NA', 'Defense of other', 'Defense of self', 'Overcome resistence',
+SQFdata$forceuse <- factor(SQFdata$forceuse, levels = c("DO", "DS", "OR", "OT", "SF", "SW"),
+                           labels=c('Defense of other', 'Defense of self', 'Overcome resistence',
                                     'Other', 'Suspected flight', 'Suspected weapon'))
 
 # Corregir NAs y unificar valores en officrid
 SQFdata$officrid[which(SQFdata$officrid == " ")] <- NA
-SQFdata$officrid <- factor(SQFdata$officrid, levels = c(" ", "I", "0"), labels=c('NA', 'Id', 'No'))
+SQFdata$officrid <- factor(SQFdata$officrid, levels = c("I", "0"), labels=c('Id', 'No'))
 
 # Corregir NAs y unificar valores en offshld
 SQFdata$offshld[which(SQFdata$offshld == " ")] <- NA
-SQFdata$offshld <- factor(SQFdata$offshld, levels = c(" ", "S", "0"), labels=c('NA', 'Shield', 'No'))
+SQFdata$offshld <- factor(SQFdata$offshld, levels = c("S", "0"), labels=c('Shield', 'No'))
 
 # Corregir NAs y unificar valores en offverb
 SQFdata$offverb[which(SQFdata$offverb == " ")] <- NA
-SQFdata$offverb <- factor(SQFdata$offverb, levels = c(" ", "V", "0"), labels=c('NA', 'Verbal', 'No'))
+SQFdata$offverb <- factor(SQFdata$offverb, levels = c("V", "0"), labels=c('Verbal', 'No'))
 
 # Corregir NAs y unificar valores en othfeatr
 SQFdata$othfeatr[which(SQFdata$othfeatr == " ")] <- NA

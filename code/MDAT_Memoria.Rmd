@@ -131,7 +131,7 @@ En las tablas obtenidas en el segundo apartado del presente documento se puede o
     - Porcentaje de datos faltantes.
     - Casos con varianza nula o casi nula.
     - Factores con demasiados niveles.
-    - 
+    - Otros aspectos.
 
 ```{r, eval = FALSE}
 
