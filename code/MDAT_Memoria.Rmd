@@ -16,21 +16,19 @@ library(gridExtra)
 
 # Apartado 3
 library(magrittr)
-
+library(dplyr)
 
 
 library(caret)
 
 library(pscl)
+detach("package:pscl", unload=TRUE)
 library(survey)
 library(ROCR)
 library(foreach)
 library(doMC)
 registerDoMC(8)
 library(rpart)
-
-library(dplyr)
-
 ```
 
 # 1. DESCRIPCIÓN DEL PROBLEMA
@@ -133,7 +131,6 @@ Se genera un dataset a partir de diversas transformaciones aplicadas a las varia
 # source("code/Cleaning_Data.R")
 source("Cleaning_Data.R")
 SQFdata_modif <- SQFdata
-SQFdata_modif$arstmade <- relevel(SQFdata_modif$arstmade, ref = "Y")
 ```
 
 ### 3.3.2 Eliminación de variables
@@ -198,8 +195,6 @@ length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
 SQFdata_modif <- SQFdata_modif %>%
                     select(-c(premname, stinter, crossst, sector,
                               pct, crimsusp, addrpct, detailCM))
-
-
 
 # 
 # Variables asociadas a series temporales o coordenadas -> No son de interés para
@@ -436,23 +431,17 @@ Hipótesis
 ### 4.1.1 Creación de modelos vacío y completo
 
 ```{r}
-# 
 # Creación de modelo vacío
-#
 model_glm_DSAMP_Vacio <- glm(arstmade ~ 1, data = SQFdataTrain_DSAMP, family = "binomial")
 
-# 
 # Creación de modelo completo
-#
 model_glm_DSAMP <- glm(arstmade ~ ., data = SQFdataTrain_DSAMP, family = "binomial")
 ```
 
 ### 4.1.2 Selección de modelos mediante stepwise
 
 ```{r}
-# 
 # Stepwise modelo con Down-Sampling
-#
 model_glm_DSAMP_Forw <- step(model_glm_DSAMP_Vacio,
                        scope = list(lower = formula(model_glm_DSAMP_Vacio), upper = formula(model_glm_DSAMP)),
                        direction = "forward", trace = 0)
@@ -483,6 +472,7 @@ round(exp(cbind(Estimate=coef(model_glm_DSAMP_Forw),
 Evaluamos el R cuadrado de McFadden mientras más cercano a uno indica que el modelo tiene poder predictivo, es este caso el valor es de 0.587.
 
 ```{r, warming = FALSE}
+library(pscl)
 pR2(model_glm_DSAMP_Forw)
 ```
 
@@ -493,77 +483,20 @@ Si bien el método stepwise selecciona el modelo por criterio AIC, es necesario 
 El análisis se repite para la variable *race*, dado que es un factor, a priori, relacionado con la controversia que ampara esta ley. Después de evaluar los estadísticos vemos que hay suficiente evidencia para considerar importante la variable dentro del modelo.
 
 ```{r, warming = FALSE}
-#varImp(model_glm_DSAMP_Forw)
-
-# 
 # Eliminar haircolr
-# 
 regTermTest(model_glm_DSAMP_Forw, "haircolr")
 model_glm_DSAMP_hair<- glm(arstmade ~ .-haircolr, data = SQFdataTrain_DSAMP, family = "binomial")
 model_glm_DSAMP_hair_back<-step(model_glm_DSAMP_hair, direction = "backward", trace = 0)
-#summary(model_glm_DSAMP_hair_back)
 c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic, model_glm_DSAMP_hair_back$aic)
 anova(model_glm_DSAMP_hair_back, model_glm_DSAMP_Forw,  test="Chisq")
 
-# 
 # Eliminar race
-# 
 regTermTest(model_glm_DSAMP_Forw, "race")
 model_glm_DSAMP_race<- glm(arstmade ~ .-race, data = SQFdataTrain_DSAMP, family = "binomial")
 model_glm_DSAMP_race_back<-step(model_glm_DSAMP_race, direction = "backward", trace = 0)
-#summary(model_glm_DSAMP_race_back)
 c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic, model_glm_DSAMP_hair_back$aic, model_glm_DSAMP_race_back$aic)
 anova(model_glm_DSAMP_race_back, model_glm_DSAMP_Forw,  test="Chisq")
 ```
-
-### 4.1.7 Validación cruzada
-
-Dado que nuestro objetivo es construir un modelo de predicción, la métrica más importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificación donde se cruza el verdadero valor de la observación, con la predicción de la misma según el modelo seleccionado, tomando como referencia una predicción mayor a 0.5. Como resultado se obtiene que el modelo predijo con exactitud 1671 personas paradas que fueron arrestadas, de un total de 2091 lo que representa un **sensitivity** de 0.7991, en cuanto a la predicción de los que no fueron arrestados **specificity** corresponde a un acierto de 0.8607
-
-
-```{r}
-# 
-# Evaluación del modelo y creación de tabla de resultados
-#
-pred_DSAMP_hair_back <- factor(predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")>0.5,
-                          levels=c(FALSE, TRUE),
-                          labels=c("N","Y"))
-
-cM_DSAMP_hair_back <- confusionMatrix(pred_DSAMP_hair_back, SQFdataTest$arstmade, positive="Y")
-
-eval_DSAMP_hair_back_metrics <- c(model_glm_DSAMP_hair_back$aic,
-                                  model_glm_DSAMP_hair_back$null.deviance,
-                                  model_glm_DSAMP_hair_back$deviance,
-                                  length(model_glm_DSAMP_hair_back$model)-1)
-
-eval_DSAMP_hair_back <- c(cM_DSAMP_hair_back$byClass[7],
-                          cM_DSAMP_hair_back$byClass[5:6],
-                          cM_DSAMP_hair_back$byClass[2])
-```
-
-#### 4.1.8 Curva ROC
-
-La curva ROC es un gráfico que muestra la relación entre los datos que se predicen correctamente con la tasa de los datos negativos que se consideran erróneamente como positivos. Esta métrica ofrece un mejor resumen de la capacidad predictiva que una tabla de clasificación, porque presenta la potencia predictiva para todos los posibles valores sin establecer una referencia arbitraria, permitiendo así evaluar el rendimiento del clasificador. El área bajo la curva ROC para los datos de testeo es de 0.8977 lo que indica que el modelo discrimina adecuadamente a los arrestados y no arrestados.
-
-```{r, warming = FALSE, message=FALSE}
-
-prob_test <- predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")
-pr_test <- prediction(prob_test, SQFdataTest$arstmade)
-pred_tpr_fpr <- performance(pr_test, measure = "tpr", x.measure = "fpr")
-plot(pred_tpr_fpr, main = "ROC curve", col = "blue", lwd = 3)
-abline(a = 0, b = 1, lwd = 2, lty = 2)
-
-auc_test <- performance(pr_test, measure = "auc")
-auc_test <- auc_test@y.values[[1]]
-auc_test
-```
-
-
-#### 4.1.9 Conclusiones
-
-En los modelos estadísticos analizados, en principio se determina que la variable *race* que corresponde a la raza de las personas paradas resulta significativa en la probabilidad de que sean arrestados, sin embargo, resultaría interesante verificar si efectivamente este es un factor determinante para que una persona sea parada o no, es decir, verificar la hipótesis de que esta ley es un "política de discriminación racial indirecta".  
-
-Según las estadísticas presentadas por el Departamento de Policía (NYPD) en el año 2016, Nueva York ha experimentado una reducción en todas las categorías de delitos, además de la reducción de uso de la técnica de "Stop and Frisk". Ante estos resultados, resulta interesante conocer el impacto que tiene esta ley en las estadísticas de delincuencia.
 
 ## 4.2 Knn
 
@@ -584,9 +517,7 @@ A continuación se recurre al uso de árboles de decisión para predecir la vari
 La función `randomForest::rfcv` permite realizar una evaluación del comportamiento del modelo según el número de variables a escoger para cada rama. Dado que el conjunto de train cuenta con relativamente pocos predictores, se emplea un step elevado para comprobar todas las particiones posibles y seleccionar la óptima a la hora de generar el modelo. Una vez realizado el cálculo, se escoge el valor óptimo para generar el conjunto de árboles.
 
 ```{r}
-# 
 # Random Forest con Cross-Validation para selección de predictores
-#
 cv.model_rf_10 <- rfcv(trainx=SQFdataTrain_DSAMP[,-match("arstmade",
                                                          colnames(SQFdataTrain_DSAMP))],
                        trainy=SQFdataTrain_DSAMP$arstmade, cv.fold=10,
@@ -657,7 +588,8 @@ for(i in 1:N) {
     # Almacenamiento de los predictores seleccionados por árbol
     vars.sec[,i] = as.vector(a)
 }
-end.time <- Sys.time()
+
+varImp(moguerza.forest.sec)
 
 time.taken.sec <- Sys.time() - start.time
 ```
@@ -689,27 +621,18 @@ for (i in 1:N) {
     vars.par[,i] <- which(is_in(colnames(SQFdataTrain_DSAMP_RF), attr(moguerza.forest.par[[i]]$terms,"term.labels")))
 }
 
-foreach (i=1:N) %dopar% {
-    vars.par[,i] <- which(is_in(colnames(SQFdataTrain_DSAMP_RF), attr(moguerza.forest.par[[i]]$terms,"term.labels")))
-}
-
-end.time <- Sys.time()
-
-time.taken.par <- end.time - start.time
-#==========================================================================================
-
-time.taken.sec - time.taken.par
-
-
+time.taken.par <- Sys.time() - start.time
 ```
 
-### 4.3.4 Evaluación del error
+### 4.3.4 Evaluación del error en conjunto de train
+
+* Código secuencial:
 
 ```{r}
-#==================================Error en train==========================================
 # Matriz de predicciones
 pred.matrix.train.sec = matrix(0,k,N)
 
+start.time <- Sys.time()
 for (j in 1:N)
 {
     prediction = predict(moguerza.forest.sec[[j]], SQFdataTrain_DSAMP_RF[,vars.sec[,j]] )
@@ -717,7 +640,7 @@ for (j in 1:N)
     prediction.fact = factores[max.col(prediction)]
     pred.matrix.train.sec[,j] = prediction.fact
 }
-
+Sys.time() - start.time
 # Vector de probabilidades
 p.arstmade.train.sec = rowSums(pred.matrix.train.sec==factores[2])/N
 
@@ -727,18 +650,15 @@ pred.train.fact.sec <- relevel(as.factor(pred.train.fact.sec), ref = "Y")
 
 table.moguerza.train.sec = table(pred.train.fact.sec, real.train.fact)
 confusionMatrix(table.moguerza.train.sec)
-#==========================================================================================
+```
 
+* Código paralelo:
 
-
-
-
-
-
-#==================================Error en train==========================================
+```{r}
 # Matriz de predicciones
 pred.matrix.train.par = matrix(0,k,N)
 
+start.time <- Sys.time()
 pred.vect.train.par <- foreach(j = 1:N) %dopar% {
     prediction <- predict(moguerza.forest.par[[j]], SQFdataTrain_DSAMP_RF[,vars.par[,j]] )
     factores = colnames(prediction)
@@ -749,6 +669,8 @@ for(j in 1:N){
     pred.matrix.train.par[,j] = pred.vect.train.par[[j]]
 }
 
+Sys.time() - start.time
+
 # Vector de probabilidades
 p.arstmade.train.par = rowSums(pred.matrix.train.par==factores[2])/N
 
@@ -758,40 +680,38 @@ pred.train.fact.par <- relevel(as.factor(pred.train.fact.par), ref = "Y")
 
 table.moguerza.train.par = table(pred.train.fact.par, real.train.fact)
 confusionMatrix(table.moguerza.train.par)
-#==========================================================================================
+```
 
+### 4.3.5 Evaluación del error en conjunto de test
 
+* Código secuencial:
 
-
-#==================================Error en test===========================================
+```{r}
 # Matriz de predicciones
 pred.matrix.test.sec = matrix(0,m,N)
 
-pred.vect.test.sec <- foreach(j = 1:N) %dopar% {
-    prediction <- predict(moguerza.forest.sec[[j]], SQFdataTest_RF[,vars.sec[,j]] )
+for (j in 1:N)
+{
+    prediction = predict(moguerza.forest.sec[[j]], SQFdataTest_RF[,vars.sec[,j]] )
     factores = colnames(prediction)
     prediction.fact = factores[max.col(prediction)]
+    pred.matrix.test.sec[,j] = prediction.fact
 }
 
-for(j in 1:N){
-    pred.matrix.test.sec[,j] = pred.vect.test.sec[[j]]
-}
+# Vector de probabilidades
+p.arstmade.test.sec = rowSums(pred.matrix.test.sec==factores[2])/N 
 
-p.arstmade.test.sec = rowSums(pred.matrix.test.sec==factores[2])/N # Almacena la probabilidad
-# (definida según cuantos modelos de los 100 dan resultado positivo) de que el individuo x esté enfermo
-
-pred.test.fact.sec = factores[round(p.arstmade.test.sec)+1]
+pred.test.fact.sec = factores[round(p.arstmade.test.sec) + 1]
 real.train.fact = SQFdataTest_RF[,res]
 pred.test.fact.sec <- relevel(as.factor(pred.test.fact.sec), ref = "Y")
 
 table.moguerza.test.sec = table(pred.test.fact.sec,real.train.fact)
 cM_moguerza_sec <- confusionMatrix(table.moguerza.test.sec)
-#==========================================================================================
+```
 
+* Código paralelo:
 
-
-
-#==================================Error en test===========================================
+```{r}
 # Matriz de predicciones
 pred.matrix.test.par = matrix(0,m,N)
 
@@ -805,28 +725,72 @@ for(j in 1:N){
     pred.matrix.test.par[,j] = pred.vect.test.par[[j]]
 }
 
-p.arstmade.test.par = rowSums(pred.matrix.test.par==factores[2])/N # Almacena la probabilidad
-# (definida según cuantos modelos de los 100 dan resultado positivo) de que el individuo x esté enfermo
+# Vector de probabilidades
+p.arstmade.test.par = rowSums(pred.matrix.test.par==factores[2])/N
 
 pred.test.fact.par = factores[round(p.arstmade.test.par)+1]
 real.train.fact = SQFdataTest_RF[,res]
 pred.test.fact.par <- relevel(as.factor(pred.test.fact.par), ref = "Y")
 
 table.moguerza.test.par = table(pred.test.fact.par,real.train.fact)
+cM_moguerza_par <- confusionMatrix(table.moguerza.test.par)
 #==========================================================================================
 ```
 
-### Evaluación de modelos de random forest
+# 5. EVALUACIÓN
+
+### 4.1.7 Validación cruzada
+
+Dado que nuestro objetivo es construir un modelo de predicción, la métrica más importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificación donde se cruza el verdadero valor de la observación, con la predicción de la misma según el modelo seleccionado, tomando como referencia una predicción mayor a 0.5. Como resultado se obtiene que el modelo predijo con exactitud 1671 personas paradas que fueron arrestadas, de un total de 2091 lo que representa un **sensitivity** de 0.7991, en cuanto a la predicción de los que no fueron arrestados **specificity** corresponde a un acierto de 0.8607
+
 
 ```{r}
+# Evaluación del modelo y creación de tabla de resultados
+pred_DSAMP_hair_back <- factor(predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")>0.5,
+                          levels=c(FALSE, TRUE),
+                          labels=c("N","Y"))
 
-# RESTO DE MODELOS - EVALUACION
-#==========================================================================================
-cM_10 <- confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+cM_DSAMP_hair_back <- confusionMatrix(pred_DSAMP_hair_back, SQFdataTest$arstmade, positive="Y")
+
+eval_DSAMP_hair_back_metrics <- c(model_glm_DSAMP_hair_back$aic,
+                                  model_glm_DSAMP_hair_back$null.deviance,
+                                  model_glm_DSAMP_hair_back$deviance,
+                                  length(model_glm_DSAMP_hair_back$model)-1)
+
+eval_DSAMP_hair_back <- c(cM_DSAMP_hair_back$byClass[7],
+                          cM_DSAMP_hair_back$byClass[5:6],
+                          cM_DSAMP_hair_back$byClass[2])
+```
+
+#### 4.1.8 Curva ROC
+
+La curva ROC es un gráfico que muestra la relación entre los datos que se predicen correctamente con la tasa de los datos negativos que se consideran erróneamente como positivos. Esta métrica ofrece un mejor resumen de la capacidad predictiva que una tabla de clasificación, porque presenta la potencia predictiva para todos los posibles valores sin establecer una referencia arbitraria, permitiendo así evaluar el rendimiento del clasificador. El área bajo la curva ROC para los datos de testeo es de 0.8977 lo que indica que el modelo discrimina adecuadamente a los arrestados y no arrestados.
+
+```{r, warming = FALSE, message=FALSE}
+prob_test <- predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")
+pr_test <- prediction(prob_test, SQFdataTest$arstmade)
+pred_tpr_fpr <- performance(pr_test, measure = "tpr", x.measure = "fpr")
+plot(pred_tpr_fpr, main = "ROC curve", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lwd = 2, lty = 2)
+
+auc_test <- performance(pr_test, measure = "auc")
+auc_test <- auc_test@y.values[[1]]
+auc_test
+```
+
+
+#### 4.1.9 Conclusiones
+
+En los modelos estadísticos analizados, en principio se determina que la variable *race* que corresponde a la raza de las personas paradas resulta significativa en la probabilidad de que sean arrestados, sin embargo, resultaría interesante verificar si efectivamente este es un factor determinante para que una persona sea parada o no, es decir, verificar la hipótesis de que esta ley es un "política de discriminación racial indirecta".  
+
+Según las estadísticas presentadas por el Departamento de Policía (NYPD) en el año 2016, Nueva York ha experimentado una reducción en todas las categorías de delitos, además de la reducción de uso de la técnica de "Stop and Frisk". Ante estos resultados, resulta interesante conocer el impacto que tiene esta ley en las estadísticas de delincuencia.
+
+
+## 5.1 Comparativa de modelos
+
+```{r}
 cM_moguerza_sec <- confusionMatrix(table.moguerza.test.sec)
 cM_moguerza_par <- confusionMatrix(table.moguerza.test.par)
-
-
 
 fun_rf_eval <- function(x){
     return(c(x$byClass[7],x$byClass[5:6],x$byClass[2]))
@@ -843,7 +807,7 @@ df.comp.rf
 #==========================================================================================
 ```
 
-# 5. EVALUACIÓN
+
 
 # 6. CONCLUSIONES
 
