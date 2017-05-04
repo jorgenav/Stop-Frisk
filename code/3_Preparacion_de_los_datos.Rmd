@@ -408,8 +408,8 @@ library(PASWR2)
 
 ```{r, message=FALSE, warning=FALSE}
 # Carga del Dataset
-source("Cleaning_Data.R")
-SQFdata <- tbl_df(SQFdata)
+# source("Cleaning_Data.R")
+# SQFdata <- tbl_df(SQFdata)
 ```
 
 ## 3.2.1 VARIABLE DEPENDIENTE
