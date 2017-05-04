@@ -39,6 +39,7 @@ SQFdata$dob <- mdy(SQFdata$dob)  #Convert to Dates
 ```
 
 ## Unificación valores
+
 ```{r, message=FALSE, warning=FALSE}
 # Corrección perstop
 SQFdata$perstop = as.integer(SQFdata$perstop)
@@ -415,6 +416,7 @@ library(PASWR2)
 ## 3.2.1 VARIABLE DEPENDIENTE
 
 ## Arresto (arstmade)
+
 ```{r, fig.height=5, fig.width=15}
 tot <- length(SQFdata$arstmade)
 SQFdata %>% group_by(Arresto = arstmade) %>%
@@ -429,6 +431,7 @@ ggplot(data = SQFdata, aes(arstmade)) + geom_bar() + ylab("Frequency")
 ## 3.2.2 VARIABLES INDEPENDIENTES
 
 ## Complexión del sospechoso (build)
+
 ```{r}
 SQFdata %>% group_by(build) %>%
         summarise(n=n()) %>%
