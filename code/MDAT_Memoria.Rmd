@@ -2968,14 +2968,6 @@ anova(model_glm_DSAMP_race_back, model_glm_DSAMP_Forw,  test="Chisq")
 
 A continuación se recurre al uso de árboles de decisión para predecir la variable objetivo del problema planteado. Se seguirá el código programado por Javier Moguerza y como complemento al mismo, se compara el procesado de dicho código de forma secuencial y en paralelo.
 
-<!-- ## Árboles de decisión: arstmade -->
-
-<!-- ### Decision tree -->
-
-<!-- ```{r} -->
-
-<!-- ``` -->
-
 ### 4.3.1 Selección de predictores
 
 La función `randomForest::rfcv` permite realizar una evaluación del comportamiento del modelo según el número de variables a escoger para cada rama. Dado que el conjunto de train cuenta con relativamente pocos predictores, se emplea un step elevado para comprobar todas las particiones posibles y seleccionar la óptima a la hora de generar el modelo. Una vez realizado el cálculo, se escoge el valor óptimo para generar el conjunto de árboles.
@@ -3315,10 +3307,21 @@ En el apartado *3.4.1* se explicó que la técnica de Down-Sampling permite incr
 
 ```{r}
 # Generación del modelo
+model_glm <- glm(arstmade ~ ., data = SQFdataTrain, family = "binomial")
+
+model_glm$xlevels$eyecolor <- levels(SQFdataTest$eyecolor)
 
 
-confusionMatrix(factor(predict(model_glm, SQFdataTest, type="response")>0.5,
+cM_glm <- confusionMatrix(factor(predict(model_glm, SQFdataTest, type="response")<0.5,
                        levels = c(TRUE,FALSE), labels = c("Y","N")),
-                SQFdataTest$arstmade, positive = "Y")
+                relevel(SQFdataTest$arstmade, ref = "Y"), positive = "Y")
+
+df.comp.DS.models <- data.frame(glm = fun_eval_mod(cM_glm),
+                                glm_DS = fun_eval_mod(cM_DSAMP_hair_back),
+                                row.names = c("F-measure","Precision","Recall/Sensitivity","Specificity"))
+
+kable(df.comp.DS.models, format = "markdown", digits = 4)
 ```
+
+Tal y como se afirmó, tras aplicar Down-Sampling se alcanza el objetivo fijado de mejorar el *sensitivity* del modelo y por tanto, reducir al máximo los falsos negativos.
 
