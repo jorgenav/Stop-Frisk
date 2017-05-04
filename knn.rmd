@@ -280,23 +280,6 @@ Para añadir los casos necesarios, perc.over tiene que fijarse a un múltiplo de
 Sabemos que para este caso debemos añadir al menos 4.647 casos por caso en la clase minoritaria, perc.over se fija a 400 y se calcula el número de casos que se han de seleccionar de la clase mayoritaria en base al número de casos añadidos. Se añaden 4·4799 = 19196 casos, por lo que en la clase minoritaria quedarán finalmente $19196+4799=23995$ casos. Queremos que la clase mayoritaria alcance ese mismo número de casos, por lo que habrá que seleccionar *X* casos por cada caso añadido a la clase minoritaria: $19196·X=23995$
 Quedando como resultado final un perc.under de *1.25*.
 
-```{r}
-# Ajuste del desbalanceo con SMOTE (se rechaza la posibilidad de realizar
-# up-sampling dado que es necesario añadir demasiados casos)
-set.seed(6789)
-# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 400, perc.under = 125)
-# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 300, perc.under = 133.33)
-SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 10, perc.over = 100, perc.under = 200)
-# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 50, perc.under = 300)
-# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 20, perc.under = 600.4)
-# SQFdataTrain_SMOTE <- SMOTE(arstmade ~ ., data=SQFdataTrain, k = 15, perc.over = 15, perc.under = 767.45)
-
-SQFdataTrain_SMOTE %>% group_by(arstmade) %>%
-    summarise(count = n()) %>%
-    mutate(percent = 100*count/sum(count))
-```
-
-
 
 ## KNN: arstmade
 
@@ -309,9 +292,6 @@ SQFdataTrain.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain$arstmade)-1)
 
 SQFdataTrain_DSAMP.numeric <- SQFdataTrain_DSAMP[,which(sapply(SQFdataTrain_DSAMP,is.numeric))]
 SQFdataTrain_DSAMP.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain_DSAMP$arstmade)-1)
-
-SQFdataTrain_SMOTE.numeric <- SQFdataTrain_SMOTE[,which(sapply(SQFdataTrain_SMOTE,is.numeric))]
-SQFdataTrain_SMOTE.numeric$arstmade <- as.factor(as.numeric(SQFdataTrain_SMOTE$arstmade)-1)
 
 SQFdataTrain.cat <- SQFdataTrain[,which(sapply(SQFdataTrain,is.factor))]
 SQFdataTrain_DSAMP.cat <- SQFdataTrain_DSAMP[,which(sapply(SQFdataTrain_DSAMP,is.factor))]
@@ -332,9 +312,13 @@ train.labels = SQFdataTrain$arstmade
 test.labels = SQFdataTest$arstmade
 
 train.numeric = train %>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
+
+SQFdataTrain.numeric
 test.numeric = test %>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
-knn_total <- knn1(train.numeric, test.numeric, train.labels)
-error = sum(knn_total != test.labels)/length(test.labels);error
+knn_total.numeric <- knn1(train.numeric, test.numeric, train.labels)
+error = sum(knn_total.numeric != test.labels)/length(test.labels);
+
+1-error
 ```
 
 ```{r}
@@ -345,33 +329,22 @@ test_DSAMP.labels = SQFdataTest$arstmade
 
 train_DSAMP.numeric = train_DSAMP %>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
 test_DSAMP.numeric = test_DSAMP %>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
-knn_DSAMP <- knn1(train_DSAMP.numeric, test_DSAMP.numeric, train_DSAMP.labels)
-error_DSAMP = sum(knn_DSAMP != test_DSAMP.labels)/length(test_DSAMP.labels);error_DSAMP
+knn_DSAMP.numeric <- knn1(train_DSAMP.numeric, test_DSAMP.numeric, train_DSAMP.labels)
+error_DSAMP = sum(knn_DSAMP != test_DSAMP.labels)/length(test_DSAMP.labels);
+
+1-error_DSAMP
 ```
 
-```{r}
-train_SMOTE = SQFdataTrain_SMOTE
-test_SMOTE =SQFdataTest
-train_SMOTE.labels = SQFdataTrain_SMOTE$arstmade
-test_SMOTE.labels = SQFdataTest$arstmade
-
-train_SMOTE.numeric = train_SMOTE %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
-test_SMOTE.numeric = test_SMOTE %>% select(ser_num,perobs,perstop,repcmd,revcmd,ht_feet,ht_inch,weight) %>% mutate_each(funs(scale))
-knn_SMOTE <- knn1(train_SMOTE.numeric, test_SMOTE.numeric, train_SMOTE.labels)
-error_SMOTE = sum(knn_SMOTE != test_SMOTE.labels)/length(test_SMOTE.labels);error_SMOTE
-```
 
 ## KNN con variables categoricas
 ```{r}
-#=============================================== KNN categorical DSAMP FALLA POR TAMA�O, quitar variables menos significativas
-train_DSAMP.cat = SQFdataTrain_DSAMP %>%
-  select(recstat,inout,trhsloc,typeofid,othpers,arstmade,offunif,frisked,searched,pf_hands,pf_hcuff,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_other,sb_hdobj,sb_other,rf_furt,rf_bulg,sex,race,build,city)%>%
-mutate_each(funs(as.numeric)) 
-
+train_DSAMP.cat =  SQFdataTrain_DSAMP.cat %>% mutate_each(funs(as.numeric)) 
+dim(train_DSAMP.cat)
+SQFdataTrain.cat
 test.cat = SQFdataTest %>% 
   select(recstat,inout,trhsloc,typeofid,othpers,arstmade,offunif,frisked,searched,pf_hands,pf_hcuff,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_other,sb_hdobj,sb_other,rf_furt,rf_bulg,sex,race,build,city)%>%
 mutate_each(funs(as.numeric))
-
+dim(test.cat)
 z = rep(1, dim(train_DSAMP.cat)[1]) %*% as.matrix(test.cat[1, ])
 sim = apply(z - train_DSAMP.cat == 0, 1, sum)/dim(train_DSAMP.cat)[2]
 # Repetimos para todos los puntos
@@ -383,25 +356,41 @@ for (i in 1:ntest) {
   z = rep(1, ntrain) %*% as.matrix(test.cat[i, ])
   sim[i, ] = apply(z - train_DSAMP.cat == 0, 1, sum)/d
 }
+
+```
+
+```{r}
 similaridadCategirica_DSAMP = sim
 indices = apply(sim, 1, which.max)
-
-
 prediccion = rep(0, ntest)
 for (i in 1:ntest) {
   z = table(train_DSAMP.labels[which(sim[i, ] == sim[i, indices[i]])])
-  prediccion[i] = attributes(which(z == max(z)))$names
+  prediccionCategirica_DSAMP[i] = attributes(which(z == max(z)))$names
 }
-z = table(train.labels[which(sim == max(sim))])
 attributes(which(z == max(z)))$names
-error2 = sum(prediccion != test.labels)/length(test.labels)
-error2
+
+```
+
+```{r}
+error2 = sum(prediccionCategirica_DSAMP != test.labels)/length(test.labels)
+1-error2
 
 total = rbind(test.cat, train_DSAMP.cat)
 distanciaEuclidea = as.matrix(dist(total))[1:ntest, (ntest + 1):(ntest + ntrain)]
 similaridadNumerica = 1 - distanciaEuclidea/max(distanciaEuclidea)
 similaridadFinal_DSAMP = (0.3 * similaridadNumerica + 0.7 * similaridadCategorica)
 sim = similaridadFinal_DSAMP
+indices = apply(sim, 1, which.max)
+prediccion = rep(0, ntest)
+for (i in 1:ntest) {
+  z = table(train_DSAMP.labels[which(sim[i, ] == sim[i, indices[i]])])
+  prediccion[i] = attributes(which(z == max(z)))$names
+}
+fun_rf_eval <- function(x){
+    return(c(x$byClass[7],x$byClass[5:6],x$byClass[2]))
+}
+fun_rf_eval(confusionMatrix(prediccion,test.labels))
+confusionMatrix(prediccion,test.labels)$table
 ```
 
 ```{r}
@@ -444,6 +433,41 @@ distanciaEuclidea = as.matrix(dist(total))[1:ntest, (ntest + 1):(ntest + ntrain)
 similaridadNumerica = 1 - distanciaEuclidea/max(distanciaEuclidea)
 similaridadFinal = (0.3 * similaridadNumerica + 0.7 * similaridadCategorica)
 sim = similaridadFinal
+
 ```
 
+```{r}
+test.numeric = SQFdataTest%>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight,recstat,inout,trhsloc,typeofid,othpers,arstmade,offunif,frisked,searched,pf_hands,pf_hcuff,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_other,sb_hdobj,sb_other,rf_furt,rf_bulg,sex,race,build,city) %>%mutate_each(funs(as.numeric))
+train.numeric = SQFdataTrain%>% select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight,recstat,inout,trhsloc,typeofid,othpers,arstmade,offunif,frisked,searched,pf_hands,pf_hcuff,radio,ac_rept,ac_inves,rf_vcrim,rf_othsw,ac_proxm,rf_attir,cs_descr,cs_casng,cs_lkout,rf_vcact,cs_drgtr,ac_evasv,ac_assoc,cs_furtv,rf_rfcmp,ac_cgdir,cs_vcrim,cs_bulge,cs_other,ac_incid,ac_time,rf_knowl,ac_other,sb_hdobj,sb_other,rf_furt,rf_bulg,sex,race,build,city) %>%
+mutate_each(funs(as.numeric))
+SQFdataTest
+test.numeric
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+set.seed(3333)
+knn_fit <- train(arstmade ~., data = SQFdataTrain, method = "knn",
+ trControl=trctrl,
+ preProcess = c("center", "scale"),
+ tuneLength = 10)
+knn_fit
+test_pred <- predict(knn_fit, newdata = SQFdataTest)
+```
+Tabla de confusion variables numericas sobre el conjunto de datos completo
+```{r}
+fun_rf_eval(confusionMatrix(knn_total.numeric,test.labels))
+confusionMatrix(knn_total.numeric,test.labels)$table
+```
 
+Tabla de confusion variables numericas sobre el conjunto de datos con downsampling
+```{r}
+fun_rf_eval(confusionMatrix(knn_DSAMP.numeric,test.labels))
+confusionMatrix(knn_DSAMP.numeric,test.labels)$table
+```
+
+```{r}
+fun_rf_eval(confusionMatrix(prediccionCategirica_DSAMP,test.labels))
+```
+
+```{r}
+fun_rf_eval(confusionMatrix(test_pred,test.labels))
+confusionMatrix(test_pred,test.labels)$table
+```
