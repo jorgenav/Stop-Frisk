@@ -1389,34 +1389,61 @@ multiplot(p1,p2,cols=2)
 Existen ligeras diferencias en la tasa de arresto.
 
 ## Tiempo de observación (perobs)
+
 ```{r, fig.height=5, fig.width=15}
-obs <- SQFdata$perobs
-SQFdata %>% filter(perobs<150) %>%
-        ggplot(aes(perobs, perstop)) +
-        geom_point() +
-        labs(x="Período de observación ", y="Período de parada") +
-        geom_smooth(method = 'lm') +
-        scale_size_area() +
-        ggtitle("Relación entre tiempo de observación y parada")
+cor(SQFdata$perobs, SQFdata$perstop)
 ```
 
 ```{r, fig.height=5, fig.width=15}
-cor(obs, SQFdata$perstop)
+SQFdata %>% group_by(arstmade) %>%
+        summarise(n=n(), 
+                  min= min(perobs),
+                  `25%`=quantile(perobs, probs=0.25), 
+                  `50%`=quantile(perobs, probs=0.50),                  
+                  media= round(mean(perobs),2),
+                  `75%`=quantile(perobs, probs=0.75),                  
+                  max= max(perobs)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
 ```
 
+
 ```{r, fig.height=5, fig.width=15}
-SQFdata %>% 
-        group_by(arstmade) %>%
-        summarise(n=n()) %>%
+p1 = SQFdata %>% filter(perobs<100) %>%
+        ggplot(aes(x=perobs)) + geom_histogram() 
+p2 = SQFdata %>% filter(perobs<20) %>%
+        ggplot(aes(arstmade, perobs)) + geom_boxplot()
+p3 = SQFdata %>% filter(perobs<100) %>%
+        ggplot(aes(x=perobs, color=arstmade, fill=arstmade)) +
+        geom_histogram(alpha=0.5, position="identity")
+
+multiplot(p1,p2,p3,cols=2)
+```
+Antes de parar una persona, el oficial observa a la persona y evalúa parámetros, variables e indicios que den cuenta la necesidad de iniciar el procedimiento “stop and frisk”. El 98% de las personas paradas fueron observadas entre  0 a 10 minutos, el 2% está distribuido entre 11 hasta 635 minutos. El tiempo empleado para observar a las personas que fueron paradas y arrestadas es menor en relación a las que no fueron arrestadas
+
+## Tiempo de parada (perstop)
+
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(arstmade) %>%
+        summarise(n=n(), 
+                  min= min(perstop),
+                  `25%`=quantile(perstop, probs=0.25), 
+                  `50%`=quantile(perstop, probs=0.50),                  
+                  media= round(mean(perstop),2),
+                  `75%`=quantile(perstop, probs=0.75),                  
+                  max= max(perstop)) %>%
         mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
 ```
 
 ```{r, fig.height=5, fig.width=15}
-SQFdata %>% filter(perobs<150)%>% 
-        ggplot(aes(arstmade, log(perobs))) +
-        geom_boxplot()
-        ggtitle("Relación entre tiempo de observación y parada")
+p1 = ggplot(data = SQFdata, aes(x=perstop)) + geom_histogram() 
+p2 = ggplot(data = SQFdata, aes(arstmade, perstop)) + geom_boxplot()
+p3 = SQFdata %>% filter(perobs<100) %>%
+        ggplot(aes(x=perstop, color=arstmade, fill=arstmade)) +
+        geom_histogram( alpha=0.5, position="identity")
+
+multiplot(p1,p2,p3,cols=2)
 ```
+El período de parada no presenta una sola distribución, a priori, se puede determinar que es multimodal.  Las paradas tuvieron un período de tiempo principalmente de 62, 14 y 6 minutos. Al igual que el tiempo de observación, este es mayor en las personas que no fueron arrestadas.
 
 ## Condados (city)
 ```{r, fig.height=5, fig.width=15}
