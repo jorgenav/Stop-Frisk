@@ -2839,11 +2839,11 @@ Esta situación, conocida como clases desbalanceadas, es muy típica en problema
 
 En la realización del presente trabajo se han empleado las técnicas de remuestreo expuestas. Únicamente se muestran los resultados obtenidos tras emplear Down-Sampling dado que el resto de técnicas suponían mejoras menores, lo cual es lógico teniendo en cuenta que el dataset original cuenta con un total de 45.787 observaciones y por tanto es posible eliminar observaciones sin arriesgarse a perser demasiada información para generar los modelos.
 
-Cabe destacar que, a pesar de mejorar en la predicción de los casos positivos, también conlleva desventajas frente al dataset desbalanceado. De las métricas empleadas para evaluar los modelos, la técnica de Down-Sampling mejora el *recall* del modelo pero empeora su *precision*. Dichas métricas se corresponden con:
+Cabe destacar que, a pesar de mejorar en la predicción de los casos positivos, también conlleva desventajas frente al dataset desbalanceado. De las métricas empleadas para evaluar los modelos, la técnica de Down-Sampling mejora el *sensitivity* del modelo pero empeora su *precision*. Dichas métricas se corresponden con:
     
-* ***Recall***: Tasa de arrestos reales predichos como tal.
+* ***Sensitivity***: Tasa de arrestos reales predichos como tal.
 
-$$\text{Recall}=\frac{TP}{TP+FN}$$
+$$\text{Sensitivity}=\frac{TP}{TP+FN}$$
 
 * ***Precision***: Tasa de acierto en la predicción de arrestos.
 
@@ -2853,7 +2853,7 @@ Siendo $TP=\text{True Positive}$ y $FN=\text{False Negative}$.
 
 La mejora en la predicción de casos positivos se basa en el incremento de las predicciones para dicha clase a costa de una reducción en la contraria. Esto conlleva un menor número de $FN$ y un mayor número de $TP$ en la matriz de confusión, pero también un mayor número de $FP$.
 
-Analizando las dos situaciones, el hecho de que el modelo empeore su *precision* supone arrestar a gente que no debería ser arrestada. Por el contrario, que mejore su *recall* implica reducir el número de sospechosos que deberían ser arrestados y sin embargo se les permite marchar.
+Analizando las dos situaciones, el hecho de que el modelo empeore su *precision* supone arrestar a gente que no debería ser arrestada. Por el contrario, que mejore su *sensitivity* implica reducir el número de sospechosos que deberían ser arrestados y sin embargo se les permite marchar.
 
 Dado que se considera más perjudicial para la ciudad el hecho de dejar marchar a un sospechoso que debiera ser arrestado, se opta finalmente por las soluciones aportadas por la ténica Down-Sampling.
 
@@ -3166,11 +3166,11 @@ for (j in 1:N)
 p.arstmade.test.sec = rowSums(pred.matrix.test.sec==factores[2])/N 
 
 pred.test.fact.sec = factores[round(p.arstmade.test.sec) + 1]
-real.train.fact = SQFdataTest_RF[,res]
+real.train.fact = relevel(SQFdataTest_RF[,res], ref = "Y")
 pred.test.fact.sec <- relevel(as.factor(pred.test.fact.sec), ref = "Y")
 
 table.moguerza.test.sec = table(pred.test.fact.sec,real.train.fact)
-cM_moguerza_sec <- confusionMatrix(table.moguerza.test.sec)
+confusionMatrix(table.moguerza.test.sec)
 ```
 
 * Código paralelo:
@@ -3193,91 +3193,132 @@ for(j in 1:N){
 p.arstmade.test.par = rowSums(pred.matrix.test.par==factores[2])/N
 
 pred.test.fact.par = factores[round(p.arstmade.test.par)+1]
-real.train.fact = SQFdataTest_RF[,res]
+real.train.fact = relevel(SQFdataTest_RF[,res], ref = "Y")
 pred.test.fact.par <- relevel(as.factor(pred.test.fact.par), ref = "Y")
 
 table.moguerza.test.par = table(pred.test.fact.par,real.train.fact)
-cM_moguerza_par <- confusionMatrix(table.moguerza.test.par)
-#==========================================================================================
+confusionMatrix(table.moguerza.test.par)
 ```
+
+Se observan resultados similares para ambos modelos, por lo que en adelante se empleará únicamente uno de ellos.
 
 \newpage
 
 # 5. EVALUACIÓN
 
-### 4.1.7 Validación cruzada
+Se evalúan los tres mejores modelos obtenidos en cada caso.
 
-Dado que nuestro objetivo es construir un modelo de predicción, la métrica más importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificación donde se cruza el verdadero valor de la observación, con la predicción de la misma según el modelo seleccionado, tomando como referencia una predicción mayor a 0.5. Como resultado se obtiene que el modelo predijo con exactitud 1671 personas paradas que fueron arrestadas, de un total de 2091 lo que representa un **sensitivity** de 0.7991, en cuanto a la predicción de los que no fueron arrestados **specificity** corresponde a un acierto de 0.8607
+## 5.1 Validación cruzada
 
+Dado que nuestro objetivo es construir un modelo de predicción, la métrica más importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificación para cada modelo, donde se cruza el verdadero valor de la observación con la predicción de la misma. Para ello se toma como referencia una predicción mayor a 0.5.
 
-```{r}
-# Evaluación del modelo y creación de tabla de resultados
-pred_DSAMP_hair_back <- factor(predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")>0.5,
-                          levels=c(FALSE, TRUE),
-                          labels=c("N","Y"))
-
-cM_DSAMP_hair_back <- confusionMatrix(pred_DSAMP_hair_back, SQFdataTest$arstmade, positive="Y")
-
-eval_DSAMP_hair_back_metrics <- c(model_glm_DSAMP_hair_back$aic,
-                                  model_glm_DSAMP_hair_back$null.deviance,
-                                  model_glm_DSAMP_hair_back$deviance,
-                                  length(model_glm_DSAMP_hair_back$model)-1)
-
-eval_DSAMP_hair_back <- c(cM_DSAMP_hair_back$byClass[7],
-                          cM_DSAMP_hair_back$byClass[5:6],
-                          cM_DSAMP_hair_back$byClass[2])
-```
-
-#### 4.1.8 Curva ROC
-
-La curva ROC es un gráfico que muestra la relación entre los datos que se predicen correctamente con la tasa de los datos negativos que se consideran erróneamente como positivos. Esta métrica ofrece un mejor resumen de la capacidad predictiva que una tabla de clasificación, porque presenta la potencia predictiva para todos los posibles valores sin establecer una referencia arbitraria, permitiendo así evaluar el rendimiento del clasificador. El área bajo la curva ROC para los datos de testeo es de 0.8977 lo que indica que el modelo discrimina adecuadamente a los arrestados y no arrestados.
-
-```{r, warming = FALSE, message=FALSE}
-prob_test <- predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")
-pr_test <- prediction(prob_test, SQFdataTest$arstmade)
-pred_tpr_fpr <- performance(pr_test, measure = "tpr", x.measure = "fpr")
-plot(pred_tpr_fpr, main = "ROC curve", col = "blue", lwd = 3)
-abline(a = 0, b = 1, lwd = 2, lty = 2)
-
-auc_test <- performance(pr_test, measure = "auc")
-auc_test <- auc_test@y.values[[1]]
-auc_test
-```
-
-
-#### 4.1.9 Conclusiones
-
-En los modelos estadísticos analizados, en principio se determina que la variable *race* que corresponde a la raza de las personas paradas resulta significativa en la probabilidad de que sean arrestados, sin embargo, resultaría interesante verificar si efectivamente este es un factor determinante para que una persona sea parada o no, es decir, verificar la hipótesis de que esta ley es un "política de discriminación racial indirecta".  
-
-Según las estadísticas presentadas por el Departamento de Policía (NYPD) en el año 2016, Nueva York ha experimentado una reducción en todas las categorías de delitos, además de la reducción de uso de la técnica de "Stop and Frisk". Ante estos resultados, resulta interesante conocer el impacto que tiene esta ley en las estadísticas de delincuencia.
-
-
-## 5.1 Comparativa de modelos
+De dicha tabla se obtienen las métricas *F-measure*, *precision*, *recall o sensitivity* y *specificity*.
 
 ```{r}
-cM_moguerza_sec <- confusionMatrix(table.moguerza.test.sec)
-cM_moguerza_par <- confusionMatrix(table.moguerza.test.par)
+# Función de evaluación de modelos
+fun_eval_mod <- function(x){
+    c(x$byClass[7], x$byClass[5:6], x$byClass[2])
+    }
 
-fun_rf_eval <- function(x){
-    return(c(x$byClass[7],x$byClass[5:6],x$byClass[2]))
-}
+# Obtención de matrices de confusión para cada modelo
 
-df.comp.rf <- data.frame(
-    rf_node_10 = fun_rf_eval(cM_10),
-    rf_moguerza_sec = fun_rf_eval(cM_moguerza_sec),
-    rf_moguerza_par = fun_rf_eval(cM_moguerza_par),
+# Regresión Logística
+pred_DSAMP_hair_back <- factor(predict(model_glm_DSAMP_hair_back, SQFdataTest,
+                                       type="response")>0.5,
+                          levels=c(TRUE, FALSE),
+                          labels=c("Y","N"))
+
+cM_DSAMP_hair_back <- confusionMatrix(pred_DSAMP_hair_back,
+                                      relevel(SQFdataTest$arstmade, ref = "Y"),
+                                      positive="Y")
+
+# KNN
+
+# Random Forest
+cM_RF_par <- confusionMatrix(table.moguerza.test.par)
+
+
+df.comp.models <- data.frame(
+    LogisticRegression = fun_eval_mod(cM_DSAMP_hair_back),
+    # knn = fun_eval_mod(cM_knn),
+    RandomForest = fun_eval_mod(cM_RF_par),
     row.names = c("F-measure","Precision","Recall/Sensitivity","Specificity")
 )
 
-df.comp.rf
-#==========================================================================================
+kable(df.comp.models, format = "markdown", digits = 4)
+```
+
+## 5.2 Curvas ROC
+
+La curva ROC muestra la relación entre la tasa de *true positives* y la tasa de *false positives*, es decir, entre la tasa de casos predichos correctamente como positivos y la tasa de casos predichos erróneamente como positivos:
+
+* *True Positive Rate (TPR)*:
+
+$$\text{TPR}=\frac{TP}{TP+FN}$$
+
+* *False Positive Rate (FPR)*:
+
+$$\text{FPR}=\frac{FP}{FP+TN}$$
+
+Esta métrica ofrece un mejor resumen de la capacidad predictiva que una tabla de clasificación porque presenta la potencia predictiva para todos los posibles valores sin establecer una referencia arbitraria, permitiendo así evaluar el rendimiento del clasificador.
+
+### 5.2.1 Regresión logística
+
+```{r, warming = FALSE, message=FALSE}
+prob_test_glm <- predict(model_glm_DSAMP_hair_back, SQFdataTest, type="response")
+pr_test_glm <- prediction(prob_test_glm, SQFdataTest$arstmade)
+pred_tpr_fpr_glm <- performance(pr_test_glm, measure = "tpr", x.measure = "fpr")
+plot(pred_tpr_fpr_glm, main = "ROC curve", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lwd = 2, lty = 2)
+
+auc_test_glm <- performance(pr_test_glm, measure = "auc")
+auc_test_glm <- auc_test_glm@y.values[[1]]
+```
+
+### 5.2.2 Knn
+
+```{r, warming = FALSE, message=FALSE, eval=FALSE}
+prob_test_knn <- predict(model_knn_DSAMP, SQFdataTest, type="prob")[2]
+pr_test_knn <- prediction(prob_test_knn, SQFdataTest$arstmade)
+pred_tpr_fpr_knn <- performance(pr_test_knn, measure = "tpr", x.measure = "fpr")
+plot(pred_tpr_fpr_knn, main = "ROC curve", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lwd = 2, lty = 2)
+
+auc_test_knn <- performance(pr_test_knn, measure = "auc")
+auc_test_knn <- auc_test_knn@y.values[[1]]
+```
+
+### 5.2.3 Random Forest
+
+```{r, warming = FALSE, message=FALSE}
+prob_test_RF <- rowSums(pred.matrix.test.par==factores[1])/N
+pr_test_RF <- prediction(prob_test_RF, SQFdataTest$arstmade)
+pred_tpr_fpr_RF <- performance(pr_test_RF, measure = "tpr", x.measure = "fpr")
+plot(pred_tpr_fpr_RF, main = "ROC curve", col = "blue", lwd = 3)
+abline(a = 0, b = 1, lwd = 2, lty = 2)
+
+auc_test_RF <- performance(pr_test_RF, measure = "auc")
+auc_test_RF <- auc_test_RF@y.values[[1]]
 ```
 
 \newpage
 
 # 6. CONCLUSIONES
 
+En los modelos estadísticos analizados, en principio se determina que la variable *race* que corresponde a la raza de las personas paradas resulta significativa en la probabilidad de que sean arrestados, sin embargo, resultaría interesante verificar si efectivamente este es un factor determinante para que una persona sea parada o no, es decir, verificar la hipótesis de que esta ley es un "política de discriminación racial indirecta".  
+
+Según las estadísticas presentadas por el Departamento de Policía (NYPD) en el año 2016, Nueva York ha experimentado una reducción en todas las categorías de delitos, además de la reducción de uso de la técnica de "Stop and Frisk". Ante estos resultados, resulta interesante conocer el impacto que tiene esta ley en las estadísticas de delincuencia.
+
+## 6.1 Comparación de resultados sin Down-Sampling
+
+En el apartado *3.4.1* se explicó que la técnica de Down-Sampling permite incrementar el número de $TP$ generados por el modelo. En este último punto se pretende ilustrar de forma sencilla dicha mejora. Se realiza una comparación de valores entre el modelo óptimo de regresión logística obtenido y el modelo que se hubiera obtenido de no haber aplicado Down-Sampling al dataset.
+
+```{r}
+# Generación del modelo
 
 
-
+confusionMatrix(factor(predict(model_glm, SQFdataTest, type="response")>0.5,
+                       levels = c(TRUE,FALSE), labels = c("Y","N")),
+                SQFdataTest$arstmade, positive = "Y")
+```
 
