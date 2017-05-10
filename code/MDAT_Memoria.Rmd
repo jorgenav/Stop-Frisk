@@ -13,8 +13,7 @@ library(dataQualityR)
 library(knitr)
 library(grid)
 library(gridExtra)
-
-# Apartado 3
+library(pscl)
 library(magrittr)
 library(dplyr)
 library(lubridate)
@@ -22,15 +21,14 @@ library(ggplot2)
 library(PASWR2)
 library(leaflet)
 library(proj4)
-
 library(caret)
-
 library(survey)
 library(ROCR)
 library(foreach)
 library(doMC)
-registerDoMC(8)
+registerDoMC(6)
 library(rpart)
+library(randomForest)
 ```
 
 # 1. DESCRIPCIÓN DEL PROBLEMA
@@ -83,6 +81,8 @@ DQR.cat <- read.csv("dqr_cat.csv")
 ```{r, message=FALSE, warning=FALSE}
 grid.table(DQR.num,
            theme = ttheme_default(base_size = 5, padding = unit(c(1, 1), "mm")))
+
+kable(DQR.cat)
 ```
 
 ### 2.2.b Variables categóricas
@@ -943,7 +943,11 @@ En cuanto a la **variable dependiente "arstmade"**, se aprecia un mayor porcenta
 
 #### Localización de la Parada: xcoord  vs  ycoord
 
-```{r, fig.height=30, fig.width=30}
+```{r, echo=FALSE}
+doNextChunk <- opts_knit$get("rmarkdown.pandoc.to") == 'html'
+```
+
+```{r, fig.height=30, fig.width=30, eval=doNextChunk}
 coords <- SQFdata[, c("xcoord", "ycoord")]
 coords.new <- project(coords, inverse=TRUE, proj="+proj=lcc +lat_1=41.03333333333333 +lat_2=40.66666666666666 +lat_0=40.16666666666666 +lon_0=-74 +x_0=300000.0000000001 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs")
 SQFdata["xcoord"] <- coords.new[[1]]
@@ -1414,7 +1418,7 @@ multiplot(p1,p2,cols=2)
 
 Existen claras diferencias según el cruce en el que se produce la detención. Cabe destacar que para poder apreciar la información se seleccionan únicamente aquellos para los que se dispone de un mayor número de observaciones.
 
-## Sector en el que se produce la parada (sector)
+#### Sector en el que se produce la parada (sector)
 
 ```{r sector }
 SQFdata %>% group_by(sector) %>%
@@ -1504,34 +1508,62 @@ Existen ligeras diferencias en la tasa de arresto.
 
 #### Tiempo de observación (perobs)
 
-```{r, fig.height=5, fig.width=15, warning=FALSE}
-obs <- SQFdata$perobs
-SQFdata %>% filter(perobs<150) %>%
-        ggplot(aes(perobs, perstop)) +
-        geom_point() +
-        labs(x="Período de observación ", y="Período de parada") +
-        geom_smooth(method = 'lm') +
-        scale_size_area() +
-        ggtitle("Relación entre tiempo de observación y parada")
+```{r, fig.height=5, fig.width=15}
+cor(SQFdata$perobs, SQFdata$perstop)
 ```
 
 ```{r, fig.height=5, fig.width=15}
-cor(obs, SQFdata$perstop)
-```
-
-```{r, fig.height=5, fig.width=15}
-SQFdata %>% 
-        group_by(arstmade) %>%
-        summarise(n=n()) %>%
+SQFdata %>% group_by(arstmade) %>%
+        summarise(n=n(), 
+                  min= min(perobs),
+                  `25%`=quantile(perobs, probs=0.25), 
+                  `50%`=quantile(perobs, probs=0.50),                  
+                  media= round(mean(perobs),2),
+                  `75%`=quantile(perobs, probs=0.75),                  
+                  max= max(perobs)) %>%
         mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
 ```
 
-```{r, fig.height=5, fig.width=15, warning=FALSE}
-SQFdata %>% filter(perobs<150)%>% 
-        ggplot(aes(arstmade, log(perobs))) +
-        geom_boxplot()
-        ggtitle("Relación entre tiempo de observación y parada")
+
+```{r, fig.height=5, fig.width=15}
+p1 = SQFdata %>% filter(perobs<100) %>%
+        ggplot(aes(x=perobs)) + geom_histogram() 
+p2 = SQFdata %>% filter(perobs<20) %>%
+        ggplot(aes(arstmade, perobs)) + geom_boxplot()
+p3 = SQFdata %>% filter(perobs<100) %>%
+        ggplot(aes(x=perobs, color=arstmade, fill=arstmade)) +
+        geom_histogram(alpha=0.5, position="identity")
+
+multiplot(p1,p2,p3,cols=2)
 ```
+
+Antes de parar una persona, el oficial observa a la persona y evalúa parámetros, variables e indicios que den cuenta la necesidad de iniciar el procedimiento “stop and frisk”. El 98% de las personas paradas fueron observadas entre  0 a 10 minutos, el 2% está distribuido entre 11 hasta 635 minutos. El tiempo empleado para observar a las personas que fueron paradas y arrestadas es menor en relación a las que no fueron arrestadas
+
+#### Tiempo de parada (perstop)
+
+```{r, fig.height=5, fig.width=15}
+SQFdata %>% group_by(arstmade) %>%
+        summarise(n=n(), 
+                  min= min(perstop),
+                  `25%`=quantile(perstop, probs=0.25), 
+                  `50%`=quantile(perstop, probs=0.50),                  
+                  media= round(mean(perstop),2),
+                  `75%`=quantile(perstop, probs=0.75),                  
+                  max= max(perstop)) %>%
+        mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
+```
+
+```{r, fig.height=5, fig.width=15}
+p1 = ggplot(data = SQFdata, aes(x=perstop)) + geom_histogram() 
+p2 = ggplot(data = SQFdata, aes(arstmade, perstop)) + geom_boxplot()
+p3 = SQFdata %>% filter(perobs<100) %>%
+        ggplot(aes(x=perstop, color=arstmade, fill=arstmade)) +
+        geom_histogram( alpha=0.5, position="identity")
+
+multiplot(p1,p2,p3,cols=2)
+```
+
+El período de parada no presenta una sola distribución, a priori, se puede determinar que es multimodal.  Las paradas tuvieron un período de tiempo principalmente de 62, 14 y 6 minutos. Al igual que el tiempo de observación, este es mayor en las personas que no fueron arrestadas.
 
 #### Condados (city)
 
@@ -1990,14 +2022,13 @@ SQFdata %>% group_by(haircolr, arstmade) %>%
 p1 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar() + ylab("Frecuencia")
 p2 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
-
 ```
 
 La mayor frecuencia de paradas se produjeron en los que tienen el color de pelo moreno y castaño, donde se produjeron arrestos en el 15.08% y en el 12.84% respectivamente. Aunque el mayor porcentaje de arrestos se han producido en ...
 
 #### Sospechoso portando rifle (riflshot)
 
-```{r riflshot-arstmade}
+```{r}
 SQFdata %>% group_by(riflshot) %>%
         summarise(n=n()) %>%
         mutate(percentage_n=paste0(round(n/sum(n)*100,2),"%"))
@@ -2590,11 +2621,9 @@ Respecto a estas variables lo más significativo ha sido:
 
 Se genera un dataset a partir de diversas transformaciones aplicadas a las variables del dataset original. Se busca seleccionar las variables y las observaciones que puedan aportar información a los modelos y eliminar todos aquellos casos que no permitan trabajar con ellos.
 
-### 3.3.1 Creación de dataset transformado y ordenación de niveles en variable objetivo
+### 3.3.1 Creación de dataset transformado
 
 ```{r}
-# source("code/Cleaning_Data.R")
-source("Cleaning_Data.R")
 SQFdata_modif <- SQFdata
 ```
 
@@ -2627,7 +2656,6 @@ SQFdata_modif <- SQFdata_modif %>%
                     select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
                               forceuse, othfeatr, addrnum, stname, beat,
                               post, state, zip, rescode, premtype, aptnum))
-
 
 
 #
@@ -2881,7 +2909,7 @@ SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
 
 \newpage
 
-# 4. Modelado
+# 4. MODELADO
 
 ## 4.1 Regresión logística
 
@@ -2936,7 +2964,6 @@ round(exp(cbind(Estimate=coef(model_glm_DSAMP_Forw),
 Evaluamos el R cuadrado de McFadden mientras más cercano a uno indica que el modelo tiene poder predictivo, es este caso el valor es de 0.587.
 
 ```{r, warming = FALSE}
-library(pscl)
 pR2(model_glm_DSAMP_Forw)
 ```
 
@@ -2983,10 +3010,6 @@ cv.model_rf_10 <- rfcv(trainx=SQFdataTrain_DSAMP[,-match("arstmade",
 ### 4.3.2 Preparación de datos para la generación de modelos
 
 ```{r}
-# importance(model_rf_10)
-
-# varImpPlot(model_rf_10)
-
 # Preparación de datasets con target en última columna
 SQFdataTrain_DSAMP_RF <- SQFdataTrain_DSAMP %>% select(-arstmade)
 SQFdataTrain_DSAMP_RF <- cbind(SQFdataTrain_DSAMP_RF,
@@ -3045,8 +3068,6 @@ for(i in 1:N) {
     vars.sec[,i] = as.vector(a)
 }
 
-varImp(moguerza.forest.sec)
-
 time.taken.sec <- Sys.time() - start.time
 ```
 
@@ -3086,7 +3107,7 @@ time.taken.par <- Sys.time() - start.time
 
 ```{r}
 # Matriz de predicciones
-pred.matrix.train.sec = matrix(0,k,N)
+pred.matrix.train.sec <- matrix(0,k,N)
 
 start.time <- Sys.time()
 for (j in 1:N)
@@ -3098,10 +3119,10 @@ for (j in 1:N)
 }
 Sys.time() - start.time
 # Vector de probabilidades
-p.arstmade.train.sec = rowSums(pred.matrix.train.sec==factores[2])/N
+p.arstmade.train.sec <- rowSums(pred.matrix.train.sec==factores[2])/N
 
-pred.train.fact.sec = factores[round(p.arstmade.train.sec)+1]
-real.train.fact = SQFdataTrain_DSAMP_RF[,res]
+pred.train.fact.sec <- factores[round(p.arstmade.train.sec)+1]
+real.train.fact <- relevel(SQFdataTrain_DSAMP_RF[,res], ref = 'Y')
 pred.train.fact.sec <- relevel(as.factor(pred.train.fact.sec), ref = "Y")
 
 table.moguerza.train.sec = table(pred.train.fact.sec, real.train.fact)
@@ -3112,26 +3133,26 @@ confusionMatrix(table.moguerza.train.sec)
 
 ```{r}
 # Matriz de predicciones
-pred.matrix.train.par = matrix(0,k,N)
+pred.matrix.train.par <- matrix(0,k,N)
 
 start.time <- Sys.time()
 pred.vect.train.par <- foreach(j = 1:N) %dopar% {
     prediction <- predict(moguerza.forest.par[[j]], SQFdataTrain_DSAMP_RF[,vars.par[,j]] )
-    factores = colnames(prediction)
-    prediction.fact = factores[max.col(prediction)]
+    factores <- colnames(prediction)
+    prediction.fact <- factores[max.col(prediction)]
 }
 
 for(j in 1:N){
-    pred.matrix.train.par[,j] = pred.vect.train.par[[j]]
+    pred.matrix.train.par[,j] <- pred.vect.train.par[[j]]
 }
 
 Sys.time() - start.time
 
 # Vector de probabilidades
-p.arstmade.train.par = rowSums(pred.matrix.train.par==factores[2])/N
+p.arstmade.train.par <- rowSums(pred.matrix.train.par==factores[2])/N
 
-pred.train.fact.par = factores[round(p.arstmade.train.par)+1]
-real.train.fact = SQFdataTrain_DSAMP_RF[,res]
+pred.train.fact.par <- factores[round(p.arstmade.train.par)+1]
+real.train.fact <- relevel(SQFdataTrain_DSAMP_RF[,res], ref = 'Y')
 pred.train.fact.par <- relevel(as.factor(pred.train.fact.par), ref = "Y")
 
 table.moguerza.train.par = table(pred.train.fact.par, real.train.fact)
@@ -3283,7 +3304,7 @@ auc_test_knn <- auc_test_knn@y.values[[1]]
 ### 5.2.3 Random Forest
 
 ```{r, warming = FALSE, message=FALSE}
-prob_test_RF <- rowSums(pred.matrix.test.par==factores[1])/N
+prob_test_RF <- rowSums(pred.matrix.test.par==factores[2])/N
 pr_test_RF <- prediction(prob_test_RF, SQFdataTest$arstmade)
 pred_tpr_fpr_RF <- performance(pr_test_RF, measure = "tpr", x.measure = "fpr")
 plot(pred_tpr_fpr_RF, main = "ROC curve", col = "blue", lwd = 3)
