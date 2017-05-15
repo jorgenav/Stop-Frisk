@@ -8,7 +8,6 @@ output:
 ---
 
 ```{r, message = FALSE, warning = FALSE}
-# Apartado 2
 library(dataQualityR)
 library(knitr)
 library(grid)
@@ -24,9 +23,10 @@ library(proj4)
 library(caret)
 library(survey)
 library(ROCR)
+library(class)
 library(foreach)
 library(doMC)
-registerDoMC(6)
+registerDoMC(4)
 library(rpart)
 library(randomForest)
 ```
@@ -81,8 +81,6 @@ DQR.cat <- read.csv("dqr_cat.csv")
 ```{r, message=FALSE, warning=FALSE}
 grid.table(DQR.num,
            theme = ttheme_default(base_size = 5, padding = unit(c(1, 1), "mm")))
-
-kable(DQR.cat)
 ```
 
 ### 2.2.b Variables categóricas
@@ -464,14 +462,20 @@ SQFdata$race <- factor(SQFdata$race, levels = c("A", "B", "I", "P", "Q", "U", "W
                                 'BLACK-HISPANIC', 'WHITE-HISPANIC', 'UNKNOWN', 'WHITE', 'OTHER'))
 
 # Corrección eyecolor
-SQFdata$eyecolor <- factor(SQFdata$eyecolor, levels = c("BK","BL","BR","DF","GR","GY","HA","MA","MC","P","VI","XX","Z"),
-                       labels=c('Black', 'Blue', 'Brown', 'Two different', 'Green', 'Gray',
-                                'Hazel', 'Maroon', 'MC', 'Pink', 'Violet', 'Unknown', 'Other'))
+SQFdata$eyecolor <- factor(SQFdata$eyecolor,
+                           levels = c("BK","BL","BR","DF", "GR", "GY","HA", "MA",
+                                      "MC","P","VI","XX","Z"),
+                           labels=c('Black', 'Blue', 'Brown', 'Two different',
+                                    'Green', 'Gray', 'Hazel', 'Maroon', 'MC',
+                                    'Pink', 'Violet', 'Unknown', 'Other'))
 
 # Corrección haircolr
-SQFdata$haircolr <- factor(SQFdata$haircolr, levels = c("BA","BK","BL","BR","DY","FR","GY","RA","SN","SP","WH","XX","ZZ"),
-                       labels=c('Bald', 'Black', 'Blond', 'Brown', 'Dyed', 'Frosted', 'Gray',
-                                'Red', 'Sandy', 'Salt and pepper', 'White', 'Unknown', 'Other'))
+SQFdata$haircolr <- factor(SQFdata$haircolr,
+                           levels = c("BA","BK","BL","BR","DY","FR","GY",
+                                      "RA","SN","SP","WH","XX","ZZ"),
+                        labels=c('Bald', 'Black', 'Blond', 'Brown', 'Dyed',
+                                 'Frosted', 'Gray', 'Red', 'Sandy',
+                                 'Salt and pepper', 'White', 'Unknown', 'Other'))
 
 # Corrección build
 SQFdata$build <- factor(SQFdata$build, levels = c("H", "M", "T", "U", "Z"),
@@ -507,7 +511,8 @@ Se puede apreciar en la distribución de la **variable "build"**, que se paran (
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(build)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(build)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(build)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -531,7 +536,8 @@ Se puede apreciar en la distribución de la **variable "frisked"**, que de los s
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(frisked)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(frisked)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(frisked)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -555,7 +561,8 @@ Se puede apreciar en la distribución de la **variable "knifcuti"**, que de los 
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(knifcuti)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(knifcuti)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -579,7 +586,8 @@ Se puede apreciar en la distribución de la **variable "machgun"**, que no ha si
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(machgun)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(machgun)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(machgun)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -603,7 +611,8 @@ Se puede apreciar en la distribución de la **variable "othrweap"**, que de los 
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(othrweap)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(othrweap)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(othrweap)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -627,7 +636,8 @@ Se puede apreciar en la distribución de la **variable "pf_ptwep"**, que el ofic
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_ptwep)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(pf_ptwep)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(pf_ptwep)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -651,7 +661,8 @@ Se puede apreciar en la distribución de la **variable "pf_baton"**, que el ofic
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_baton)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(pf_baton)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(pf_baton)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -675,7 +686,8 @@ Se puede apreciar en la distribución de la **variable "cs_lkout"** que de los s
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_lkout)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(cs_lkout)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(cs_lkout)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -699,7 +711,8 @@ Se puede apreciar en la distribución de la **variable "cs_cloth"**, que de los 
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_cloth)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(cs_cloth)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(cs_cloth)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -723,7 +736,8 @@ Se puede apreciar en la distribución de la **variable "rf_attir"**, que de los 
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_attir)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(rf_attir)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(rf_attir)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -747,7 +761,8 @@ Se puede apreciar en la distribución de la **variable "rf_vcact"**, que de los 
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_vcact)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(rf_vcact)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(rf_vcact)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -771,7 +786,8 @@ Se puede apreciar en la distribución de la **variable "sb_outln"**, que tan sol
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(sb_outln)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(sb_outln)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(sb_outln)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -795,7 +811,8 @@ Se puede apreciar en la distribución de la **variable "sb_admis"**, que tan sol
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(sb_admis)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(sb_admis)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(sb_admis)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -819,7 +836,8 @@ Se puede apreciar en la distribución de la **variable "ac_time"**, que el 40.3%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(ac_time)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(ac_time)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -843,7 +861,8 @@ Se puede apreciar en la distribución de la **variable "ac_stsnd"**, que tan sol
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(ac_stsnd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(ac_stsnd)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -868,8 +887,10 @@ Lo primero que se aprecia en la distribución de la **variable "forceuse"**, es 
 Dentro de los casos donde se utilizó la fuerza contra el sospechoso, destacan la defensa propia y la huida del sospecho sobre el resto de razones para usarla (sospechoso con arma, ofrecimiento de resistencia y la defensa de otros).
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
-p1 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=45, hjust=1))
-p2 = ggplot(data = SQFdata, aes(forceuse)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=45, hjust=1))
+p1 = ggplot(data = SQFdata, aes(forceuse)) +
+    geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=45, hjust=1))
+p2 = ggplot(data = SQFdata, aes(forceuse)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=45, hjust=1))
 multiplot(p1,p2,cols=2)
 ```
 
@@ -895,7 +916,8 @@ Se puede apreciar en la distribución de la **variable "explnstp"**, que el ofic
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(explnstp)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(explnstp)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(explnstp)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -926,8 +948,11 @@ SQFdata.filtered = SQFdata %>%
                       group_by(crossst) %>%
                       filter(n() > 150)
 
-p1 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=45, hjust=1))
-p2 = ggplot(data = SQFdata.filtered , aes(crossst)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=45, hjust=1))
+p1 = ggplot(data = SQFdata.filtered , aes(crossst)) +
+    geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=45, hjust=1))
+p2 = ggplot(data = SQFdata.filtered , aes(crossst)) +
+    geom_bar(aes(fill = arstmade), position = "fill") +
+    ylab("Percentage") + theme(axis.text.x = element_text(angle=45, hjust=1))
 multiplot(p1,p2,cols=1)
 ```
 
@@ -944,23 +969,30 @@ En cuanto a la **variable dependiente "arstmade"**, se aprecia un mayor porcenta
 #### Localización de la Parada: xcoord  vs  ycoord
 
 ```{r, echo=FALSE}
-doNextChunk <- opts_knit$get("rmarkdown.pandoc.to") == 'html'
+OnlyHTML <- opts_knit$get("rmarkdown.pandoc.to") == 'html'
 ```
 
-```{r, fig.height=30, fig.width=30, eval=doNextChunk}
+```{r, fig.height=30, fig.width=30, eval=OnlyHTML}
 coords <- SQFdata[, c("xcoord", "ycoord")]
-coords.new <- project(coords, inverse=TRUE, proj="+proj=lcc +lat_1=41.03333333333333 +lat_2=40.66666666666666 +lat_0=40.16666666666666 +lon_0=-74 +x_0=300000.0000000001 +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs")
+coords.new <- project(coords, inverse=TRUE,
+                      proj="+proj=lcc +lat_1=41.03333333333333 +lat_2=40.66666666666666
+                      +lat_0=40.16666666666666 +lon_0=-74 +x_0=300000.0000000001
+                      +y_0=0 +ellps=GRS80 +datum=NAD83 +to_meter=0.3048006096012192 +no_defs")
 SQFdata["xcoord"] <- coords.new[[1]]
 SQFdata["ycoord"] <- coords.new[[2]]
 
-df <- SQFdata %>% dplyr::select(xcoord, ycoord, arstmade) %>% dplyr::filter(!is.na(xcoord)|!is.na(ycoord))
+df <- SQFdata %>% 
+    select(xcoord, ycoord, arstmade) %>% 
+    filter(!is.na(xcoord)|!is.na(ycoord))
 pal <- colorFactor(c("#2980b9", "#C70039"), df$arstmade)
 
 leaflet(data = df) %>%
   addProviderTiles(providers$Esri.WorldGrayCanvas) %>%
   setView(-73.9796295, 40.6978522, zoom = 11) %>%
-  addCircleMarkers(lng=~df$xcoord, lat=~df$ycoord, radius=2, stroke=FALSE, color=~pal(df$arstmade), popup=df$arstmade) %>%
-  addLegend(position="bottomleft", colors=c("#C70039","#2980b9"), labels=c("arstmade (Yes)", "arstmade (No)"))
+  addCircleMarkers(lng=~df$xcoord, lat=~df$ycoord, radius=2,
+                   stroke=FALSE, color=~pal(df$arstmade), popup=df$arstmade) %>%
+  addLegend(position="bottomleft", colors=c("#C70039","#2980b9"),
+            labels=c("arstmade (Yes)", "arstmade (No)"))
 ```
 
 #### Raza del sospechoso (race)
@@ -1027,11 +1059,13 @@ SQFdata_age %>% group_by(age, arstmade) %>%
 
 ```{r age-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(age)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(age)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(age)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 
 p1 = ggplot(data = SQFdata_age, aes(age)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata_age, aes(age)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata_age, aes(age)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1055,7 +1089,8 @@ SQFdata %>% group_by(contrabn, arstmade) %>%
 
 ```{r contrabn-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(contrabn)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(contrabn)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(contrabn)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1077,7 +1112,8 @@ SQFdata %>% group_by(asltweap, arstmade) %>%
 
 ```{r asltweap-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(asltweap)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(asltweap)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(asltweap)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1120,11 +1156,13 @@ SQFdata_detailCM %>% group_by(detailCM, arstmade) %>%
 
 ```{r detailCM-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(detailCM)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(detailCM)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(detailCM)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 
 p1 = ggplot(data = SQFdata_detailCM, aes(detailCM)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata_detailCM, aes(detailCM)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata_detailCM, aes(detailCM)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1148,7 +1186,8 @@ SQFdata %>% group_by(pf_grnd, arstmade) %>%
 
 ```{r pf_grnd-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_grnd)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(pf_grnd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(pf_grnd)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1170,7 +1209,8 @@ SQFdata %>% group_by(pf_drwep, arstmade) %>%
 
 ```{r pf_drwep-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_drwep)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(pf_drwep)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(pf_drwep)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1192,7 +1232,8 @@ SQFdata %>% group_by(cs_descr, arstmade) %>%
 
 ```{r cs_descr-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_descr)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(cs_descr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(cs_descr)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1214,7 +1255,8 @@ SQFdata %>% group_by(cs_casng, arstmade) %>%
 
 ```{r cs_casng-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_casng)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(cs_casng)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(cs_casng)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1237,7 +1279,8 @@ SQFdata %>% group_by(cs_other, arstmade) %>%
 
 ```{r cs_other-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_other)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(cs_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(cs_other)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1259,7 +1302,8 @@ SQFdata %>% group_by(rf_othsw, arstmade) %>%
 
 ```{r rf_othsw-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_othsw)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(rf_othsw)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(rf_othsw)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1281,7 +1325,8 @@ SQFdata %>% group_by(rf_bulg, arstmade) %>%
 
 ```{r rf_bulg-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_bulg)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(rf_bulg)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(rf_bulg)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1303,7 +1348,8 @@ SQFdata %>% group_by(sb_hdobj, arstmade) %>%
 
 ```{r sb_hdobj-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(sb_hdobj)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(sb_hdobj)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(sb_hdobj)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1325,7 +1371,8 @@ SQFdata %>% group_by(ac_cgdir, arstmade) %>%
 
 ```{r ac_cgdir-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_cgdir)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(ac_cgdir)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(ac_cgdir)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1347,7 +1394,8 @@ SQFdata %>% group_by(ac_incid, arstmade) %>%
 
 ```{r ac_incid-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_incid)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(ac_incid)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(ac_incid)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1369,7 +1417,8 @@ SQFdata %>% group_by(ac_other, arstmade) %>%
 
 ```{r ac_other-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_other)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(ac_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(ac_other)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1407,12 +1456,18 @@ SQFdata_stinter %>% group_by(stinter, arstmade) %>%
 ```
 
 ```{r stinter-plot, fig.height=5, fig.width=15, warning=FALSE}
-p1 = ggplot(data = SQFdata, aes(stinter)) + geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
-p2 = ggplot(data = SQFdata, aes(stinter)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p1 = ggplot(data = SQFdata, aes(stinter)) + geom_bar() +
+    ylab("Frequency") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p2 = ggplot(data = SQFdata, aes(stinter)) +
+    geom_bar(aes(fill = arstmade), position = "fill") +
+    ylab("Percentage") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
 multiplot(p1,p2,cols=2)
 
-p1 = ggplot(data = SQFdata_stinter, aes(stinter)) + geom_bar() + ylab("Frequency") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
-p2 = ggplot(data = SQFdata_stinter, aes(stinter)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p1 = ggplot(data = SQFdata_stinter, aes(stinter)) + geom_bar() +
+    ylab("Frequency") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
+p2 = ggplot(data = SQFdata_stinter, aes(stinter)) +
+    geom_bar(aes(fill = arstmade), position = "fill") +
+    ylab("Percentage") + theme(axis.text.x = element_text(angle=-45, hjust = 0))
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1434,7 +1489,8 @@ SQFdata %>% group_by(sector, arstmade) %>%
 
 ```{r sector-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(sector)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(sector)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(sector)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1456,7 +1512,8 @@ SQFdata %>% group_by(typeofid, arstmade) %>%
 
 ```{r typeofid-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(typeofid)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(typeofid)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(typeofid)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1478,7 +1535,8 @@ SQFdata %>% group_by(othpers, arstmade) %>%
 
 ```{r othpers-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(othpers)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(othpers)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(othpers)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1500,7 +1558,8 @@ SQFdata %>% group_by(radio, arstmade) %>%
 
 ```{r radio-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(radio)) + geom_bar() + ylab("Frequency")
-p2 = ggplot(data = SQFdata, aes(radio)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
+p2 = ggplot(data = SQFdata, aes(radio)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Percentage")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1525,7 +1584,7 @@ SQFdata %>% group_by(arstmade) %>%
 ```
 
 
-```{r, fig.height=5, fig.width=15}
+```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = SQFdata %>% filter(perobs<100) %>%
         ggplot(aes(x=perobs)) + geom_histogram() 
 p2 = SQFdata %>% filter(perobs<20) %>%
@@ -1553,7 +1612,7 @@ SQFdata %>% group_by(arstmade) %>%
         mutate(freq_n=paste0(round( n/sum(n)*100,2),"%"))
 ```
 
-```{r, fig.height=5, fig.width=15}
+```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(x=perstop)) + geom_histogram() 
 p2 = ggplot(data = SQFdata, aes(arstmade, perstop)) + geom_boxplot()
 p3 = SQFdata %>% filter(perobs<100) %>%
@@ -1575,7 +1634,8 @@ SQFdata %>% group_by(city) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(city)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(city)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(city)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1595,7 +1655,8 @@ SQFdata %>% group_by(searched) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(searched)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(searched)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(searched)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1615,7 +1676,8 @@ SQFdata %>% group_by(pistol) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pistol)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pistol)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(pistol)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1635,7 +1697,8 @@ SQFdata %>% group_by(pf_hcuff) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_hcuff)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pf_hcuff)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(pf_hcuff)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1655,7 +1718,8 @@ SQFdata %>% group_by(pf_pepsp) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_pepsp)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pf_pepsp)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(pf_pepsp)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1675,7 +1739,8 @@ SQFdata %>% group_by(cs_drgtr) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_drgtr)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(cs_drgtr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(cs_drgtr)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1695,7 +1760,8 @@ SQFdata %>% group_by( cs_furtv) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_furtv)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(cs_furtv)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(cs_furtv)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1715,7 +1781,8 @@ SQFdata %>% group_by(cs_vcrim) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_vcrim)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(cs_vcrim)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(cs_vcrim)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1735,7 +1802,8 @@ SQFdata %>% group_by(rf_rfcmp) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_rfcmp)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(rf_rfcmp)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(rf_rfcmp)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1755,7 +1823,8 @@ SQFdata %>% group_by(rf_verbl) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_verbl)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(rf_verbl)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(rf_verbl)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1775,7 +1844,8 @@ SQFdata %>% group_by(sb_other) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(sb_other)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(sb_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(sb_other)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1795,7 +1865,8 @@ SQFdata %>% group_by( ac_proxm) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_proxm)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(ac_proxm)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(ac_proxm)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1815,7 +1886,8 @@ SQFdata %>% group_by(ac_rept) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_rept)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(ac_rept)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(ac_rept)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1835,7 +1907,8 @@ SQFdata %>% group_by(inout) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(inout)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(inout)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(inout)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1855,7 +1928,8 @@ SQFdata %>% group_by(trhsloc) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(trhsloc)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(trhsloc)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(trhsloc)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1876,7 +1950,8 @@ SQFdata %>% group_by(pct) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pct)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pct)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(pct)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1899,7 +1974,8 @@ SQFdata %>% group_by(addrpct) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(addrpct)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(addrpct)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(addrpct)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1922,7 +1998,8 @@ SQFdata %>% group_by( repcmd) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(repcmd)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(repcmd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(repcmd)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1944,7 +2021,8 @@ SQFdata %>% group_by(revcmd) %>%
 
 ```{r, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(revcmd)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(revcmd)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(revcmd)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1970,7 +2048,8 @@ SQFdata %>% group_by(sex, arstmade) %>%
 
 ```{r sex-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(sex)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(sex)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(sex)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -1996,11 +2075,13 @@ SQFdata_weigth %>% group_by(weight, arstmade) %>%
 ```{r weight-plot, fig.height=5, fig.width=15, warning=FALSE}
 
 p1 = ggplot(data = SQFdata, aes(weight)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(weight)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(weight)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 
 p1 = ggplot(data = SQFdata_weigth, aes(weight)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata_weigth, aes(weight)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata_weigth, aes(weight)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2020,7 +2101,8 @@ SQFdata %>% group_by(haircolr, arstmade) %>%
 
 ```{r haircolr-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(haircolr)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(haircolr)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2042,7 +2124,8 @@ SQFdata %>% group_by(riflshot, arstmade) %>%
 
 ```{r riflshot-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(riflshot)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(riflshot)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2064,7 +2147,8 @@ SQFdata %>% group_by(sumissue, arstmade) %>%
 
 ```{r sumissue-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(sumissue)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(sumissue)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2086,7 +2170,8 @@ SQFdata %>% group_by(pf_hands, arstmade) %>%
 
 ```{r pf_hands-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pf_hands)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(pf_hands)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2108,7 +2193,8 @@ SQFdata %>% group_by(pf_wall, arstmade) %>%
 
 ```{r pf_wall-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pf_wall)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(pf_wall)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2130,7 +2216,8 @@ SQFdata %>% group_by(pf_other, arstmade) %>%
 
 ```{r pf_other-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(pf_other)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(pf_other)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2152,7 +2239,8 @@ SQFdata %>% group_by(cs_objcs, arstmade) %>%
 
 ```{r cs_objcs-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(cs_objcs)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(cs_objcs)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2174,7 +2262,8 @@ SQFdata %>% group_by(cs_bulge, arstmade) %>%
 
 ```{r cs_bulge-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(cs_bulge)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(cs_bulge)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2196,7 +2285,8 @@ SQFdata %>% group_by(rf_vcrim, arstmade) %>%
 
 ```{r rf_vcrim-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(rf_vcrim)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(rf_vcrim)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2218,7 +2308,8 @@ SQFdata %>% group_by(rf_knowl, arstmade) %>%
 
 ```{r rf_knowl-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(rf_knowl)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(rf_knowl)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2240,7 +2331,8 @@ SQFdata %>% group_by(rf_furt, arstmade) %>%
 
 ```{r rf_furt-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(rf_furt)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(rf_furt)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2262,7 +2354,8 @@ SQFdata %>% group_by(ac_evasv, arstmade) %>%
 
 ```{r ac_evasv-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(ac_evasv)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(ac_evasv)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2284,7 +2377,8 @@ SQFdata %>% group_by(ac_assoc, arstmade) %>%
 
 ```{r ac_assoc-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(ac_assoc)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(ac_assoc)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2306,7 +2400,8 @@ SQFdata %>% group_by(ac_inves, arstmade) %>%
 
 ```{r ac_inves-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(ac_inves)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(ac_inves)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2328,7 +2423,8 @@ SQFdata %>% group_by(stname, arstmade) %>%
 
 ```{r stname-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(stname)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(stname)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(stname)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2348,7 +2444,8 @@ SQFdata %>% group_by(offunif, arstmade) %>%
 
 ```{r offunif-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(offunif)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(offunif)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(offunif)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2370,7 +2467,8 @@ SQFdata %>% group_by(offverb, arstmade) %>%
 
 ```{r offverb-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(offverb)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(offverb)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(offverb)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2392,7 +2490,8 @@ SQFdata %>% group_by(officrid, arstmade) %>%
 
 ```{r officrid-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(officrid)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(officrid)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(officrid)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2414,7 +2513,8 @@ SQFdata %>% group_by(offshld, arstmade) %>%
 
 ```{r offshld-plot, fig.height=5, fig.width=15, warning=FALSE}
 p1 = ggplot(data = SQFdata, aes(offshld)) + geom_bar() + ylab("Frecuencia")
-p2 = ggplot(data = SQFdata, aes(offshld)) + geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
+p2 = ggplot(data = SQFdata, aes(offshld)) +
+    geom_bar(aes(fill = arstmade), position = "fill") + ylab("Porcentaje")
 multiplot(p1,p2,cols=2)
 ```
 
@@ -2705,7 +2805,7 @@ dim(SQFdata)
 dim(SQFdata_modif)
 ```
 
-### 3.3.3 Imputación de NAs
+### 3.3.3 Tratamiento de NAs
 
 Nos encontramos ante dos casos distintos de NAs después de haber realizado la eliminación previa de variables:
 
@@ -2935,7 +3035,8 @@ model_glm_DSAMP <- glm(arstmade ~ ., data = SQFdataTrain_DSAMP, family = "binomi
 ```{r}
 # Stepwise modelo con Down-Sampling
 model_glm_DSAMP_Forw <- step(model_glm_DSAMP_Vacio,
-                       scope = list(lower = formula(model_glm_DSAMP_Vacio), upper = formula(model_glm_DSAMP)),
+                       scope = list(lower = formula(model_glm_DSAMP_Vacio),
+                                    upper = formula(model_glm_DSAMP)),
                        direction = "forward", trace = 0)
 summary(model_glm_DSAMP_Forw)
 ```
@@ -2954,7 +3055,7 @@ c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic)
 Como la respuesta es binaria, la función de salida es la probabilidad condicionada de que la respuesta sea un acierto dado los valores de los predictores. Los betas estimados son los log- odds, donde la probabilidad (odds) de que el suceso ocurra se da como la probabilidad de acierto dividido por la probabilidad de fallo.
 En cuanto a la interpretación de los parámetros estimados del modelo *model_glm_DSAMP_Forw*, el signo de los mismos indica que ese predictor aumenta o disminuye la probabilidad de que una persona sea arrestada y para evaluar la magnitud de la variación se calculó el exponencial de cada beta. Así se puede determinar por ejemplo: si aumenta  una unidad en la edad, la probabilidad de ser arrestado  se incrementa en un factor de 1,01
 
-```{r}
+```{r warning=FALSE}
 round(exp(cbind(Estimate=coef(model_glm_DSAMP_Forw),
                 confint(model_glm_DSAMP_Forw))), 2)
 ```
@@ -2985,11 +3086,85 @@ anova(model_glm_DSAMP_hair_back, model_glm_DSAMP_Forw,  test="Chisq")
 regTermTest(model_glm_DSAMP_Forw, "race")
 model_glm_DSAMP_race<- glm(arstmade ~ .-race, data = SQFdataTrain_DSAMP, family = "binomial")
 model_glm_DSAMP_race_back<-step(model_glm_DSAMP_race, direction = "backward", trace = 0)
-c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic, model_glm_DSAMP_hair_back$aic, model_glm_DSAMP_race_back$aic)
+
+c(model_glm_DSAMP$aic, model_glm_DSAMP_Forw$aic,
+  model_glm_DSAMP_hair_back$aic, model_glm_DSAMP_race_back$aic)
+
 anova(model_glm_DSAMP_race_back, model_glm_DSAMP_Forw,  test="Chisq")
 ```
 
 ## 4.2 Knn
+
+### 4.2.1 Knn con variables numéricas
+
+```{r}
+train.labels <- SQFdataTrain_DSAMP$arstmade
+test.labels <- SQFdataTest$arstmade
+
+train.numeric <- SQFdataTrain_DSAMP %>% 
+  select(ser_num, perobs, perstop, repcmd, revcmd, age, ht_feet, ht_inch, weight) %>% 
+  mutate_each(funs(scale))
+
+test.numeric <- SQFdataTest %>%
+  select(ser_num,perobs,perstop,repcmd,revcmd,age,ht_feet,ht_inch,weight) %>% 
+  mutate_each(funs(scale))
+```
+
+```{r}
+knn_total.numeric <- knn1(train.numeric, test.numeric, train.labels)
+error1 <- sum(knn_total.numeric != test.labels)/length(test.labels);
+1-error1
+```
+
+### 4.2.2 Knn con variables categóricas
+
+```{r warning=FALSE}
+train.cat <- SQFdataTrain_DSAMP %>%
+  mutate_each(funs(as.numeric))
+
+test.cat <- SQFdataTest %>%
+  mutate_each(funs(as.numeric))
+
+z = rep(1, dim(train.cat)[1]) %*% as.matrix(test.cat[1, ])
+sim = apply(z - train.cat == 0, 1, sum)/dim(train.cat)[2]
+
+# Repetimos para todos los puntos
+ntrain <- dim(train.cat)[1]
+ntest <- dim(test.cat)[1]
+d <- dim(train.cat)[2]
+sim <- matrix(0, ntest, ntrain)
+
+for (i in 1:ntest) {
+  z = rep(1, ntrain) %*% as.matrix(test.cat[i, ])
+  sim[i, ] = apply(z - train.cat == 0, 1, sum)/d
+}
+
+similaridadCategorica = sim
+indices = apply(sim, 1, which.max)
+prediccionCategorica = rep(0, ntest)
+for (i in 1:ntest) {
+  z = table(train.labels[which(sim[i, ] == sim[i, indices[i]])])
+  prediccionCategorica[i] = attributes(which(z == max(z)))$names
+}
+attributes(which(z == max(z)))$names
+```
+
+### 4.2.3 Unión de las medidas
+
+```{r}
+total = rbind(test.numeric, train.numeric)
+distanciaEuclidea = as.matrix(dist(total))[1:ntest, (ntest + 1):(ntest + ntrain)]
+similaridadNumerica = 1 - distanciaEuclidea/max(distanciaEuclidea)
+similaridadFinal = (0.3 * similaridadNumerica + 0.7 * similaridadCategorica)
+sim = similaridadFinal
+k = 10
+indices = apply(sim, 1, function(x) sort (x, index.return = TRUE,decreasing = TRUE)$ix[1:k])
+prediccion_knn = rep(0, ntest)
+for (i in 1:ntest) {
+  prediccion_knn[i] = 2 * sum(as.numeric(train.labels[indices[,i]]) - 1) >= k
+}
+
+```
 
 ## 4.3 Random Forest
 
@@ -3051,7 +3226,7 @@ start.time <- Sys.time()
 for(i in 1:N) {
     # Selección de predictores y observaciones para el árbol
     a = sort(sample(1:(dim(SQFdataTrain_DSAMP_RF)[2]-1),K))
-    b = sort(sample(1:k, M, replace=TRUE))
+    b = sort(sample(1:k, M))
     
     # Datos para el árbol
     SQFdataTrain_DSAMP.vot = SQFdataTrain_DSAMP_RF[b,c(a,res)]
@@ -3080,7 +3255,7 @@ start.time <- Sys.time()
 SQFdataTrain_DSAMP.vot <- foreach(n = 1:N) %dopar% {
     # Selección de predictores y observaciones para el árbol
     a = sort(sample(1:(dim(SQFdataTrain_DSAMP_RF)[2]-1),K))
-    b = sort(sample(1:k, M, replace=TRUE))
+    b = sort(sample(1:k, M))
 
     # Datos para el árbol
     SQFdataTrain_DSAMP_RF[b,c(a,res)]
@@ -3088,17 +3263,24 @@ SQFdataTrain_DSAMP.vot <- foreach(n = 1:N) %dopar% {
 
 # Creación de árboles
 moguerza.forest.par <- foreach(i=1:N) %dopar% {
-    model.rp <- rpart(SQFdataTrain_DSAMP.vot[[i]][,K+1] ~., data = SQFdataTrain_DSAMP.vot[[i]][,1:K],
+    model.rp <- rpart(SQFdataTrain_DSAMP.vot[[i]][,K+1] ~.,
+                      data = SQFdataTrain_DSAMP.vot[[i]][,1:K],
                       cp=0.0001, control = rpart.control(maxdepth = 10),
                       parms=list(split="gini"))
 }
 
 # Almacenamiento de predictores por árbol
 for (i in 1:N) {
-    vars.par[,i] <- which(is_in(colnames(SQFdataTrain_DSAMP_RF), attr(moguerza.forest.par[[i]]$terms,"term.labels")))
+    vars.par[,i] <- which(is_in(colnames(SQFdataTrain_DSAMP_RF),
+                                attr(moguerza.forest.par[[i]]$terms,"term.labels")))
 }
 
 time.taken.par <- Sys.time() - start.time
+
+paste("Tiempo generación del modelo código secuencial:",
+      as.character.POSIXt(round(time.taken.sec, 2)))
+paste("Tiempo generación del modelo código paralelo:",
+      as.character.POSIXt(round(time.taken.par, 2)))
 ```
 
 ### 4.3.4 Evaluación del error en conjunto de train
@@ -3109,7 +3291,6 @@ time.taken.par <- Sys.time() - start.time
 # Matriz de predicciones
 pred.matrix.train.sec <- matrix(0,k,N)
 
-start.time <- Sys.time()
 for (j in 1:N)
 {
     prediction = predict(moguerza.forest.sec[[j]], SQFdataTrain_DSAMP_RF[,vars.sec[,j]] )
@@ -3117,7 +3298,6 @@ for (j in 1:N)
     prediction.fact = factores[max.col(prediction)]
     pred.matrix.train.sec[,j] = prediction.fact
 }
-Sys.time() - start.time
 # Vector de probabilidades
 p.arstmade.train.sec <- rowSums(pred.matrix.train.sec==factores[2])/N
 
@@ -3135,7 +3315,6 @@ confusionMatrix(table.moguerza.train.sec)
 # Matriz de predicciones
 pred.matrix.train.par <- matrix(0,k,N)
 
-start.time <- Sys.time()
 pred.vect.train.par <- foreach(j = 1:N) %dopar% {
     prediction <- predict(moguerza.forest.par[[j]], SQFdataTrain_DSAMP_RF[,vars.par[,j]] )
     factores <- colnames(prediction)
@@ -3145,8 +3324,6 @@ pred.vect.train.par <- foreach(j = 1:N) %dopar% {
 for(j in 1:N){
     pred.matrix.train.par[,j] <- pred.vect.train.par[[j]]
 }
-
-Sys.time() - start.time
 
 # Vector de probabilidades
 p.arstmade.train.par <- rowSums(pred.matrix.train.par==factores[2])/N
@@ -3167,6 +3344,7 @@ confusionMatrix(table.moguerza.train.par)
 # Matriz de predicciones
 pred.matrix.test.sec = matrix(0,m,N)
 
+start.time <- Sys.time()
 for (j in 1:N)
 {
     prediction = predict(moguerza.forest.sec[[j]], SQFdataTest_RF[,vars.sec[,j]] )
@@ -3174,6 +3352,8 @@ for (j in 1:N)
     prediction.fact = factores[max.col(prediction)]
     pred.matrix.test.sec[,j] = prediction.fact
 }
+
+time.pred.sec <- Sys.time() - start.time
 
 # Vector de probabilidades
 p.arstmade.test.sec = rowSums(pred.matrix.test.sec==factores[2])/N 
@@ -3192,6 +3372,7 @@ confusionMatrix(table.moguerza.test.sec)
 # Matriz de predicciones
 pred.matrix.test.par = matrix(0,m,N)
 
+start.time <- Sys.time()
 pred.vect.test.par <- foreach(j = 1:N) %dopar% {
     prediction <- predict(moguerza.forest.par[[j]], SQFdataTest_RF[,vars.par[,j]] )
     factores = colnames(prediction)
@@ -3202,6 +3383,8 @@ for(j in 1:N){
     pred.matrix.test.par[,j] = pred.vect.test.par[[j]]
 }
 
+time.pred.par <- Sys.time() - start.time
+
 # Vector de probabilidades
 p.arstmade.test.par = rowSums(pred.matrix.test.par==factores[2])/N
 
@@ -3211,6 +3394,11 @@ pred.test.fact.par <- relevel(as.factor(pred.test.fact.par), ref = "Y")
 
 table.moguerza.test.par = table(pred.test.fact.par,real.train.fact)
 confusionMatrix(table.moguerza.test.par)
+
+paste("Tiempo de predicción del modelo código secuencial:",
+      as.character.POSIXt(round(time.pred.sec, 2)))
+paste("Tiempo de predicción del modelo código paralelo:",
+      as.character.POSIXt(round(time.pred.par, 2)))
 ```
 
 Se observan resultados similares para ambos modelos, por lo que en adelante se empleará únicamente uno de ellos.
@@ -3223,7 +3411,7 @@ Se evalúan los tres mejores modelos obtenidos en cada caso.
 
 ## 5.1 Validación cruzada
 
-Dado que nuestro objetivo es construir un modelo de predicción, la métrica más importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificación para cada modelo, donde se cruza el verdadero valor de la observación con la predicción de la misma. Para ello se toma como referencia una predicción mayor a 0.5.
+Dado que nuestro objetivo es construir un modelo de predicción, la medida de evaluación más importante es determinar lo bien que el modelo predice para observaciones diferentes a las de prueba. Se construye una tabla de clasificación para cada modelo, donde se cruza el verdadero valor de la observación con la predicción de la misma. Para ello se toma como referencia una predicción mayor a 0.5.
 
 De dicha tabla se obtienen las métricas *F-measure*, *precision*, *recall o sensitivity* y *specificity*.
 
@@ -3246,6 +3434,9 @@ cM_DSAMP_hair_back <- confusionMatrix(pred_DSAMP_hair_back,
                                       positive="Y")
 
 # KNN
+cM_knn <- confusionMatrix(factor(prediccion_knn, levels = c(0,1), labels=c('N','Y')),
+                          test.labels, positive = 'Y')
+
 
 # Random Forest
 cM_RF_par <- confusionMatrix(table.moguerza.test.par)
@@ -3253,7 +3444,7 @@ cM_RF_par <- confusionMatrix(table.moguerza.test.par)
 
 df.comp.models <- data.frame(
     LogisticRegression = fun_eval_mod(cM_DSAMP_hair_back),
-    # knn = fun_eval_mod(cM_knn),
+    knn = fun_eval_mod(cM_knn),
     RandomForest = fun_eval_mod(cM_RF_par),
     row.names = c("F-measure","Precision","Recall/Sensitivity","Specificity")
 )
@@ -3286,22 +3477,10 @@ abline(a = 0, b = 1, lwd = 2, lty = 2)
 
 auc_test_glm <- performance(pr_test_glm, measure = "auc")
 auc_test_glm <- auc_test_glm@y.values[[1]]
+paste("Índice de área bajo la curva:", round(auc_test_glm, 4))
 ```
 
-### 5.2.2 Knn
-
-```{r, warming = FALSE, message=FALSE, eval=FALSE}
-prob_test_knn <- predict(model_knn_DSAMP, SQFdataTest, type="prob")[2]
-pr_test_knn <- prediction(prob_test_knn, SQFdataTest$arstmade)
-pred_tpr_fpr_knn <- performance(pr_test_knn, measure = "tpr", x.measure = "fpr")
-plot(pred_tpr_fpr_knn, main = "ROC curve", col = "blue", lwd = 3)
-abline(a = 0, b = 1, lwd = 2, lty = 2)
-
-auc_test_knn <- performance(pr_test_knn, measure = "auc")
-auc_test_knn <- auc_test_knn@y.values[[1]]
-```
-
-### 5.2.3 Random Forest
+### 5.2.2 Random Forest
 
 ```{r, warming = FALSE, message=FALSE}
 prob_test_RF <- rowSums(pred.matrix.test.par==factores[2])/N
@@ -3312,6 +3491,7 @@ abline(a = 0, b = 1, lwd = 2, lty = 2)
 
 auc_test_RF <- performance(pr_test_RF, measure = "auc")
 auc_test_RF <- auc_test_RF@y.values[[1]]
+paste("Índice de área bajo la curva:", round(auc_test_RF, 4))
 ```
 
 \newpage
@@ -3339,7 +3519,8 @@ cM_glm <- confusionMatrix(factor(predict(model_glm, SQFdataTest, type="response"
 
 df.comp.DS.models <- data.frame(glm = fun_eval_mod(cM_glm),
                                 glm_DS = fun_eval_mod(cM_DSAMP_hair_back),
-                                row.names = c("F-measure","Precision","Recall/Sensitivity","Specificity"))
+                                row.names = c("F-measure","Precision",
+                                              "Recall/Sensitivity","Specificity"))
 
 kable(df.comp.DS.models, format = "markdown", digits = 4)
 ```

@@ -17,5 +17,4 @@ Algorithms used and answers achieved:
 
 	- Logistic regression.
 	- K nearest neighbours (KNN).
-	- Decision trees.
 	- Random Forest.
