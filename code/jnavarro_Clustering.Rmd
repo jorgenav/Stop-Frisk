@@ -1,0 +1,416 @@
+---
+title: "Clustering"
+author: "Jorge Navarro Garcia"
+date: "20 de mayo de 2017"
+output: html_document
+---
+
+```{r, message=FALSE}
+# Carga de librerías
+library(magrittr)
+library(dplyr)
+library(caret)
+library(cluster)
+library(useful)
+library(NbClust)
+```
+
+## Carga de datos
+
+```{r,message=FALSE}
+# Carga del Dataset
+if (!grepl('code', getwd())) setwd('./code')
+source('OLD/Cleaning_Data.R')
+dim(SQFdata)
+```
+
+## 3.3 Transformación de variables
+
+### 3.3.1 Creación de dataset transformado
+
+```{r}
+SQFdata_modif <- SQFdata
+```
+
+### 3.3.2 Eliminación de variables
+
+```{r}
+#
+# Eliminación de variables con más de ~60% de datos faltantes.
+#
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
+                              forceuse, othfeatr, addrnum, stname, beat,
+                              post, state, zip, rescode, premtype, aptnum))
+
+
+#
+# Eliminación de variables con poca o nula varianza (casos pertenecientes
+# todos a una misma clase). 7 variables eliminadas
+#
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(adtlrept, riflshot, asltweap, machgun,
+                             pf_baton, pf_pepsp, addrtyp, year,
+                             compyear, comppct, lineCM, dob, dettypCM))
+
+
+
+# 
+# Eliminación de variables con demasiados niveles (strings). 8 variables eliminadas
+# 
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(premname, stinter, crossst, sector,
+                              pct, crimsusp, addrpct, detailCM))
+
+# 
+# Variables asociadas a series temporales o coordenadas -> No son de interés para
+# el problema que ocupa
+# 
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(datestop, timestop, xcoord, ycoord))
+
+
+
+# 
+# Número de variables final
+# 
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+### 3.3.3 Tratamiento de NAs
+
+```{r}
+# 
+# Eliminación de NAs en variable age
+#
+SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
+
+
+
+# 
+# Modificación de variables no eliminadas
+# 
+
+# Uso de armas
+SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
+SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
+SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
+
+# Uso de fuerza física
+SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
+SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
+SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
+SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
+SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
+SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
+SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
+
+# Circunstancias adicionales
+SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
+SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
+SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
+SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
+SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
+SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
+SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
+SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
+SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+
+# Razones para el cacheo
+SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
+SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
+SQFdata_modif$rf_attir[which(is.na(SQFdata_modif$rf_attir))] <- 'N'
+SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
+SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
+SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
+SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
+
+# Razones para la detención
+SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
+SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
+SQFdata_modif$cs_casng[which(is.na(SQFdata_modif$cs_casng))] <- 'N'
+SQFdata_modif$cs_lkout[which(is.na(SQFdata_modif$cs_lkout))] <- 'N'
+SQFdata_modif$cs_cloth[which(is.na(SQFdata_modif$cs_cloth))] <- 'N'
+SQFdata_modif$cs_drgtr[which(is.na(SQFdata_modif$cs_drgtr))] <- 'N'
+SQFdata_modif$cs_furtv[which(is.na(SQFdata_modif$cs_furtv))] <- 'N'
+SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
+SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
+SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
+
+# Motivos de búsqueda
+SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
+SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
+SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
+SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
+
+# Comprobación de NAs
+sum(is.na(SQFdata))
+sum(is.na(SQFdata_modif))
+```
+
+### 3.3.4 Eliminación de variables con varianza nula
+
+```{r}
+# 
+# Con caret::nearZeroVar se elimina el resto de variables que presentan varianza
+# nula después de aplicar la imputación de NAs
+#
+SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+## 5.1 Clustering variables numéricas
+
+### 5.1.1 Separación de datos en categóricos y numéricos
+
+```{r}
+SQFdata_modif.num <- SQFdata_modif[,sapply(SQFdata_modif, is.numeric)]
+str(SQFdata_modif.num)
+
+# Creación de conjunto para clustering reducido
+set.seed(123)
+SQFdata_modif.num.red <- sample_n(SQFdata_modif.num, round(dim(SQFdata_modif.num)[1]/25))
+```
+
+### 5.1.2 Selección del número óptimo de clusters
+
+```{r}
+k_kmeans <- FitKMeans(SQFdata_modif.num.red, max.clusters = 25, nstart = 25, seed = 123)
+k_kmeans
+
+PlotHartigan(k_kmeans)
+```
+
+### 5.1.3 Creación de clusters
+
+```{r}
+# Clustering reducido
+set.seed(123)
+cl_kmeans.red <- kmeans(x = SQFdata_modif.num.red, centers = 5)
+plot(cl_kmeans.red, data = SQFdata_modif.num.red)
+
+
+# Clustering completo
+set.seed(123)
+cl_kmeans <- kmeans(x = SQFdata_modif.num, centers = 5)
+
+cl_kmeans$cluster
+SQFdata_modif.num$cluster <- cl_kmeans$cluster
+
+str(SQFdata_modif.num)
+```
+
+
+## 5.2 Clustering variables numéricas y categóricas (dummies)
+
+```{r}
+SQFdata_modif.dum <- SQFdata_modif %>% select(-arstmade)
+```
+
+### 5.2.1 Eliminacion de observaciones con casos Unknown previo a dummificacion
+
+```{r}
+SQFdata_modif.dum <- SQFdata_modif.dum %>%
+    filter(sex != "Unknown")
+
+SQFdata_modif.dum <- SQFdata_modif.dum %>%
+    filter(race != "UNKNOWN")
+
+# Dummificación de haircolr
+# SQFdata_modif.dum %>% group_by(haircolr) %>%
+#     summarise(count = n()) %>%
+#     mutate(perc = count*100/sum(count))
+
+SQFdata_modif.dum <- SQFdata_modif.dum %>%
+    select(-haircolr)
+
+# Dummificación de eyecolor
+# SQFdata_modif.dum %>% group_by(eyecolor) %>%
+#     summarise(count = n()) %>%
+#     mutate(perc = count*100/sum(count))
+
+SQFdata_modif.dum <- SQFdata_modif.dum %>%
+    select(-eyecolor)
+
+dim(SQFdata_modif.dum)
+```
+
+### 5.2.2 Separación de datos en categóricos y numéricos (¿¿??)
+
+```{r}
+SQFdata_modif.dum.cat <- SQFdata_modif.dum[,sapply(SQFdata_modif.dum, is.factor)]
+SQFdata_modif.dum.num <- SQFdata_modif.dum[,sapply(SQFdata_modif.dum, is.numeric)]
+```
+
+### 5.2.3 Dummificacion de variables
+
+```{r}
+# Dummificación de variables de tipo Y|N
+YesNoCat <- sapply(SQFdata_modif.dum.cat,
+                   function(x) (levels(x) == c("Y","N")) || (levels(x) == c("N","Y")))
+
+SQFdata_modif.dum.cat[YesNoCat] <- sapply(SQFdata_modif.dum.cat[YesNoCat], function(x) ifelse(x=="Y",1,0))
+
+sapply(SQFdata_modif.dum.cat[-YesNoCat],levels)
+
+# Dummificación de sexo (primero se eliminan casos Unkown)
+SQFdata_modif.dum.cat %>% group_by(sex) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count/sum(count))
+
+SQFdata_modif.dum.cat$sex <- ifelse(SQFdata_modif.dum.cat$sex=="Male",1,0)
+
+# Dummificación de raza (se eliminan Unkown)
+SQFdata_modif.dum.cat %>% group_by(race) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count/sum(count))
+
+SQFdata_modif.dum.cat$race.ASIAN <- ifelse(SQFdata_modif.dum.cat$race=="ASIAN/PACIFIC ISLANDER",1,0)
+SQFdata_modif.dum.cat$race.NATIVE <- ifelse(SQFdata_modif.dum.cat$race=="AMERICAN INDIAN/ALASKAN NATIVE",1,0)
+SQFdata_modif.dum.cat$race.B_HISP <- ifelse(SQFdata_modif.dum.cat$race=="BLACK-HISPANIC",1,0)
+SQFdata_modif.dum.cat$race.W_HISP <- ifelse(SQFdata_modif.dum.cat$race=="WHITE-HISPANIC",1,0)
+SQFdata_modif.dum.cat$race.WHITE <- ifelse(SQFdata_modif.dum.cat$race=="WHITE",1,0)
+SQFdata_modif.dum.cat$race.OTHER <- ifelse(SQFdata_modif.dum.cat$race=="OTHER",1,0)
+
+SQFdata_modif.dum.cat <- SQFdata_modif.dum.cat %>%
+    select(-race)
+
+# Dummificación de build
+SQFdata_modif.dum.cat %>% group_by(build) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif.dum.cat$build.Heavy <- ifelse(SQFdata_modif.dum.cat$build=="Heavy",1,0)
+SQFdata_modif.dum.cat$build.Thin <- ifelse(SQFdata_modif.dum.cat$build=="Thin",1,0)
+SQFdata_modif.dum.cat$build.Muscular <- ifelse(SQFdata_modif.dum.cat$build=="Muscular",1,0)
+SQFdata_modif.dum.cat$build.Unknown <- ifelse(SQFdata_modif.dum.cat$build=="Unknown",1,0)
+
+SQFdata_modif.dum.cat <- SQFdata_modif.dum.cat %>%
+    select(-build)
+
+# Dummificación de inout
+SQFdata_modif.dum.cat %>% group_by(inout) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif.dum.cat$inout <- ifelse(SQFdata_modif.dum.cat$inout=="Inside",1,0)
+
+# Dummificación de trhsloc
+SQFdata_modif.dum.cat %>% group_by(trhsloc) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif.dum.cat$trhsloc.Housing <- ifelse(SQFdata_modif.dum.cat$trhsloc=="Housing",1,0)
+SQFdata_modif.dum.cat$trhsloc.Transit <- ifelse(SQFdata_modif.dum.cat$trhsloc=="Transit",1,0)
+
+SQFdata_modif.dum.cat <- SQFdata_modif.dum.cat %>%
+    select(-trhsloc)
+
+# Dummificación de typeofid
+SQFdata_modif.dum.cat %>% group_by(typeofid) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif.dum.cat$typeofid.Other <- ifelse(SQFdata_modif.dum.cat$typeofid=="Other",1,0)
+SQFdata_modif.dum.cat$typeofid.Refused <- ifelse(SQFdata_modif.dum.cat$typeofid=="Refused",1,0)
+SQFdata_modif.dum.cat$typeofid.Verbal <- ifelse(SQFdata_modif.dum.cat$typeofid=="Verbal",1,0)
+
+SQFdata_modif.dum.cat <- SQFdata_modif.dum.cat %>%
+    select(-typeofid)
+
+# Dummificación de city
+SQFdata_modif.dum.cat %>% group_by(city) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif.dum.cat$city.BRONX <- ifelse(SQFdata_modif.dum.cat$city=="BRONX",1,0)
+SQFdata_modif.dum.cat$city.MANHATTAN <- ifelse(SQFdata_modif.dum.cat$city=="MANHATTAN",1,0)
+SQFdata_modif.dum.cat$city.QUEENS <- ifelse(SQFdata_modif.dum.cat$city=="QUEENS",1,0)
+SQFdata_modif.dum.cat$city.S_ISLAND <- ifelse(SQFdata_modif.dum.cat$city=="STATEN ISLAND",1,0)
+
+SQFdata_modif.dum.cat <- SQFdata_modif.dum.cat %>%
+    select(-city)
+
+# Dummificación de recstat (Ni idea de que es...)
+SQFdata_modif.dum.cat %>% group_by(recstat) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif.dum.cat$recstat <- ifelse(SQFdata_modif.dum.cat$recstat=="1",1,0)
+
+
+# Comprobacion -> Todas las variables son numeric
+sapply(SQFdata_modif.dum.cat, is.numeric)
+sapply(SQFdata_modif.dum.num, is.numeric)
+
+dim(SQFdata_modif.dum.cat)
+dim(SQFdata_modif.dum.num)
+
+
+SQFdata_modif.dum.cbind <- cbind(SQFdata_modif.dum.num, SQFdata_modif.dum.cat)
+
+str(SQFdata_modif.dum.cbind)
+```
+
+### 5.2.4 Escalado de variables
+
+Según últimos comentarios de Felipe a Jose, no es necesario realizar este paso. Únicamente se realiza en casos en los que ante dos variables numéricas, una de ellas presenta valores del orden de millones y otra del orden de decenas. Si existen variables *dummificadas* mezcladas con numéricas en el rango de los millares no hay problema.
+
+```{r, eval=FALSE}
+VarEscalar <- colnames(SQFdata_modif.dum.cbind[sapply(SQFdata_modif.dum.cbind,
+                                                      function(x) (min(x)!=0) || (max(x)!=1))])
+
+summary(SQFdata_modif.dum.cbind[VarEscalar])
+
+escalado <- function(z) {
+    min_z <- min(z)
+    max_z <- max(z)
+    z <- sapply(z, function(x) (x-min_z)/(max_z-min_z))    
+    return(z)
+}
+
+SQFdata_modif.dum.cbind[VarEscalar] <- sapply(SQFdata_modif.dum.cbind[VarEscalar], escalado)
+str(SQFdata_modif.dum.cbind)
+dim(SQFdata_modif.dum.cbind)
+```
+
+### 5.2.5 Selección del número óptimo de clusters
+
+```{r}
+k_kmeans <- FitKMeans(SQFdata_modif.dum.cbind, max.clusters = 25, nstart = 25, seed = 123)
+k_kmeans
+
+NbClust(data = SQFdata_modif.dum.cbind, distance = 'manhattan', min.nc = 2, max.nc = 10, method = 'kmeans')
+
+PlotHartigan(k_kmeans)
+```
+
+### 5.2.6 Creación de clusters
+
+```{r}
+# Creación de conjunto para clustering reducido
+set.seed(123)
+SQFdata_modif.dum.cbind.red <- sample_n(SQFdata_modif.dum.cbind, round(dim(SQFdata_modif.dum.cbind)[1]/25))
+
+# Clustering reducido
+set.seed(123)
+cl_kmeans.dum.red <- kmeans(x = SQFdata_modif.dum.cbind.red, centers = 5)
+plot(cl_kmeans.dum.red, data = SQFdata_modif.dum.cbind.red)
+
+
+# Clustering completo
+set.seed(123)
+cl_kmeans.dum <- kmeans(x = SQFdata_modif.dum.cbind, centers = 5)
+
+cl_kmeans.dum$cluster
+SQFdata_modif.dum.cbind$cluster <- cl_kmeans.dum$cluster
+```
+
+
+

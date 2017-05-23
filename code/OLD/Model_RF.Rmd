@@ -1,0 +1,643 @@
+---
+author: "Jorge Navarro Garcia"
+date: "29 de abril de 2017"
+output: html_document
+---
+
+```{r, message=FALSE}
+# Carga de librerías
+library(magrittr)
+library(dplyr)
+library(car)
+library(effects)
+library(randomForest)
+library(caret)
+library(dataQualityR)
+library(DMwR)
+library(foreach)
+library(doMC)
+library(e1071)
+registerDoMC(6)
+library(class)
+```
+
+# Creación de modelos predictivos
+
+Dado que la variable target *arstmade* muestra un desbalanceo en sus clases, 15% clase positiva frente a 85% clase negativa, es necesario tener en cuenta métricas de evaluación de los modelos que tengan en cuenta las diferencias entre clases a la hora de realizar predicciones. De esta forma, la evaluación de modelos mediante el coeficiente de *accuracy*, una de las métricas más comunes en problemas de clasificación binaria, se muestra incompleta. Por ello se tiene en cuenta otro tipo de métricas como *F-measure* y los valores *Precision* vs *Recall* o *Sensitivity* vs *Specificity*.
+
+## Carga de datos
+
+```{r,message=FALSE}
+# Carga del Dataset
+source('Cleaning_Data.R')
+dim(SQFdata)
+```
+
+## Análisis descriptivo
+
+```{r, message=FALSE}
+drq.num <- paste("./dqr_num.csv", sep = "")
+drq.cat <- paste("./dqr_cat.csv", sep = "")
+checkDataQuality(SQFdata, out.file.num = drq.num,  out.file.cat = drq.cat)
+DQR.num <- read.csv("dqr_num.csv")
+DQR.cat <- read.csv("dqr_cat.csv")
+```
+
+### A Variables numéricas
+
+```{r}
+print(DQR.num)
+
+# Variables a tener en cuenta por NAs -> age, xcoord e ycoord
+```
+
+### B Variables categóricas
+
+```{r}
+print(DQR.cat)
+# Variables a tener en cuenta por NAs > 60% -> arstoffn, sumoffen, officrid, offverb, ¿offshld (54.62)?, forceuse, othfeatr, addrnum, stname, beat, post
+
+# Variables a tener en cuenta por NAs cercanos al 20% -> adtlrept, pistol, riflshot, asltweap, knifcuti, machgun, othrweap, pf_hands, pf_wall, pf_grnd, pf_drwep, pf_ptwep, pf_baton, pf_hcuff, pf_pepsp, pf_other, , ac_rept, ac_inves, rf_vcrim, rf_othsw, ac_proxm, rf_attir, cs_objcs, cs_descr, cs_casng, cs_lkout, rf_vcact, cs_cloth, cs_drgtr, ac_evasv, ac_assoc, cs_furtv, rf_rfcmp, , ac_cgdir, rf_verbl, cs_vcrim, cs_bulge, cs_other, ac_incid, ac_time, rf_knowl, ac_stsnd, ac_other, sb_hdobj, sb_outln, sb_admis, sb_other, rf_furt, rf_bulg, premname, stinter, crossst, sector
+```
+
+## Transformación de los datos
+
+## Ordenación de niveles en variable objetivo
+
+```{r}
+SQFdata$arstmade <- relevel(SQFdata$arstmade, ref = "Y")
+```
+
+### Eliminación de variables
+
+```{r}
+
+# Eliminación de variables con más de 60% de datos faltantes.
+SQFdata_modif <- SQFdata %>%
+                    select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
+                                       forceuse, othfeatr, addrnum, stname, beat, post))
+
+
+
+# Eliminación de variables con 20% de NAs pero nula varianza (casos pertenecientes
+# todos a una misma clase). 6 variables eliminadas
+summary(SQFdata_modif$adtlrept);summary(SQFdata_modif$riflshot);
+summary(SQFdata_modif$asltweap);summary(SQFdata_modif$machgun);
+summary(SQFdata_modif$pf_baton);summary(SQFdata_modif$pf_pepsp)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(adtlrept, riflshot, asltweap, machgun,
+                             pf_baton, pf_pepsp))
+
+
+
+# Eliminación de variables con demasiados niveles (strings). 4 variables eliminadas
+summary(SQFdata_modif$premname);summary(SQFdata_modif$stinter);
+summary(SQFdata_modif$crossst);summary(SQFdata_modif$sector)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(premname, stinter, crossst, sector))
+
+
+
+# Eliminación de variables que no aparecen en el checkDataQuality. 7 variables eliminadas.
+summary(SQFdata_modif$state);summary(SQFdata_modif$zip);summary(SQFdata_modif$addrtyp);
+summary(SQFdata_modif$rescode);summary(SQFdata_modif$premtype);
+summary(SQFdata_modif$aptnum);summary(SQFdata_modif$timestop)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(state,zip,addrtyp,rescode,premtype,aptnum,timestop))
+
+
+
+# Eliminación de factores con más de 53 niveles. 4 variables eliminadas.
+length(levels(SQFdata_modif$pct));length(levels(SQFdata_modif$crimsusp));
+length(levels(SQFdata_modif$addrpct));length(levels(SQFdata_modif$detailCM))
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(pct,crimsusp,addrpct,detailCM))
+
+
+
+# Eliminación de variables con poca varianza. 6 variables eliminadas.
+summary(SQFdata_modif$year);summary(SQFdata_modif$datestop);
+summary(SQFdata_modif$compyear);summary(SQFdata_modif$comppct);
+summary(SQFdata_modif$lineCM);summary(SQFdata_modif$dob)
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(year,datestop,compyear,comppct, lineCM, dob))
+
+
+
+# Eliminación de más variables con poca varianza. 1 variable eliminada.
+
+# Se analiza el atributo y en caso de que no sea un factor, se devuelve valor
+# 2 para que no sea eliminado.
+fun_2level <- function(x){
+    ifelse(is.factor(x),return(length(levels(x))),return(2))
+}
+
+names(SQFdata_modif)[which(sapply(SQFdata_modif, fun_2level) < 2)]
+
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(which(sapply(SQFdata_modif, fun_2level) < 2)))
+
+
+
+# Eliminación de coordenadas:
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(xcoord, ycoord))
+
+
+
+# Variables en duda
+summary(SQFdata_modif$ser_num)
+summary(SQFdata_modif$revcmd)
+summary(SQFdata_modif$repcmd)
+
+
+
+# Número de variables final
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+### Eliminación de NAs
+
+```{r}
+
+# Eliminación de NAs en variable age
+SQFdata_modif %>% group_by(is.na(age)) %>%
+    summarise(n())
+
+SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
+
+dim(SQFdata)
+dim(SQFdata_modif)
+
+# Trabajo con NAs
+
+# Variables NO eliminadas
+
+# Modificación de variables no eliminadas
+
+# USO DE ARMAS
+summary(SQFdata_modif$pistol);summary(SQFdata_modif$knifcuti);summary(SQFdata_modif$othrweap);
+
+SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
+SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
+SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
+
+# USO DE FUERZA FÍSICA
+summary(SQFdata_modif$pf_hands);summary(SQFdata_modif$pf_wall);summary(SQFdata_modif$pf_grnd);
+summary(SQFdata_modif$pf_drwep);summary(SQFdata_modif$pf_ptwep);summary(SQFdata_modif$pf_hcuff);
+summary(SQFdata_modif$pf_other);
+
+SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
+SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
+SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
+SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
+SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
+SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
+SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
+
+# CIRCUNSTANCIAS ADICIONALES
+summary(SQFdata_modif$ac_rept);summary(SQFdata_modif$ac_inves);summary(SQFdata_modif$ac_proxm);
+summary(SQFdata_modif$ac_evasv);summary(SQFdata_modif$ac_assoc);summary(SQFdata_modif$ac_cgdir);
+summary(SQFdata_modif$ac_incid);summary(SQFdata_modif$ac_time);summary(SQFdata_modif$ac_stsnd);
+summary(SQFdata_modif$ac_other);
+
+SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
+SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
+SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
+SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
+SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
+SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
+SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
+SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
+SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+
+# REASON FOR FRISK
+summary(SQFdata_modif$rf_vcrim);summary(SQFdata_modif$rf_othsw);summary(SQFdata_modif$rf_attir);
+summary(SQFdata_modif$rf_vcact);summary(SQFdata_modif$rf_rfcmp);summary(SQFdata_modif$rf_verbl);
+summary(SQFdata_modif$rf_knowl);summary(SQFdata_modif$rf_furt);summary(SQFdata_modif$rf_bulg);
+
+SQFdata_modif %>% filter(is.na(cs_objcs)) %>%
+    summarise(count_rf_vcrim  = sum(rf_vcrim == "Y", na.rm = TRUE),
+            count_rf_othsw  = sum(rf_othsw == "Y", na.rm = TRUE),
+            count_rf_attir  = sum(rf_attir == "Y", na.rm = TRUE),
+            count_rf_vcact  = sum(rf_vcact == "Y", na.rm = TRUE),
+            count_rf_rfcmp  = sum(rf_rfcmp == "Y", na.rm = TRUE),
+            count_rf_furt  = sum(rf_furt == "Y", na.rm = TRUE),
+            count_rf_bulg  = sum(rf_bulg == "Y", na.rm = TRUE),
+            count_rf_verbl  = sum(rf_verbl == "Y", na.rm = TRUE),
+            count_rf_knowl = sum(rf_knowl == "Y", na.rm = TRUE),
+            tot = n()) %>%
+    mutate(percent_rf_vcrim = 100*count_rf_vcrim/tot,
+           percent_rf_othsw = 100*count_rf_othsw/tot,
+           percent_rf_attir = 100*count_rf_attir/tot,
+           percent_rf_vcact = 100*count_rf_vcact/tot,
+           percent_rf_rfcmp = 100*count_rf_rfcmp/tot,
+           percent_rf_furt = 100*count_rf_furt/tot,
+           percent_rf_bulg = 100*count_rf_bulg/tot,
+           percent_rf_verbl = 100*count_rf_verbl/tot,
+           percent_rf_knowl = 100*count_rf_knowl/tot)
+
+SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
+SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
+SQFdata_modif$rf_attir[which(is.na(SQFdata_modif$rf_attir))] <- 'N'
+SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
+SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
+SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
+SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
+
+# REASON FOR STOP
+summary(SQFdata_modif$cs_objcs);summary(SQFdata_modif$cs_descr);summary(SQFdata_modif$cs_casng);
+summary(SQFdata_modif$cs_lkout);summary(SQFdata_modif$cs_cloth);summary(SQFdata_modif$cs_drgtr);
+summary(SQFdata_modif$cs_furtv);summary(SQFdata_modif$cs_vcrim);summary(SQFdata_modif$cs_bulge);
+summary(SQFdata_modif$cs_other);
+
+SQFdata_modif %>% filter(is.na(cs_objcs)) %>%
+    summarise(count_cs_descr = sum(cs_descr == "Y", na.rm = TRUE),
+              count_cs_casng = sum(cs_casng == "Y", na.rm = TRUE),
+              count_cs_lkout = sum(cs_lkout == "Y", na.rm = TRUE),
+              count_cs_cloth = sum(cs_cloth == "Y", na.rm = TRUE),
+              count_cs_drgtr = sum(cs_drgtr == "Y", na.rm = TRUE),
+              count_cs_furtv = sum(cs_furtv == "Y", na.rm = TRUE),
+              count_cs_vcrim = sum(cs_vcrim == "Y", na.rm = TRUE),
+              count_cs_bulge = sum(cs_bulge == "Y", na.rm = TRUE),
+              count_cs_other = sum(cs_other == "Y", na.rm = TRUE),
+              tot = n()) %>%
+    mutate(percent_cs_descr = 100*count_cs_descr/tot,
+           percent_cs_casng = 100*count_cs_casng/tot,
+           percent_cs_lkout = 100*count_cs_lkout/tot,
+           percent_cs_cloth = 100*count_cs_cloth/tot,
+           percent_cs_drgtr = 100*count_cs_drgtr/tot,
+           percent_cs_furtv = 100*count_cs_furtv/tot,
+           percent_cs_vcrim = 100*count_cs_vcrim/tot,
+           percent_cs_bulge = 100*count_cs_bulge/tot,
+           percent_cs_other = 100*count_cs_other/tot)
+
+SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
+SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
+SQFdata_modif$cs_casng[which(is.na(SQFdata_modif$cs_casng))] <- 'N'
+SQFdata_modif$cs_lkout[which(is.na(SQFdata_modif$cs_lkout))] <- 'N'
+SQFdata_modif$cs_cloth[which(is.na(SQFdata_modif$cs_cloth))] <- 'N'
+SQFdata_modif$cs_drgtr[which(is.na(SQFdata_modif$cs_drgtr))] <- 'N'
+SQFdata_modif$cs_furtv[which(is.na(SQFdata_modif$cs_furtv))] <- 'N'
+SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
+SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
+SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
+
+# BASIS OF SEARCH
+summary(SQFdata_modif$sb_hdobj);summary(SQFdata_modif$sb_outln);summary(SQFdata_modif$sb_admis);
+summary(SQFdata_modif$sb_other);
+
+SQFdata_modif %>% filter(is.na(sb_hdobj)) %>%
+    summarise(count_outln = sum(sb_outln == "Y", na.rm = TRUE),
+              count_admis = sum(sb_admis == "Y", na.rm = TRUE),
+              count_other = sum(sb_other == "Y", na.rm = TRUE),
+              tot = n()) %>%
+    mutate(percent_outln = 100*count_outln/tot,
+           percent_admis = 100*count_admis/tot,
+           percent_other = 100*count_other/tot)
+
+SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
+SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
+SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
+SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
+
+
+# AÑADIR EXPLICACIÓN CON PAQUETE MissingDataGUI?
+
+# Comprobación de NAs
+sum(is.na(SQFdata))
+sum(is.na(SQFdata_modif))
+
+library(Amelia)
+missmap(SQFdata, main = "Missing values vs observed")
+missmap(SQFdata_modif, main = "Missing values vs observed")
+```
+
+## Eliminación de variables con varianza nula
+
+```{r}
+# Con nearZeroVar se eliminan más variables
+SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+## División de muestra en train/test
+
+```{r}
+# Creación de conjuntos train y test
+tot_obs <- dim(SQFdata_modif)[1]
+indices <- 1:tot_obs
+
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain = SQFdata_modif[indices_train, ]
+SQFdataTest = SQFdata_modif[-indices_train, ]
+
+# Datos desbalanceados
+SQFdataTrain %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### Ajuste del desbalanceo: Down-sampling
+
+- Down-Sampling:
+
+Tal y como se puede observar en la tabla anterior, de los casos seleccionados para el conjunto de train, el caso positivo o arresto de la persona detenida corresponde únicamente a un 15\% de ellos. Al disponer de un número reducidos en nuestro conjunto de train, el modelo tenderá a predecir más casos negativos que positivos, lo que supone dejar marchar a personas que deberían ser arrestadas.
+
+Esta situación, conocida como clases desbalanceadas, es muy típica en problemas de clasificación binaria. Para tratar de resolver este problema se pueden adoptar diferentes medidas:
+    - Conseguir más datos.
+    - Remuestreo del dataset con diferentes técnicas: Up-Sampling, Down-Sampling, SMOTE, etc.
+    - Uso de modelos con peso.
+
+En la realización del presente trabajo se han empleado las técnicas de remuestreo expuestas. Únicamente se muestran los resultados obtenidos tras emplear Down-Sampling dado que el resto de técnicas suponían mejoras menores.
+
+Cabe destacar que, a pesar de mejorar en la predicción de los casos positivos, también conlleva desventajas frente al dataset desbalanceado. De las métricas empleadas para evaluar los modelos, la técnica de Down-Sampling mejora el *recall* del modelo pero empeora su *precision*. Dichas métricas se corresponden con:
+    
+    - ***Recall***: Tasa de arrestos reales predichos como tal.
+
+$$\text{Recall}=\frac{TP}{TP+FN}$$    
+
+    - ***Precision***: Tasa de acierto en la predicción de arrestos.
+
+$$\text{Precision}=\frac{TP}{TP+FP}$$
+
+Siendo $TP=\text{True Positive}$ y $FN=\text{False Negative}$.
+
+Como se dijo anteriormente, al aplicar la técnica de Down-Sampling se mejora la predicción de casos positivos. Dicha mejora se basa en una mayor predicción de casos positivos a costa de una reducción de casos negativos predichos. Esto conlleva un menor número de $FN$ y un mayor número de $TP$ en la matriz de confusión, pero también un mayor número de $FP$.
+
+Analizando las dos situaciones, el hecho de que el modelo empeore su *precision* supone arrestar a gente que no debería ser arrestada. Por el contrario, que mejore su *recall* implica reducir el número de sospechosos que deberían ser arrestados y sin embargo se les permite marchar.
+
+Dado que se considera más perjudicial para la ciudad el hecho de dejar marchar a un sospechoso que debiera ser arrestado, se opta finalmente por las soluciones aportadas por la ténica Down-Sampling.
+
+$$"All\ models\ are\ wrong,\ but\ some\ are\ useful"$$
+
+
+```{r}
+# Total de casos -> 4847 (si) + 27203 (no) = 32050
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberían ser 4847 casos
+training.yes <- SQFdataTrain %>% filter(arstmade == 'Y')
+training.no <- SQFdataTrain %>% filter(arstmade == 'N')
+
+set.seed(4567)
+ind_training.no <- sample(rownames(training.no),4799)
+training.no <- training.no[ind_training.no,]
+
+SQFdataTrain_DSAMP <- rbind(training.yes, training.no)
+
+SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+## Árboles de decisión: arstmade
+
+### Decision tree
+
+```{r}
+
+```
+
+### Random Forest con limite de nodos terminales
+
+La función `randomForest::rfcv` permite realizar una evaluación del comportamiento del modelo según el número de variables a escoger para cada rama. Dado que el conjunto de train cuenta con relativamente pocos predictores, se emplea un step elevado para comprobar todas las particiones posibles y seleccionar la óptima a la hora de generar el modelo. Una vez realizado el cálculo, se escoge el valor óptimo para generar el bosque siguiendo el código programado por Javier Moguerza.
+
+```{r}
+
+# GENERACION DE MODELOS CON LIMITE DE NODOS TERMINALES
+#==========================================================================================
+cv.model_rf_10 <- rfcv(trainx=SQFdataTrain_DSAMP[,-match("arstmade",colnames(SQFdataTrain_DSAMP))],
+                       trainy=SQFdataTrain_DSAMP$arstmade, cv.fold=10,
+                       step=0.99, mtry=function(p) max(1, floor(sqrt(p))), ntree = 100)
+
+
+#===================================randomForest===========================================
+start.time <- Sys.time()
+model_rf_10 <- foreach(ntree=rep(100,6), .combine=combine, .multicombine = TRUE,
+                       .packages = 'randomForest') %dopar% {
+               randomForest(arstmade ~ ., data = SQFdataTrain_DSAMP, ntree=ntree, mtry = 25, maxnodes = 10)
+}
+end.time <- Sys.time()
+time.taken_randomForest <- end.time - start.time
+#==========================================================================================
+
+
+#=====================================Moguerza=============================================
+# Preparación de dataset con target en última columna
+SQFdataTrain_DSAMP_RF <- SQFdataTrain_DSAMP %>% select(-arstmade)
+SQFdataTrain_DSAMP_RF <- cbind(SQFdataTrain_DSAMP_RF, arstmade = SQFdataTrain_DSAMP$arstmade)
+
+SQFdataTest_RF <- SQFdataTest %>% select(-arstmade)
+SQFdataTest_RF <- cbind(SQFdataTest_RF, arstmade = SQFdataTest$arstmade)
+
+# Parámetros para el bosque
+N = 600 # Numero de arboles
+K = as.integer(names(cv.model_rf_10$error.cv[which.min(cv.model_rf_10$error.cv)])) # Numero de variables en cada 
+                                                                        # arbol (Valor óptimo aportado por rfcv)
+M = round(dim(SQFdataTrain_DSAMP_RF)[1]*0.6) # Numero de muestras en cada arbol
+
+# Posición de la variable respuesta en el dataset
+res = which(colnames(SQFdataTrain_DSAMP_RF)=="arstmade")
+
+
+# Vectores de modelos
+moguerza.forest.sec <- vector("list", N)
+moguerza.forest.par <- vector("list", N)
+
+# Matrices de predictores
+vars.sec = matrix(0,K,N)
+vars.par = matrix(0,K,N)
+
+# Tamaño total de la muestra de train y test
+k = dim(SQFdataTrain_DSAMP_RF)[1]
+m = dim(SQFdataTest_RF)[1]
+
+#===================================Código secuencial======================================
+start.time <- Sys.time()
+for(i in 1:N) {
+    a = sort(sample(1:(dim(SQFdataTrain_DSAMP_RF)[2]-1),K)) # Predictores en arbol
+    b = sort(sample(1:k, M, replace=TRUE)) # Num de obs en arbol
+
+    SQFdataTrain_DSAMP.vot = SQFdataTrain_DSAMP_RF[b,c(a,res)] # Datos para el arbol
+    model.rp <- rpart(SQFdataTrain_DSAMP.vot[,K+1] ~., data = SQFdataTrain_DSAMP.vot[,1:K],
+                      cp=0.0001, control = rpart.control(maxdepth = 10),
+                      parms=list(split="gini")) # Creación de los árboles
+    moguerza.forest.sec[[i]] = model.rp
+    vars.sec[,i] = as.vector(a)
+}
+end.time <- Sys.time()
+
+time.taken_sec <- end.time - start.time
+#==========================================================================================
+
+
+
+#====================================Código paralelo=======================================
+start.time <- Sys.time()
+
+# Creación de conjuntos aleatorios de train
+SQFdataTrain_DSAMP.vot <- foreach(n = 1:N) %dopar% {
+    a = sort(sample(1:(dim(SQFdataTrain_DSAMP_RF)[2]-1),K)) # Predictores en arbol
+    b = sort(sample(1:k, M, replace=TRUE)) # Num de obs en arbol
+    SQFdataTrain_DSAMP_RF[b,c(a,res)] # Datos para el arbol
+}
+
+# Creación de árboles
+moguerza.forest.par <- foreach(i=1:N) %dopar% {
+    model.rp <- rpart(SQFdataTrain_DSAMP.vot[[i]][,K+1] ~., data = SQFdataTrain_DSAMP.vot[[i]][,1:K],
+                      cp=0.0001, control = rpart.control(maxdepth = 10),
+                      parms=list(split="gini"))
+}
+
+# Almacenamiento de predictores por árbol
+for (i in 1:N) {
+    vars.par[,i] <- which(is_in(colnames(SQFdataTrain_DSAMP_RF), attr(moguerza_forest_par[[i]]$terms,"term.labels")))
+}
+end.time <- Sys.time()
+
+time.taken.par <- end.time - start.time
+#==========================================================================================
+
+importance(model_rf_10)
+
+varImpPlot(model_rf_10)
+```
+
+```{r}
+#==================================Error en train==========================================
+# Matriz de predicciones
+pred.matrix.train.sec = matrix(0,k,N)
+
+for (j in 1:N)
+{
+    prediction = predict(moguerza.forest.sec[[j]], SQFdataTrain_DSAMP_RF[,vars.sec[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+    pred.matrix.train.sec[,j] = prediction.fact
+}
+
+# Vector de probabilidades
+p.arstmade.train.sec = rowSums(pred.matrix.train.sec==factores[2])/N
+
+pred.train.fact.sec = factores[round(p.arstmade.train.sec)+1]
+real.train.fact = SQFdataTrain_DSAMP_RF[,res]
+pred.train.fact.sec <- relevel(as.factor(pred.train.fact.sec), ref = "Y")
+
+table.moguerza.train.sec = table(pred.train.fact.sec, real.train.fact)
+confusionMatrix(table.moguerza.train.sec)
+#==========================================================================================
+
+
+
+
+
+
+
+#==================================Error en train==========================================
+# Matriz de predicciones
+pred.matrix.train.par = matrix(0,k,N)
+
+pred.vect.train.par <- foreach(j = 1:N) %dopar% {
+    prediction <- predict(moguerza.forest.par[[j]], SQFdataTrain_DSAMP_RF[,vars.par[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+}
+
+for(j in 1:N){
+    pred.matrix.train.par[,j] = pred.vect.train.par[[j]]
+}
+
+# p.sick.vector = rowSums(y.old.predict.matrix_foreach==factores[2])/N # Almacena la probabilidad
+# # (definida según cuantos modelos de los 100 dan resultado positivo) de que el individuo x esté enfermo
+# 
+# y.train.pred.fact = factores[round(p.sick.vector)+1]
+# y.real.train.fact = SQFdataTrain_DSAMP_RF[,res]
+# y.train.pred.fact <- relevel(as.factor(y.train.pred.fact), ref = "Y")
+# 
+# table.rforest.train = table(y.train.pred.fact,y.real.train.fact)
+# confusionMatrix(table.rforest.train)
+
+
+
+# Vector de probabilidades
+p.arstmade.train.par = rowSums(pred.matrix.train.par==factores[2])/N
+
+pred.train.fact.par = factores[round(p.arstmade.train.par)+1]
+real.train.fact = SQFdataTrain_DSAMP_RF[,res]
+pred.train.fact.par <- relevel(as.factor(pred.train.fact.par), ref = "Y")
+
+table.moguerza.train.par = table(pred.train.fact.par, real.train.fact)
+confusionMatrix(table.moguerza.train.par)
+#==========================================================================================
+
+
+
+
+#==================================Error en test===========================================
+y.old.predict.matrix_foreach_2 = matrix(0,m,N)
+
+# Matriz de predicciones
+pred.matrix.test.par = matrix(0,m,N)
+
+pred.vect.test.par <- foreach(j = 1:N) %dopar% {
+    prediction <- predict(rpart.models[[j]], SQFdataTest_RF[,vars_foreach[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+}
+
+for(j in 1:N){
+    pred.matrix.test.par[,j] = pred.vect.test.par[[j]]
+}
+
+p.arstmade.test.par = rowSums(pred.matrix.test.par==factores[2])/N # Almacena la probabilidad
+# (definida según cuantos modelos de los 100 dan resultado positivo) de que el individuo x esté enfermo
+
+pred.test.fact.par = factores[round(p.arstmade.test.par)+1]
+real.train.fact = SQFdataTest_RF[,res]
+pred.test.fact.par <- relevel(as.factor(pred.test.fact.par), ref = "Y")
+
+table.moguerza.test.par = table(pred.test.fact.par,real.train.fact)
+confusionMatrix(table.moguerza.test.par)
+#==========================================================================================
+```
+
+
+### Evaluación de modelos de random forest
+
+```{r}
+
+# RANDOM FOREST CON CARET - EVALUACION
+#==========================================================================================
+cM_rf_caret_DSAMP <- confusionMatrix(predict(model_rf_caret_DSAMP, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+#==========================================================================================
+
+# RESTO DE MODELOS - EVALUACION
+#==========================================================================================
+cM_10 <- confusionMatrix(predict(model_rf_10, SQFdataTest), SQFdataTest$arstmade, positive="Y")
+
+fun_rf_eval <- function(x){
+    return(c(x$byClass[7],x$byClass[5:6],x$byClass[2]))
+}
+
+df.comp.rf <- data.frame(
+    rf_caret_DSAMP = fun_rf_eval(cM_rf_caret_DSAMP),
+    rf_node_10 = fun_rf_eval(cM_10),
+    row.names = c("F-measure","Precision","Recall/Sensitivity","Specificity")
+)
+
+df.comp.rf
+#==========================================================================================
+```
+
+
