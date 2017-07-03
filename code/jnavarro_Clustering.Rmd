@@ -13,6 +13,9 @@ library(caret)
 library(cluster)
 library(useful)
 library(NbClust)
+library(foreach)
+library(doMC)
+registerDoMC(7)
 ```
 
 ## Carga de datos
@@ -210,7 +213,7 @@ str(SQFdata_modif.num)
 ## 5.2 Clustering variables numéricas y categóricas (dummies)
 
 ```{r}
-SQFdata_modif.dum <- SQFdata_modif %>% select(-arstmade)
+SQFdata_modif.dum <- SQFdata_modif
 ```
 
 ### 5.2.1 Eliminacion de observaciones con casos Unknown previo a dummificacion
@@ -239,6 +242,12 @@ SQFdata_modif.dum <- SQFdata_modif.dum %>%
     select(-eyecolor)
 
 dim(SQFdata_modif.dum)
+```
+
+```{r}
+labels <- SQFdata_modif.dum$arstmade
+
+SQFdata_modif.dum <- SQFdata_modif.dum %>% select(-arstmade)
 ```
 
 ### 5.2.2 Separación de datos en categóricos y numéricos (¿¿??)
@@ -380,18 +389,20 @@ str(SQFdata_modif.dum.cbind)
 dim(SQFdata_modif.dum.cbind)
 ```
 
-### 5.2.5 Selección del número óptimo de clusters
+### 5.2.5 K-Means
+
+#### 5.2.5.1 Selección del número óptimo de clusters
 
 ```{r}
 k_kmeans <- FitKMeans(SQFdata_modif.dum.cbind, max.clusters = 25, nstart = 25, seed = 123)
 k_kmeans
 
-NbClust(data = SQFdata_modif.dum.cbind, distance = 'manhattan', min.nc = 2, max.nc = 10, method = 'kmeans')
+nbclust.full <- NbClust(data = SQFdata_modif.dum.cbind, min.nc = 5, max.nc = 7, method = 'single')
 
 PlotHartigan(k_kmeans)
 ```
 
-### 5.2.6 Creación de clusters
+#### 5.2.5.2 Creación de clusters
 
 ```{r}
 # Creación de conjunto para clustering reducido
@@ -412,5 +423,265 @@ cl_kmeans.dum$cluster
 SQFdata_modif.dum.cbind$cluster <- cl_kmeans.dum$cluster
 ```
 
+#### 5.2.5.3 Análisis de resultados por clúster
 
+```{r}
+SQFdata_modif.dumcl.res <- cbind(SQFdata_modif.dum.cbind, arstmade = labels)
+
+dim(SQFdata_modif)
+dim(SQFdata_modif.dumcl.res)
+```
+
+```{r}
+SQFdata_modif.dumcl.res %>% group_by(cluster, arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2),
+           percent_tot = round(Casos/(length(labels==cluster))*100, 2))
+```
+
+## 5.3 Separación en conjuntos por clúster para test de modelos
+
+```{r}
+SQFdata_modif.cl.1 <- SQFdata_modif.dumcl.res %>% filter(cluster == 1)
+SQFdata_modif.cl.2 <- SQFdata_modif.dumcl.res %>% filter(cluster == 2)
+SQFdata_modif.cl.3 <- SQFdata_modif.dumcl.res %>% filter(cluster == 3)
+SQFdata_modif.cl.4 <- SQFdata_modif.dumcl.res %>% filter(cluster == 4)
+SQFdata_modif.cl.5 <- SQFdata_modif.dumcl.res %>% filter(cluster == 5)
+
+dim(SQFdata_modif.dumcl.res)[1]
+dim(SQFdata_modif.cl.1)[1] + dim(SQFdata_modif.cl.2)[1] + dim(SQFdata_modif.cl.3)[1] + dim(SQFdata_modif.cl.4)[1] + dim(SQFdata_modif.cl.5)[1]
+
+SQFdata_modif.cl.1 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+
+SQFdata_modif.cl.2 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+
+SQFdata_modif.cl.3 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+
+SQFdata_modif.cl.4 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+
+SQFdata_modif.cl.5 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+```
+
+
+
+
+
+## 3.4 Creación de conjuntos de *train* y *test*
+
+Tras haber realizado las transformaciones necesarias a las variables, se crean los conjuntos de *train* y *test* a partir del dataset modificado. Tras crear los conjuntos se comprueba la proporción de clases que existe en la variable objetivo.
+
+```{r}
+# 
+# Creación de conjuntos train y test
+# 
+tot_obs <- dim(SQFdata_modif.cl.2)[1]
+indices <- 1:tot_obs
+
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain.cl.2 = SQFdata_modif.cl.2[indices_train, ]
+SQFdataTestcl.2 = SQFdata_modif.cl.2[-indices_train, ]
+
+# Datos desbalanceados
+SQFdataTrain.cl.2 %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### 3.4.1 Ajuste del desbalanceo: Down-Sampling
+
+```{r}
+# 
+# Total de casos -> 4799 (SI) + 27103 (NO) = 32050
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deberían ser 4799 casos
+# 
+training.yes <- SQFdataTrain %>% filter(arstmade == 'Y')
+training.no <- SQFdataTrain %>% filter(arstmade == 'N')
+
+set.seed(4567)
+ind_training.no <- sample(rownames(training.no),4799)
+training.no <- training.no[ind_training.no,]
+
+SQFdataTrain_DSAMP <- rbind(training.yes, training.no)
+
+SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+
+## 4.3 Random Forest
+
+### 4.3.1 Selección de predictores
+
+```{r}
+# Random Forest con Cross-Validation para selección de predictores
+cv.model_rf_10 <- rfcv(trainx=SQFdataTrain.cl.2[,-match("arstmade",
+                                                         colnames(SQFdataTrain.cl.2))],
+                       trainy=SQFdataTrain.cl.2$arstmade, cv.fold=10,
+                       step=0.99, mtry=function(p) max(1, floor(sqrt(p))), ntree = 100)
+```
+
+### 4.3.2 Preparación de datos para la generación de modelos
+
+```{r}
+# Preparación de datasets con target en última columna
+SQFdataTrain.cl.2_RF <- SQFdataTrain.cl.2 %>% select(-arstmade)
+SQFdataTrain.cl.2_RF <- cbind(SQFdataTrain.cl.2_RF,
+                               arstmade = SQFdataTrain.cl.2$arstmade)
+
+SQFdataTestcl.2_RF <- SQFdataTestcl.2 %>% select(-arstmade)
+SQFdataTestcl.2_RF <- cbind(SQFdataTestcl.2_RF, arstmade = SQFdataTestcl.2$arstmade)
+
+# Parámetros para el bosque (N - Nº arboles, K - Nº predictores, M - Nº muestras)
+N = 600
+K = as.integer(names(cv.model_rf_10$error.cv[which.min(cv.model_rf_10$error.cv)])) 
+M = round(dim(SQFdataTrain.cl.2_RF)[1]*0.7)
+
+# Posición de la variable respuesta en el dataset
+res = which(colnames(SQFdataTrain.cl.2_RF)=="arstmade")
+
+# Vectores de modelos
+moguerza.forest.sec <- vector("list", N)
+moguerza.forest.par <- vector("list", N)
+ 
+# Matrices de predictores
+vars.sec = matrix(0,K,N)
+vars.par = matrix(0,K,N)
+
+# Tamaño total de la muestra de train y test
+k = dim(SQFdataTrain.cl.2_RF)[1]
+m = dim(SQFdataTestcl.2_RF)[1]
+```
+
+### 4.3.3 Generación de modelos
+
+* Código secuencial:
+
+```{r}
+start.time <- Sys.time()
+
+for(i in 1:N) {
+    # Selección de predictores y observaciones para el árbol
+    a = sort(sample(1:(dim(SQFdataTrain.cl.2_RF)[2]-1),K))
+    b = sort(sample(1:k, M))
+    
+    # Datos para el árbol
+    SQFdataTrain.cl.2.vot = SQFdataTrain.cl.2_RF[b,c(a,res)]
+    
+    # Creación de los árboles
+    model.rp <- rpart(SQFdataTrain.cl.2.vot[,K+1] ~., data = SQFdataTrain.cl.2.vot[,1:K],
+                      cp=0.0001, control = rpart.control(maxdepth = 10),
+                      parms=list(split="gini"))
+    
+    # Almacenamiento de árboles en modelo secuencial
+    moguerza.forest.sec[[i]] = model.rp
+    
+    # Almacenamiento de los predictores seleccionados por árbol
+    vars.sec[,i] = as.vector(a)
+}
+
+time.taken.sec <- Sys.time() - start.time
+```
+
+* Código paralelo:
+
+```{r}
+start.time <- Sys.time()
+
+# Creación de conjuntos aleatorios de train
+SQFdataTrain.cl.2.vot <- foreach(n = 1:N) %dopar% {
+    # Selección de predictores y observaciones para el árbol
+    a = sort(sample(1:(dim(SQFdataTrain.cl.2_RF)[2]-1),K))
+    b = sort(sample(1:k, M))
+
+    # Datos para el árbol
+    SQFdataTrain.cl.2_RF[b,c(a,res)]
+}
+
+# Creación de árboles
+moguerza.forest.par <- foreach(i=1:N) %dopar% {
+    model.rp <- rpart(SQFdataTrain.cl.2.vot[[i]][,K+1] ~.,
+                      data = SQFdataTrain.cl.2.vot[[i]][,1:K],
+                      cp=0.0001, control = rpart.control(maxdepth = 10),
+                      parms=list(split="gini"))
+}
+
+# Almacenamiento de predictores por árbol
+for (i in 1:N) {
+    vars.par[,i] <- which(is_in(colnames(SQFdataTrain.cl.2_RF),
+                                attr(moguerza.forest.par[[i]]$terms,"term.labels")))
+}
+
+time.taken.par <- Sys.time() - start.time
+
+paste("Tiempo generación del modelo código paralelo:",
+      as.character.POSIXt(round(time.taken.par, 2)))
+```
+
+### 4.3.4 Evaluación del error en conjunto de train
+
+* Código secuencial:
+
+```{r}
+# Matriz de predicciones
+pred.matrix.train.sec <- matrix(0,k,N)
+
+for (j in 1:N)
+{
+    prediction = predict(moguerza.forest.sec[[j]], SQFdataTrain.cl.2_RF[,vars.sec[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+    pred.matrix.train.sec[,j] = prediction.fact
+}
+# Vector de probabilidades
+p.arstmade.train.sec <- rowSums(pred.matrix.train.sec==factores[2])/N
+
+pred.train.fact.sec <- factores[round(p.arstmade.train.sec)+1]
+real.train.fact <- relevel(SQFdataTrain.cl.2_RF[,res], ref = 'Y')
+pred.train.fact.sec <- relevel(as.factor(pred.train.fact.sec), ref = "Y")
+
+table.moguerza.train.sec = table(pred.train.fact.sec, real.train.fact)
+confusionMatrix(table.moguerza.train.sec)
+```
+
+### 4.3.5 Evaluación del error en conjunto de test
+
+* Código secuencial:
+
+```{r}
+# Matriz de predicciones
+pred.matrix.test.sec = matrix(0,m,N)
+
+start.time <- Sys.time()
+for (j in 1:N)
+{
+    prediction = predict(moguerza.forest.sec[[j]], SQFdataTestcl.2_RF[,vars.sec[,j]] )
+    factores = colnames(prediction)
+    prediction.fact = factores[max.col(prediction)]
+    pred.matrix.test.sec[,j] = prediction.fact
+}
+
+time.pred.sec <- Sys.time() - start.time
+
+# Vector de probabilidades
+p.arstmade.test.sec = rowSums(pred.matrix.test.sec==factores[2])/N 
+
+pred.test.fact.sec = factores[round(p.arstmade.test.sec) + 1]
+real.train.fact = relevel(SQFdataTestcl.2_RF[,res], ref = "Y")
+pred.test.fact.sec <- relevel(as.factor(pred.test.fact.sec), ref = "Y")
+
+table.moguerza.test.sec = table(pred.test.fact.sec,real.train.fact)
+confusionMatrix(table.moguerza.test.sec)
+```
 
