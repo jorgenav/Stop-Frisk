@@ -14,6 +14,8 @@ library(cluster)
 library(useful)
 library(NbClust)
 library(e1071)
+library(dummies)
+library(parallelSVM)
 ```
 
 ## Carga de datos
@@ -166,47 +168,68 @@ dim(SQFdata)
 dim(SQFdata_modif)
 ```
 
-## 5.1 Clustering variables numéricas
+### 3.3.5 Creacion de variables Dummies
 
-### 5.1.1 Separación de datos en categóricos y numéricos
 ```{r}
-SQFdata_modif.num <- SQFdata_modif[,sapply(SQFdata_modif, is.numeric)]
-str(SQFdata_modif.num)
+# 
+# Con caret::nearZeroVar se elimina el resto de variables que presentan varianza
+# nula después de aplicar la imputación de NAs
+#
+SQFdata_modif=dummy.data.frame(SQFdata_modif,names = c("recstat","inout","trhsloc","typeofid","othpers","offunif","frisked",
+                                                        "searched","pf_hands","pf_hcuff","radio","ac_rept","ac_inves","rf_vcrim","rf_othsw","ac_proxm","rf_attir",
+                                                        "cs_descr","cs_casng","cs_lkout","rf_vcact","cs_drgtr","ac_evasv","ac_assoc",
+                                                        "cs_furtv","rf_rfcmp","ac_cgdir","cs_vcrim","cs_bulge","cs_other","ac_incid",
+                                                        "ac_time","rf_knowl","ac_other","sb_hdobj","sb_other","rf_furt","rf_bulg","sex",
+                                                        "race","haircolr","eyecolor","build","city"))
+```
+## 3.4 Creación de conjuntos de *train* y *test* 
 
-# Creación de conjunto para clustering reducido
-set.seed(123)
-SQFdata_modif.num.red <- sample_n(SQFdata_modif.num, round(dim(SQFdata_modif.num)[1]/25))
+Tras haber realizado las transformaciones necesarias a las variables, se crean los conjuntos de *train* y *test* a partir del dataset modificado. Tras crear los conjuntos se comprueba la proporción de clases que existe en la variable objetivo.
+
+```{r}
+# 
+# Creación de conjuntos train y test
+# 
+tot_obs <- dim(SQFdata_modif)[1]
+indices <- 1:tot_obs
+SQFdata_modif
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain = SQFdata_modif[indices_train, ]
+SQFdataTest = SQFdata_modif[-indices_train, ]
+SQFdataTrain
+```
+## 5.1 SVM
+```{r}
+svm.train.radial <- svm(arstmade ~ . , SQFdataTrain, kernel = "radial", gamma = 0.1, cost = 100)
+svm.test.radial <- predict(svm.train.radial, SQFdataTest)
+summary(svm.train.radial)
+table(svm.test.radial)
+prefRadial=performance(svm.test.radial,"tpr","fpr")
 ```
 ```{r}
-svm.train.radial <- svm(arstmade ~ . , SQFdata_modif[train, ], kernel = "radial", gamma = 1, cost = 100)
-svm.test.radial <- predict(svm.train.radial, SQFdata_modif[train, ])
-plot(svm.test.radial, SQFdata_modif[train, ])
-summary(model)
-table(svm.train.radial)
+svm.train.radial <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "radial", gamma = 0.1, cost = 100)
+
 ```
+
 ```{r}
-train = sample(200, 200)
-svm.train.linear <- svm(arstmade ~ . , SQFdata_modif[train, ], kernel = "linear", gamma = 1, cost = 100)
-svm.test.linear<- predict(svm.train.linear, SQFdata_modif[train, ])
-plot(svm.test.linear, SQFdata_modif[train, ])
+svm.train.linear <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "linear", gamma = 1, cost = 100)
+svm.test.linear<- predict(svm.train.linear, SQFdataTest)
 summary(svm.train.linear)
 table(svm.test.linear)
 
 ```
 
 ```{r}
-train = sample(200, 200)
-svm.train.polynomial <- svm(arstmade ~ . , SQFdata_modif[train, ], kernel = "polynomial", gamma = 1, cost = 100)
-svm.test.polynomial<- predict(svm.train.polynomial, SQFdata_modif[train, ])
-plot(svm.test.polynomial, SQFdata_modif[train, ])
+svm.train.polynomial <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "polynomial", gamma = 0.1, cost = 100)
+svm.test.polynomial<- predict(svm.train.polynomial, SQFdataTest)
 summary(svm.train.polynomial)
 table(svm.test.polynomial)
 ```
+
 ```{r}
-train = sample(200, 200)
-svm.train.sigmoid <- svm(arstmade ~ . , SQFdata_modif[train, ], kernel = "sigmoid", gamma = 1, cost = 100)
-svm.test.sigmoid<- predict(svm.train.sigmoid, SQFdata_modif[train, ])
-plot(svm.test.sigmoid, SQFdata_modif)
+svm.train.sigmoid <- svm(arstmade ~ . , SQFdataTrain, kernel = "sigmoid", gamma = 1, cost = 100)
+svm.test.sigmoid<- predict(svm.train.sigmoid, SQFdataTest)
 summary(svm.train.sigmoid)
 table(svm.test.sigmoid)
 ```
