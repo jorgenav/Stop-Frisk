@@ -1,0 +1,59 @@
+Call:
+parallelSVM(formula = arstmade ~ ., data = SQFdataTrain,  kernel = "radial", gamma = 0.1, cost = 100)
+
+
+Parameters: 
+   SVM-Type:  C-classficiation
+ SVM-Kernel:  radial
+       cost:  100
+      gamma:  0.1
+
+Average Number of Support Vectors: 5790
+ 
+
+ ( 2895 2895 )
+
+
+Number of classes: 2
+
+Levels:
+N Y
+
+
+ svm.test.radial
+    N 
+13673 
+Modify Chunk OptionsRun All Chunks AboveRun Current Chunk
+
+
+
+Call:
+parallelSVM(formula = arstmade ~ ., data = SQFdataTrain,  kernel = "linear", gamma = 1, cost = 100)
+
+
+Parameters: 
+   SVM-Type:  C-classficiation
+ SVM-Kernel:  linear
+       cost:  100
+      gamma:  1
+
+Average Number of Support Vectors: 1764
+ 
+
+ ( 882 882 )
+
+
+Number of classes: 2
+
+Levels:
+N Y
+
+
+ svm.test.linear
+   N    Y 
+6692 6981 
+
+			
+Console~/Escritorio/Stop-Frisk/code/
+			
+
