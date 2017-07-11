@@ -29,6 +29,10 @@ library(doMC)
 registerDoMC(4)
 library(rpart)
 library(randomForest)
+library(parallelSVM)
+library(e1071)
+
+
 ```
 
 # 1. DESCRIPCIÓN DEL PROBLEMA
@@ -3403,6 +3407,13 @@ paste("Tiempo de predicción del modelo código paralelo:",
 
 Se observan resultados similares para ambos modelos, por lo que en adelante se empleará únicamente uno de ellos.
 
+## 4.4 SVM
+```{r}
+svm.train.linear <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "linear", cost = 100)
+svm.test.linear<- predict(svm.train.linear, newdata=SQFdataTest,decision.values=TRUE)
+summary(svm.train.linear)
+table(svm.test.linear)
+```
 \newpage
 
 # 5. EVALUACIÓN
@@ -3492,6 +3503,13 @@ abline(a = 0, b = 1, lwd = 2, lty = 2)
 auc_test_RF <- performance(pr_test_RF, measure = "auc")
 auc_test_RF <- auc_test_RF@y.values[[1]]
 paste("Índice de área bajo la curva:", round(auc_test_RF, 4))
+```
+
+### 5.2.3 SVM
+```{r}
+predSVM=prediction(as.numeric(svm.test.linear),as.numeric(SQFdataTest$arstmade))
+prefSVM=performance(predSVM,"tpr","fpr")
+plot(prefSVM)
 ```
 
 \newpage
