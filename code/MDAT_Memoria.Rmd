@@ -31,7 +31,9 @@ library(rpart)
 library(randomForest)
 library(parallelSVM)
 library(e1071)
-
+library(nnet)
+library(pROC)
+library(doParallel)
 
 ```
 
@@ -3416,6 +3418,167 @@ table(svm.test.linear)
 ```
 \newpage
 
+## 5. Redes neuronales
+### 5.1 Recodificación variables con categorías desbalanceadas o sin registros
+```{r}
+levels(SQFdata_modif$eyecolor) <- list(black="Black", blue="Blue", brown="Brown", green="Green",  
+                                       gray="Gray", hazel="Hazel", unknown="Unknown",
+                                       other=c("Two different", "Maroon","MC","Pink","Violet", "Other"))
+levels(SQFdata_modif$haircolr) <- list(bald="Bald", black="Black", blond="Blond", brown="Brown",
+                                       gray="Gray", red="Red", unknown="Unknown", 
+                                       other=c("Dyed", "Frosted","Sandy", "White", "Other"))
+```
+
+
+### 5.2 Eliminación de variables relacionadas con el registro
+
+```{r}
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-c(ser_num,repcmd, revcmd, recstat))
+
+```
+
+### 5.3 Tratamiento previo a las variables
+
+```{r}
+SQFdata_modif.num <- SQFdata_modif[,sapply(SQFdata_modif, is.numeric)]
+```
+
+
+### 5.3.1 Variables dummies 
+
+```{r}
+SQFdata_modif.cat <- SQFdata_modif[,sapply(SQFdata_modif, is.factor)]
+
+
+# binarización factores con dos niveles
+SQFdata_modif.cat1<- SQFdata_modif.cat[, sapply(SQFdata_modif.cat, function(col) length(unique(col))) < 3]
+
+YesNoCat <- sapply(SQFdata_modif.cat1,
+                   function(x) (levels(x) == c("Y","N")) || (levels(x) == c("N","Y")))
+SQFdata_modif.cat1[YesNoCat] <- sapply(SQFdata_modif.cat1[YesNoCat], function(x) ifelse(x=="Y",1,0))
+
+SQFdata_modif.cat1$inout<- as.numeric(SQFdata_modif.cat1$inout)
+SQFdata_modif.cat1$inout[SQFdata_modif.cat1$inout==2] <- 0
+
+
+# binarización factores con más de dos niveles
+SQFdata_modif.cat2 <- SQFdata_modif.cat[, sapply(SQFdata_modif.cat, function(col) length(unique(col))) > 2]
+SQFdata_modif.cat2 <- acm.disjonctif(SQFdata_modif.cat2) 
+
+```
+
+### 5.3.2 Dataset completo
+```{r}
+SQFdata_modif.num.cat<- data.frame(SQFdata_modif.cat1, SQFdata_modif.cat2, SQFdata_modif.num)
+```
+
+
+
+### 5.4 División de muestra en train y test
+
+```{r}
+set.seed(4567)
+nfilas    <- nrow(SQFdata_modif.num.cat)
+muestra   <- sample(nfilas, nfilas*.70)
+train     <- SQFdata_modif.num.cat[muestra, ]
+test      <- SQFdata_modif.num.cat[-muestra, ]
+
+# Datos desbalanceados
+train %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### 5.5 Ajuste del desbalanceo: Down-sampling
+
+- Down-Sampling:
+
+```{r}
+train.yes <- train %>% filter(arstmade == 1)
+train.no <- train %>% filter(arstmade == 0)
+
+set.seed(4567)
+ind_train.no <- sample(rownames(train.no),4768)
+train.no <- train.no[ind_train.no,]
+
+SQFdataTrain_DSAMP <- rbind(train.yes, train.no)
+
+SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### 5.6 Escalamiento datos de entrenamiento
+```{r}
+maxs <- apply(SQFdataTrain_DSAMP , 2, max) 
+mins <- apply(SQFdataTrain_DSAMP , 2, min)
+
+SQFdataTrain_DSAMP.scaled <- as.data.frame(scale(SQFdataTrain_DSAMP , center = mins, scale = maxs - mins))
+#sum(is.na(SQFdataTrain_DSAMP.scaled))
+```
+
+### 5.7 Modelo
+
+```{r}
+library(doParallel)
+cl = makeCluster(6)
+registerDoParallel(cl)
+
+SQFdataTrain_DSAMP.scaled$arstmade<- as.factor(SQFdataTrain_DSAMP.scaled$arstmade)
+levels(SQFdataTrain_DSAMP.scaled$arstmade) <- list(Y="1", N="0")
+SQFdataTrain_DSAMP.scaled$arstmade <- factor(SQFdataTrain_DSAMP.scaled$arstmade,
+                                             levels=c("Y", "N"),
+                                             ordered=TRUE)
+set.seed(1)
+seeds <- vector(mode = "list", length = 6)
+for(i in 1:5) seeds[[i]] <- sample.int(n=1000, 60) 
+seeds[[6]] <- 1
+
+
+fitControl <- trainControl(method = "cv", 
+                           number = 5, 
+                           classProbs = TRUE, 
+                           summaryFunction = twoClassSummary,
+                           seeds = seeds,
+                           allowParallel = TRUE)
+
+
+nnetGrid <-  expand.grid(size = seq(from = 1, to = 10, by = 1),
+                         decay= c(0.5, 0.1, 0.01, 0.001, 0.0001, 0.005))
+
+
+caret.fit.mod <- train(arstmade~., 
+                       data=SQFdataTrain_DSAMP.scaled,
+                       method = "nnet", 
+                       metric = "Sens",
+                       trace = F,
+                       trControl = fitControl,
+                       tuneGrid = nnetGrid,
+                       verbose = FALSE)
+
+stopCluster(cl)
+remove(cl)
+
+plot(caret.fit.mod)
+caret.fit.mod$bestTune
+
+```
+### 5.8 Predicción
+```{r}
+
+SQFdataTest.scaled <- as.data.frame(scale(test , center = mins, scale = maxs - mins))
+SQFdataTest.scaled$arstmade<- as.factor(SQFdataTest.scaled$arstmade)
+levels(SQFdataTest.scaled$arstmade) <- list(Y="1", N="0")
+SQFdataTest.scaled$arstmade <- factor(SQFdataTest.scaled$arstmade,
+                                             levels=c("Y", "N"),
+                                             ordered=TRUE)
+
+predict.caret <- predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="class")
+predicciones <- data.frame(predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="raw"),
+                           prediction=predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3],                                                 type="class"))
+```
+
 # 5. EVALUACIÓN
 
 Se evalúan los tres mejores modelos obtenidos en cada caso.
@@ -3461,6 +3624,12 @@ df.comp.models <- data.frame(
 )
 
 kable(df.comp.models, format = "markdown", digits = 4)
+
+# Redes neuronales
+
+cM_rN <- confusionMatrix(factor(predict.caret),
+                reference= factor(SQFdataTest.scaled$arstmade),
+                positive='Y')
 ```
 
 ## 5.2 Curvas ROC
@@ -3513,6 +3682,14 @@ plot(prefSVM)
 ```
 
 \newpage
+
+### 5.2.4 Redes neuronales
+```{r}
+predict.caret.prob <- predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="raw")
+nnetROC <- roc(SQFdataTest.scaled$arstmade, as.vector(predict.caret.prob), auc=TRUE)
+nnetROC
+plot(nnetROC, main = "ROC curve", col = "blue", lwd = 3)
+```
 
 # 6. CONCLUSIONES
 
