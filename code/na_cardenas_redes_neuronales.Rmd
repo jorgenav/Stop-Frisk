@@ -296,7 +296,7 @@ caret.fit.mod$bestTune
 
 ### 5.2 Predicción
 ```{r}
-
+SQFdataTest.scaled <- as.data.frame(scale(test , center = mins, scale = maxs - mins))
 SQFdataTest.scaled$arstmade<- as.factor(SQFdataTest.scaled$arstmade)
 levels(SQFdataTest.scaled$arstmade) <- list(Y="1", N="0")
 SQFdataTest.scaled$arstmade <- factor(SQFdataTest.scaled$arstmade,
