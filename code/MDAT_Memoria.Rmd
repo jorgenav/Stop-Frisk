@@ -3016,6 +3016,369 @@ SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
 \newpage
 
 # 4. MODELADO
+## 4.0 Clustering
+
+La estrategia será la separación del conjunto completo en distintos clústeres para poder aplicar a cada grupo de datos el modelo más adecuado.
+
+### 4.0.1 Dummificación y escalado de variables
+
+De forma previa a la aplicación de la técnica de clustering escogida, es necesario crear variables dummies a partir de las categóricas y escalar las numéricas para poder emplear la distancia euclídea.
+
+#### 4.0.1.1 Almacenamiento de labels
+
+```{r}
+labels <- SQFdata_modif$arstmade
+SQFdata_modif <- SQFdata_modif %>% select(-arstmade)
+```
+
+#### 4.0.1.2 Dummificacion de variables
+
+```{r}
+# Dummificación de variables de tipo Y|N
+YesNoCat <- sapply(SQFdata_modif,
+                   function(x) (ifelse(is.factor(x),
+                                       (levels(x) == c("Y","N") || (levels(x) == c("N","Y"))),
+                                       FALSE)))
+
+SQFdata_modif[YesNoCat] <- sapply(SQFdata_modif[YesNoCat], function(x) ifelse(x=="Y",1,0))
+
+sapply(SQFdata_modif[which(names(SQFdata_modif) %>% 
+                               is_in(names(YesNoCat[YesNoCat == FALSE])))], levels)
+
+
+# Dummificación de recstat (Ni idea de que es...)
+SQFdata_modif %>% group_by(recstat) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$recstat <- ifelse(SQFdata_modif$recstat=="1",1,0)
+
+
+# Dummificación de inout
+SQFdata_modif %>% group_by(inout) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$inout <- ifelse(SQFdata_modif$inout=="Inside",1,0)
+
+
+# Dummificación de trhsloc
+SQFdata_modif %>% group_by(trhsloc) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$trhsloc.Housing <- ifelse(SQFdata_modif$trhsloc=="Housing",1,0)
+SQFdata_modif$trhsloc.Transit <- ifelse(SQFdata_modif$trhsloc=="Transit",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-trhsloc)
+
+
+# Dummificación de typeofid
+SQFdata_modif %>% group_by(typeofid) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$typeofid.Other <- ifelse(SQFdata_modif$typeofid=="Other",1,0)
+SQFdata_modif$typeofid.Refused <- ifelse(SQFdata_modif$typeofid=="Refused",1,0)
+SQFdata_modif$typeofid.Verbal <- ifelse(SQFdata_modif$typeofid=="Verbal",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-typeofid)
+
+
+# Dummificación de sexo
+SQFdata_modif %>% group_by(sex) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$sex.Male <- ifelse(SQFdata_modif$sex=="Male",1,0)
+SQFdata_modif$sex.Female <- ifelse(SQFdata_modif$sex=="Female",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-sex)
+
+
+# Dummificación de raza
+SQFdata_modif %>% group_by(race) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count/sum(count))
+
+SQFdata_modif$race.ASIAN <- ifelse(SQFdata_modif$race=="ASIAN/PACIFIC ISLANDER",1,0)
+SQFdata_modif$race.NATIVE <- ifelse(SQFdata_modif$race=="AMERICAN INDIAN/ALASKAN NATIVE",1,0)
+SQFdata_modif$race.B_HISP <- ifelse(SQFdata_modif$race=="BLACK-HISPANIC",1,0)
+SQFdata_modif$race.W_HISP <- ifelse(SQFdata_modif$race=="WHITE-HISPANIC",1,0)
+SQFdata_modif$race.WHITE <- ifelse(SQFdata_modif$race=="WHITE",1,0)
+SQFdata_modif$race.OTHER <- ifelse(SQFdata_modif$race=="OTHER",1,0)
+SQFdata_modif$race.UNKNOWN <- ifelse(SQFdata_modif$race=="UNKNOWN",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-race)
+
+# Dummificación de haircolor
+SQFdata_modif %>% group_by(haircolr) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$haircolr.Bald <- ifelse(SQFdata_modif$haircolr=="Bald",1,0)
+SQFdata_modif$haircolr.Black <- ifelse(SQFdata_modif$haircolr=="Black",1,0)
+SQFdata_modif$haircolr.Blond <- ifelse(SQFdata_modif$haircolr=="Blond",1,0)
+SQFdata_modif$haircolr.Brown <- ifelse(SQFdata_modif$haircolr=="Brown",1,0)
+SQFdata_modif$haircolr.Dyed <- ifelse(SQFdata_modif$haircolr=="Dyed",1,0)
+SQFdata_modif$haircolr.Gray <- ifelse(SQFdata_modif$haircolr=="Gray",1,0)
+SQFdata_modif$haircolr.Red <- ifelse(SQFdata_modif$haircolr=="Red",1,0)
+SQFdata_modif$haircolr.Sandy <- ifelse(SQFdata_modif$haircolr=="Sandy",1,0)
+SQFdata_modif$haircolr.SaltPepper <- ifelse(SQFdata_modif$haircolr=="Salt and pepper",1,0)
+SQFdata_modif$haircolr.Unknown <- ifelse(SQFdata_modif$haircolr=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-haircolr)
+
+# Dummificación de eyecolor
+SQFdata_modif %>% group_by(eyecolor) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$eyecolor.Black <- ifelse(SQFdata_modif$eyecolor=="Black",1,0)
+SQFdata_modif$eyecolor.Blue <- ifelse(SQFdata_modif$eyecolor=="Blue",1,0)
+SQFdata_modif$eyecolor.Brown <- ifelse(SQFdata_modif$eyecolor=="Brown",1,0)
+SQFdata_modif$eyecolor.Two <- ifelse(SQFdata_modif$eyecolor=="Two different",1,0)
+SQFdata_modif$eyecolor.Green <- ifelse(SQFdata_modif$eyecolor=="Green",1,0)
+SQFdata_modif$eyecolor.Gray <- ifelse(SQFdata_modif$eyecolor=="Gray",1,0)
+SQFdata_modif$eyecolor.Hazel <- ifelse(SQFdata_modif$eyecolor=="Hazel",1,0)
+SQFdata_modif$eyecolor.Maroon <- ifelse(SQFdata_modif$eyecolor=="Maroon",1,0)
+SQFdata_modif$eyecolor.MC <- ifelse(SQFdata_modif$eyecolor=="MC",1,0)
+SQFdata_modif$eyecolor.Pink <- ifelse(SQFdata_modif$eyecolor=="Pink",1,0)
+SQFdata_modif$eyecolor.Violet <- ifelse(SQFdata_modif$eyecolor=="Violet",1,0)
+SQFdata_modif$eyecolor.Unknown <- ifelse(SQFdata_modif$eyecolor=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-eyecolor)
+
+
+# Dummificación de build
+SQFdata_modif %>% group_by(build) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$build.Heavy <- ifelse(SQFdata_modif$build=="Heavy",1,0)
+SQFdata_modif$build.Thin <- ifelse(SQFdata_modif$build=="Thin",1,0)
+SQFdata_modif$build.Muscular <- ifelse(SQFdata_modif$build=="Muscular",1,0)
+SQFdata_modif$build.Unknown <- ifelse(SQFdata_modif$build=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-build)
+
+# Dummificación de city
+SQFdata_modif %>% group_by(city) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$city.BRONX <- ifelse(SQFdata_modif$city=="BRONX",1,0)
+SQFdata_modif$city.MANHATTAN <- ifelse(SQFdata_modif$city=="MANHATTAN",1,0)
+SQFdata_modif$city.QUEENS <- ifelse(SQFdata_modif$city=="QUEENS",1,0)
+SQFdata_modif$city.S_ISLAND <- ifelse(SQFdata_modif$city=="STATEN ISLAND",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-city)
+
+
+# Comprobacion -> Todas las variables son numeric
+dim(SQFdata_modif)
+dim(SQFdata_modif[which(sapply(SQFdata_modif,is.numeric))])
+
+str(SQFdata_modif)
+```
+
+#### 4.0.1.3 Escalado de variables
+
+```{r}
+VarEscalar <- colnames(SQFdata_modif[sapply(SQFdata_modif,
+                                            function(x) (min(x)!=0) || (max(x)!=1))])
+
+summary(SQFdata_modif[VarEscalar])
+
+escalado <- function(z) {
+    min_z <- min(z)
+    max_z <- max(z)
+    z <- sapply(z, function(x) (x-min_z)/(max_z-min_z))    
+    return(z)
+}
+
+SQFdata_modif[VarEscalar] <- sapply(SQFdata_modif[VarEscalar], escalado)
+str(SQFdata_modif)
+dim(SQFdata_modif)
+
+SQFdata_modif$arstmade <- labels
+```
+
+#### 4.0.1.4 Creación de conjuntos de *train* y *test*
+
+```{r}
+# 
+# Creación de conjuntos train y test
+# 
+tot_obs <- dim(SQFdata_modif)[1]
+indices <- 1:tot_obs
+
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain = SQFdata_modif[indices_train, ]
+SQFdataTest = SQFdata_modif[-indices_train, ]
+
+# Datos desbalanceados
+SQFdataTrain %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### 4.0.3 Clustering
+
+#### 4.0.3.1 Selección del número óptimo de clusters
+
+```{r, warning=FALSE}
+k_kmeans <- FitKMeans(SQFdataTrain[which(names(SQFdataTrain)!="arstmade")],
+                      max.clusters = 15, nstart = 20, seed = 123)
+k_kmeans
+
+PlotHartigan(k_kmeans)
+```
+
+#### 4.0.3.2 Creación de clusters
+
+```{r}
+set.seed(123)
+cl_kmeans <- kmeans(x = SQFdataTrain[which(names(SQFdataTrain)!="arstmade")],
+                    centers = 6)
+
+SQFdataTrain$cluster <- cl_kmeans$cluster
+```
+
+#### 4.0.3.3 Análisis de resultados por clúster
+
+```{r}
+dim(SQFdata_modif)
+dim(SQFdataTrain)
+```
+
+```{r}
+SQFdataTrain %>% group_by(cluster, arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2),
+           percent_tot = round(Casos/(dim(SQFdataTrain)[1])*100, 2))
+```
+
+#### 4.0.3.4 Separación en conjuntos por clúster para train de modelos
+
+```{r}
+SQFdataTrain.cl.1 <- SQFdataTrain %>% filter(cluster == 1)
+SQFdataTrain.cl.2 <- SQFdataTrain %>% filter(cluster == 2)
+SQFdataTrain.cl.3 <- SQFdataTrain %>% filter(cluster == 3)
+SQFdataTrain.cl.4 <- SQFdataTrain %>% filter(cluster == 4)
+SQFdataTrain.cl.5 <- SQFdataTrain %>% filter(cluster == 5)
+SQFdataTrain.cl.6 <- SQFdataTrain %>% filter(cluster == 6)
+
+dim(SQFdataTrain)[1]
+dim(SQFdataTrain.cl.1)[1] + dim(SQFdataTrain.cl.2)[1] + dim(SQFdataTrain.cl.3)[1] + dim(SQFdataTrain.cl.4)[1] + dim(SQFdataTrain.cl.5)[1] + dim(SQFdataTrain.cl.6)[1]
+
+SQFdataTrain.cl.1 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = paste(round(Casos/sum(Casos)*100,2), "%"))
+
+SQFdataTrain.cl.2 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = paste(round(Casos/sum(Casos)*100,2), "%"))
+
+SQFdataTrain.cl.3 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(Porcentaje_clase = paste(round(Casos/sum(Casos)*100,2), "%"))
+
+SQFdataTrain.cl.4 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(Porcentaje_clase = paste(round(Casos/sum(Casos)*100,2), "%"))
+
+SQFdataTrain.cl.5 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(Porcentaje_clase = paste(round(Casos/sum(Casos)*100,2), "%"))
+
+SQFdataTrain.cl.6 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = paste(round(Casos/sum(Casos)*100,2), "%"))
+```
+
+### 4.0.4 Knn para muestras de test
+
+#### 4.0.4.1 Agrupación según k vecinos más próximos
+
+```{r}
+knn_test <- knn3(cluster ~ ., data = SQFdataTrain, k = 10, prob = FALSE)
+
+prediction <- predict(knn_test, SQFdataTest, type = "prob")
+
+class_predict <- function(x) names(x[which.max(x)])
+
+clases <- list()
+
+for(i in seq(dim(prediction)[1])){
+    cat(i, "\n")
+    clase <- names(prediction[i,])[which.max(prediction[i,])]
+    clases[i] <- clase
+}
+
+clases <- factor(clases, levels = c(1,2,3,4,5,6))
+
+SQFdataTest$cluster <- clases
+
+SQFdataTest %>% 
+    group_by(cluster) %>% 
+    summarise(Casos = n())
+```
+
+#### 4.0.4.2 Separación de datasets de test
+
+```{r}
+SQFdataTest.cl.1 <- SQFdataTest %>% filter(cluster == 1)
+SQFdataTest.cl.2 <- SQFdataTest %>% filter(cluster == 2)
+SQFdataTest.cl.3 <- SQFdataTest %>% filter(cluster == 3)
+SQFdataTest.cl.4 <- SQFdataTest %>% filter(cluster == 4)
+SQFdataTest.cl.5 <- SQFdataTest %>% filter(cluster == 5)
+SQFdataTest.cl.6 <- SQFdataTest %>% filter(cluster == 6)
+
+dim(SQFdataTest)[1]
+dim(SQFdataTest.cl.1)[1] + dim(SQFdataTest.cl.2)[1] + dim(SQFdataTest.cl.3)[1] + dim(SQFdataTest.cl.4)[1] + dim(SQFdataTest.cl.5)[1] + dim(SQFdataTest.cl.6)[1]
+
+SQFdataTest.cl.1 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2),
+           percent_tot = round(Casos*100/dim(SQFdataTest)[1],2))
+
+SQFdataTest.cl.2 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2),
+           percent_tot = round(Casos*100/dim(SQFdataTest)[1],2))
+
+SQFdataTest.cl.3 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2),
+           percent_tot = round(Casos*100/dim(SQFdataTest)[1],2))
+
+SQFdataTest.cl.4 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2),
+           percent_tot = round(Casos*100/dim(SQFdataTest)[1],2))
+
+SQFdataTest.cl.5 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2),
+           percent_tot = round(Casos*100/dim(SQFdataTest)[1],2))
+
+SQFdataTest.cl.6 %>% group_by(arstmade) %>% 
+    summarise(Casos = n()) %>% 
+    mutate(percent_class = round(Casos/sum(Casos)*100,2),
+           percent_tot = round(Casos*100/dim(SQFdataTest)[1],2))
+```
+
+
 
 ## 4.1 Regresión logística
 
@@ -3418,8 +3781,8 @@ table(svm.test.linear)
 ```
 \newpage
 
-## 5. Redes neuronales
-### 5.1 Recodificación variables con categorías desbalanceadas o sin registros
+## 4.5 Redes neuronales
+### 4.5.1 Recodificación variables con categorías desbalanceadas o sin registros
 ```{r}
 levels(SQFdata_modif$eyecolor) <- list(black="Black", blue="Blue", brown="Brown", green="Green",  
                                        gray="Gray", hazel="Hazel", unknown="Unknown",
@@ -3430,7 +3793,7 @@ levels(SQFdata_modif$haircolr) <- list(bald="Bald", black="Black", blond="Blond"
 ```
 
 
-### 5.2 Eliminación de variables relacionadas con el registro
+### 4.5.2 Eliminación de variables relacionadas con el registro
 
 ```{r}
 SQFdata_modif <- SQFdata_modif %>% 
@@ -3438,14 +3801,14 @@ SQFdata_modif <- SQFdata_modif %>%
 
 ```
 
-### 5.3 Tratamiento previo a las variables
+### 4.5.3 Tratamiento previo a las variables
 
 ```{r}
 SQFdata_modif.num <- SQFdata_modif[,sapply(SQFdata_modif, is.numeric)]
 ```
 
 
-### 5.3.1 Variables dummies 
+#### 4.5.3.1 Variables dummies 
 
 ```{r}
 SQFdata_modif.cat <- SQFdata_modif[,sapply(SQFdata_modif, is.factor)]
@@ -3468,14 +3831,14 @@ SQFdata_modif.cat2 <- acm.disjonctif(SQFdata_modif.cat2)
 
 ```
 
-### 5.3.2 Dataset completo
+#### 4.5.3.2 Dataset completo
 ```{r}
 SQFdata_modif.num.cat<- data.frame(SQFdata_modif.cat1, SQFdata_modif.cat2, SQFdata_modif.num)
 ```
 
 
 
-### 5.4 División de muestra en train y test
+### 4.5.4 División de muestra en train y test
 
 ```{r}
 set.seed(4567)
@@ -3490,7 +3853,7 @@ train %>% group_by(arstmade) %>%
     mutate(percent = 100*count/sum(count))
 ```
 
-### 5.5 Ajuste del desbalanceo: Down-sampling
+### 4.5.5 Ajuste del desbalanceo: Down-sampling
 
 - Down-Sampling:
 
@@ -3509,7 +3872,7 @@ SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
     mutate(percent = 100*count/sum(count))
 ```
 
-### 5.6 Escalamiento datos de entrenamiento
+### 4.5.6 Escalamiento datos de entrenamiento
 ```{r}
 maxs <- apply(SQFdataTrain_DSAMP , 2, max) 
 mins <- apply(SQFdataTrain_DSAMP , 2, min)
@@ -3518,7 +3881,7 @@ SQFdataTrain_DSAMP.scaled <- as.data.frame(scale(SQFdataTrain_DSAMP , center = m
 #sum(is.na(SQFdataTrain_DSAMP.scaled))
 ```
 
-### 5.7 Modelo
+### 4.5.7 Modelo
 
 ```{r}
 library(doParallel)
@@ -3564,7 +3927,7 @@ plot(caret.fit.mod)
 caret.fit.mod$bestTune
 
 ```
-### 5.8 Predicción
+### 4.5.8 Predicción
 ```{r}
 
 SQFdataTest.scaled <- as.data.frame(scale(test , center = mins, scale = maxs - mins))
