@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r, message=FALSE}
-# Carga de librer�???as
+# Carga de librer????as
 library(magrittr)
 library(dplyr)
 library(caret)
@@ -17,6 +17,8 @@ library(e1071)
 library(dummies)
 library(parallelSVM)
 library(ROCR)
+library(caret)
+
 ```
 
 ## Carga de datos
@@ -101,7 +103,7 @@ SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
 SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
 SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
 
-# Uso de fuerza f�???sica
+# Uso de fuerza f????sica
 SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
 SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
 SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
@@ -172,16 +174,159 @@ dim(SQFdata_modif)
 ### 3.3.5 Creacion de variables Dummies
 
 ```{r}
-# 
-# Con caret::nearZeroVar se elimina el resto de variables que presentan varianza
-# nula después de aplicar la imputación de NAs
-#
-SQFdata_modif=dummy.data.frame(SQFdata_modif,names = c("recstat","inout","trhsloc","typeofid","othpers","offunif","frisked",
-                                                        "searched","pf_hands","pf_hcuff","radio","ac_rept","ac_inves","rf_vcrim","rf_othsw","ac_proxm","rf_attir",
-                                                        "cs_descr","cs_casng","cs_lkout","rf_vcact","cs_drgtr","ac_evasv","ac_assoc",
-                                                        "cs_furtv","rf_rfcmp","ac_cgdir","cs_vcrim","cs_bulge","cs_other","ac_incid",
-                                                        "ac_time","rf_knowl","ac_other","sb_hdobj","sb_other","rf_furt","rf_bulg","sex",
-                                                        "race","haircolr","eyecolor","build","city"))
+# Dummificación de variables de tipo Y|N
+YesNoCat <- sapply(SQFdata_modif,
+                   function(x) (ifelse(is.factor(x),
+                                       (levels(x) == c("Y","N") || (levels(x) == c("N","Y"))),
+                                       FALSE)))
+
+SQFdata_modif[YesNoCat] <- sapply(SQFdata_modif[YesNoCat], function(x) ifelse(x=="Y",1,0))
+
+sapply(SQFdata_modif[which(names(SQFdata_modif) %>% 
+                               is_in(names(YesNoCat[YesNoCat == FALSE])))], levels)
+
+
+# Dummificación de recstat (Ni idea de que es...)
+SQFdata_modif %>% group_by(recstat) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$recstat <- ifelse(SQFdata_modif$recstat=="1",1,0)
+
+
+# Dummificación de inout
+SQFdata_modif %>% group_by(inout) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$inout <- ifelse(SQFdata_modif$inout=="Inside",1,0)
+
+
+# Dummificación de trhsloc
+SQFdata_modif %>% group_by(trhsloc) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$trhsloc.Housing <- ifelse(SQFdata_modif$trhsloc=="Housing",1,0)
+SQFdata_modif$trhsloc.Transit <- ifelse(SQFdata_modif$trhsloc=="Transit",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-trhsloc)
+
+
+# Dummificación de typeofid
+SQFdata_modif %>% group_by(typeofid) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$typeofid.Other <- ifelse(SQFdata_modif$typeofid=="Other",1,0)
+SQFdata_modif$typeofid.Refused <- ifelse(SQFdata_modif$typeofid=="Refused",1,0)
+SQFdata_modif$typeofid.Verbal <- ifelse(SQFdata_modif$typeofid=="Verbal",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-typeofid)
+
+
+# Dummificación de sexo
+SQFdata_modif %>% group_by(sex) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$sex.Male <- ifelse(SQFdata_modif$sex=="Male",1,0)
+SQFdata_modif$sex.Female <- ifelse(SQFdata_modif$sex=="Female",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-sex)
+
+
+# Dummificación de raza
+SQFdata_modif %>% group_by(race) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count/sum(count))
+
+SQFdata_modif$race.ASIAN <- ifelse(SQFdata_modif$race=="ASIAN/PACIFIC ISLANDER",1,0)
+SQFdata_modif$race.NATIVE <- ifelse(SQFdata_modif$race=="AMERICAN INDIAN/ALASKAN NATIVE",1,0)
+SQFdata_modif$race.B_HISP <- ifelse(SQFdata_modif$race=="BLACK-HISPANIC",1,0)
+SQFdata_modif$race.W_HISP <- ifelse(SQFdata_modif$race=="WHITE-HISPANIC",1,0)
+SQFdata_modif$race.WHITE <- ifelse(SQFdata_modif$race=="WHITE",1,0)
+SQFdata_modif$race.OTHER <- ifelse(SQFdata_modif$race=="OTHER",1,0)
+SQFdata_modif$race.UNKNOWN <- ifelse(SQFdata_modif$race=="UNKNOWN",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-race)
+
+# Dummificación de haircolor
+SQFdata_modif %>% group_by(haircolr) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$haircolr.Bald <- ifelse(SQFdata_modif$haircolr=="Bald",1,0)
+SQFdata_modif$haircolr.Black <- ifelse(SQFdata_modif$haircolr=="Black",1,0)
+SQFdata_modif$haircolr.Blond <- ifelse(SQFdata_modif$haircolr=="Blond",1,0)
+SQFdata_modif$haircolr.Brown <- ifelse(SQFdata_modif$haircolr=="Brown",1,0)
+SQFdata_modif$haircolr.Dyed <- ifelse(SQFdata_modif$haircolr=="Dyed",1,0)
+SQFdata_modif$haircolr.Gray <- ifelse(SQFdata_modif$haircolr=="Gray",1,0)
+SQFdata_modif$haircolr.Red <- ifelse(SQFdata_modif$haircolr=="Red",1,0)
+SQFdata_modif$haircolr.Sandy <- ifelse(SQFdata_modif$haircolr=="Sandy",1,0)
+SQFdata_modif$haircolr.SaltPepper <- ifelse(SQFdata_modif$haircolr=="Salt and pepper",1,0)
+SQFdata_modif$haircolr.Unknown <- ifelse(SQFdata_modif$haircolr=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-haircolr)
+
+# Dummificación de eyecolor
+SQFdata_modif %>% group_by(eyecolor) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$eyecolor.Black <- ifelse(SQFdata_modif$eyecolor=="Black",1,0)
+SQFdata_modif$eyecolor.Blue <- ifelse(SQFdata_modif$eyecolor=="Blue",1,0)
+SQFdata_modif$eyecolor.Brown <- ifelse(SQFdata_modif$eyecolor=="Brown",1,0)
+SQFdata_modif$eyecolor.Two <- ifelse(SQFdata_modif$eyecolor=="Two different",1,0)
+SQFdata_modif$eyecolor.Green <- ifelse(SQFdata_modif$eyecolor=="Green",1,0)
+SQFdata_modif$eyecolor.Gray <- ifelse(SQFdata_modif$eyecolor=="Gray",1,0)
+SQFdata_modif$eyecolor.Hazel <- ifelse(SQFdata_modif$eyecolor=="Hazel",1,0)
+SQFdata_modif$eyecolor.Maroon <- ifelse(SQFdata_modif$eyecolor=="Maroon",1,0)
+SQFdata_modif$eyecolor.MC <- ifelse(SQFdata_modif$eyecolor=="MC",1,0)
+SQFdata_modif$eyecolor.Pink <- ifelse(SQFdata_modif$eyecolor=="Pink",1,0)
+SQFdata_modif$eyecolor.Violet <- ifelse(SQFdata_modif$eyecolor=="Violet",1,0)
+SQFdata_modif$eyecolor.Unknown <- ifelse(SQFdata_modif$eyecolor=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-eyecolor)
+
+
+# Dummificación de build
+SQFdata_modif %>% group_by(build) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$build.Heavy <- ifelse(SQFdata_modif$build=="Heavy",1,0)
+SQFdata_modif$build.Thin <- ifelse(SQFdata_modif$build=="Thin",1,0)
+SQFdata_modif$build.Muscular <- ifelse(SQFdata_modif$build=="Muscular",1,0)
+SQFdata_modif$build.Unknown <- ifelse(SQFdata_modif$build=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-build)
+
+# Dummificación de city
+SQFdata_modif %>% group_by(city) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$city.BRONX <- ifelse(SQFdata_modif$city=="BRONX",1,0)
+SQFdata_modif$city.MANHATTAN <- ifelse(SQFdata_modif$city=="MANHATTAN",1,0)
+SQFdata_modif$city.QUEENS <- ifelse(SQFdata_modif$city=="QUEENS",1,0)
+SQFdata_modif$city.S_ISLAND <- ifelse(SQFdata_modif$city=="STATEN ISLAND",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-city)
+
+
+# Comprobacion -> Todas las variables son numeric
+dim(SQFdata_modif)
+dim(SQFdata_modif[which(sapply(SQFdata_modif,is.numeric))])
+
 ```
 ## 3.4 Creación de conjuntos de *train* y *test* 
 
@@ -210,7 +355,12 @@ pref1=performance(pred1,"tpr","fpr")
 summary(svm.train.radial)
 table(svm.test.radial)
 plot(pref1)
+
+confusionMatrix(svm.test.radial)
+
 ```
+
+
 
 
 ```{r}
@@ -225,6 +375,7 @@ plot(pref2)
 
 ```{r}
 svm.train.polynomial <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "polynomial", gamma = 0.1, cost = 100)
+
 svm.test.polynomial<- predict(svm.train.polynomial, newdata=SQFdataTest,decision.values=TRUE)
 summary(svm.train.polynomial)
 table(svm.test.polynomial)
@@ -243,81 +394,7 @@ pref4=performance(pred4,"tpr","fpr")
 plot(pref4)
 ```
 
-```{r}
-# 
-# Total de casos -> 4799 (SI) + 27103 (NO) = 32050
-# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deber�???an ser 4799 casos
-# 
-training.yes <- SQFdata_modif %>% filter(arstmade == 'Y')
-training.no <- SQFdata_modif %>% filter(arstmade == 'N')
-set.seed(4567)
-ind_training.no <- sample(rownames(training.no),4799)
-training.no <- training.no[ind_training.no,]
 
-SQFdata_DSAMP <- rbind(training.yes, training.no)
-
-```
-```{r}
-# 
-# Creación de conjuntos train y test
-# 
-tot_obs <- dim(SQFdata_DSAMP)[1]
-indices <- 1:tot_obs
-set.seed(1234)
-indices_train <- sample(indices, 0.7*tot_obs)
-SQFdataTrain_DSAMP = SQFdata_DSAMP[indices_train, ]
-SQFdataTest_DSAMP = SQFdata_DSAMP[-indices_train, ]
-dim(SQFdataTrain_DSAMP)
-dim(SQFdataTest_DSAMP)
-```
-
-
-
-
-
-
-```{r}
-svm.train.linear_DSAMP <- parallelSVM(arstmade ~ . , SQFdataTrain_DSAMP, kernel = "linear", cost = 100)
-svm.test.linear_DSAMP<- predict(svm.train.linear_DSAMP, newdata=SQFdataTest_DSAMP,decision.values=TRUE)
-summary(svm.train.linear_DSAMP)
-table(svm.test.linear_DSAMP)
-pred2_DSAMP=prediction(as.numeric(svm.test.linear_DSAMP),as.numeric(SQFdataTest_DSAMP$arstmade))
-pref2_DSAMP=performance(pred2_DSAMP,"tpr","fpr")
-plot(pref2_DSAMP)
-```
-```{r}
-svm.train.radial_DSAMP <- parallelSVM(arstmade ~ . , SQFdataTrain_DSAMP, kernel = "radial", gamma = 0.1, cost = 100)
-svm.test.radial_DSAMP <- predict(svm.train.radial_DSAMP, newdata=SQFdataTest_DSAMP,decision.values=TRUE)
-summary(svm.train.radial_DSAMP)
-table(svm.test.radial_DSAMP)
-pred1_DSAMP=prediction(as.numeric(svm.test.radial_DSAMP),as.numeric(SQFdataTest_DSAMP$arstmade))
-pref1_DSAMP=performance(pred1_DSAMP,"tpr","fpr")
-plot(pref1_DSAMP)
-```
-
-```{r}
-svm.train.polynomial_DSAMP <- parallelSVM(arstmade ~ . , SQFdataTrain_DSAMP, kernel = "polynomial", gamma = 0.1, cost = 100)
-svm.test.polynomial_DSAMP<- predict(svm.train.polynomial_DSAMP, newdata=SQFdataTest_DSAMP,decision.values=TRUE)
-summary(svm.train.polynomial_DSAMP)
-table(svm.test.polynomial_DSAMP)
-pred3_DSAMP=prediction(as.numeric(svm.test.polynomial_DSAMP),as.numeric(SQFdataTest_DSAMP$arstmade))
-pref3_DSAMP=performance(pred3_DSAMP,"tpr","fpr")
-plot(pref3_DSAMP)
-```
-
-```{r}
-svm.train.sigmoid_DSAMP <- parallelSVM(arstmade ~ . , SQFdataTrain_DSAMP, kernel = "sigmoid", gamma = 0.1, cost = 100)
-svm.test.sigmoid_DSAMP<- predict(svm.train.sigmoid_DSAMP, newdata=SQFdataTest_DSAMP,decision.values=TRUE)
-summary(svm.train.sigmoid_DSAMP)
-table(svm.test.sigmoid_DSAMP)
-pred4_DSAMP=prediction(as.numeric(svm.test.sigmoid_DSAMP),as.numeric(SQFdataTest_DSAMP$arstmade))
-pref4_DSAMP=performance(pred4_DSAMP,"tpr","fpr")
-plot(pref4_DSAMP)
-```
-
-```{r}
-dim(SQFdataTest_DSAMP)
-```
 
 
 
