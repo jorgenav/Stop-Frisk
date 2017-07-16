@@ -305,7 +305,7 @@ SQFdataTest.scaled$arstmade <- factor(SQFdataTest.scaled$arstmade,
 
 predict.caret <- predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="class")
 predicciones <- data.frame(predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="raw"),
-                           prediction=predict(caret.fit$finalModel, SQFdataTest.scaled[,-3],                                                 type="class"))
+                           prediction=predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3],                                                 type="class"))
 ```
 
 
@@ -317,7 +317,7 @@ confusionMatrix(factor(predict.caret),
                 reference= factor(SQFdataTest.scaled$arstmade),
                 positive='Y')
 
-predict.caret.prob <- predict(caret.fit$finalModel, SQFdataTest.scaled[,-3], type="raw")
+predict.caret.prob <- predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="raw")
 nnetROC <- roc(SQFdataTest.scaled$arstmade, as.vector(predict.caret.prob), auc=TRUE)
 nnetROC
 plot(nnetROC, main = "ROC curve", col = "blue", lwd = 3)
