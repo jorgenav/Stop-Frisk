@@ -511,15 +511,6 @@ SQFdataTest.cl.6 <- SQFdataTest %>% filter(cluster == 6)
 dim(SQFdataTest)[1]
 dim(SQFdataTest.cl.1)[1] + dim(SQFdataTest.cl.2)[1] + dim(SQFdataTest.cl.3)[1] + dim(SQFdataTest.cl.4)[1] + dim(SQFdataTest.cl.5)[1] + dim(SQFdataTest.cl.6)[1]
 
-########################################################################################################
-# We calculate the indices for the sets
-indices_train.cl.1 <- SQFdataTrain[which(SQFdataTrain$cluster == 1),] %>% row.names() %>% as.integer()
-indices_train.cl.2 <- SQFdataTrain[which(SQFdataTrain$cluster == 2),] %>% row.names() %>% as.integer()
-indices_train.cl.3 <- SQFdataTrain[which(SQFdataTrain$cluster == 3),] %>% row.names() %>% as.integer()
-indices_train.cl.4 <- SQFdataTrain[which(SQFdataTrain$cluster == 4),] %>% row.names() %>% as.integer()
-indices_train.cl.5 <- SQFdataTrain[which(SQFdataTrain$cluster == 5),] %>% row.names() %>% as.integer()
-indices_train.cl.6 <- SQFdataTrain[which(SQFdataTrain$cluster == 6),] %>% row.names() %>% as.integer()
-########################################################################################################
 
 SQFdataTest.cl.1 %>% group_by(arstmade) %>% 
     summarise(Casos = n()) %>% 
