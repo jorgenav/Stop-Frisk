@@ -387,14 +387,12 @@ SQFdataTrain %>% group_by(arstmade) %>%
 
 #### 5.2.1.1 Selección del número óptimo de clusters
 
-El chunk está comentado para la ejecución del rmd en pruebas. La información que aporta es el número óptimo de clústeres (6).
-
 ```{r, warning=FALSE}
-# k_kmeans <- FitKMeans(SQFdataTrain[which(names(SQFdataTrain)!="arstmade")],
-#                       max.clusters = 15, nstart = 20, seed = 123)
-# k_kmeans
-# 
-# PlotHartigan(k_kmeans)
+k_kmeans <- FitKMeans(SQFdataTrain[which(names(SQFdataTrain)!="arstmade")],
+                      max.clusters = 15, nstart = 20, seed = 123)
+k_kmeans
+
+PlotHartigan(k_kmeans)
 ```
 
 #### 5.2.1.2 Creación de clusters
@@ -436,36 +434,32 @@ dim(SQFdataTrain.cl.1)[1] + dim(SQFdataTrain.cl.2)[1] + dim(SQFdataTrain.cl.3)[1
 
 SQFdataTrain.cl.1 %>% group_by(arstmade) %>% 
     summarise(Casos = n()) %>% 
-    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+    mutate(percent_class = paste(round(Casos/sum(Casos)*100,2), "%"))
 
 SQFdataTrain.cl.2 %>% group_by(arstmade) %>% 
     summarise(Casos = n()) %>% 
-    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+    mutate(percent_class = paste(round(Casos/sum(Casos)*100,2), "%"))
 
 SQFdataTrain.cl.3 %>% group_by(arstmade) %>% 
     summarise(Casos = n()) %>% 
-    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+    mutate(Porcentaje_clase = paste(round(Casos/sum(Casos)*100,2), "%"))
 
 SQFdataTrain.cl.4 %>% group_by(arstmade) %>% 
     summarise(Casos = n()) %>% 
-    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+    mutate(Porcentaje_clase = paste(round(Casos/sum(Casos)*100,2), "%"))
 
 SQFdataTrain.cl.5 %>% group_by(arstmade) %>% 
     summarise(Casos = n()) %>% 
-    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+    mutate(Porcentaje_clase = paste(round(Casos/sum(Casos)*100,2), "%"))
 
 SQFdataTrain.cl.6 %>% group_by(arstmade) %>% 
     summarise(Casos = n()) %>% 
-    mutate(percent_class = round(Casos/sum(Casos)*100,2))
+    mutate(percent_class = paste(round(Casos/sum(Casos)*100,2), "%"))
 ```
 
 ## 5.4 Knn para muestras de test
 
 ```{r}
-# train <- SQFdataTrain %>% select(-arstmade,-cluster)
-# test <- SQFdataTest %>% select(-arstmade)
-# knn_test <- knn3Train(train = train, test = test, cl = SQFdataTrain$cluster, k = 10)
-
 knn_test <- knn3(cluster ~ ., data = SQFdataTrain, k = 10, prob = FALSE)
 
 prediction <- predict(knn_test, SQFdataTest, type = "prob")
@@ -485,6 +479,10 @@ for(i in seq(dim(prediction)[1])){
 clases <- factor(clases, levels = c(1,2,3,4,5,6))
 
 SQFdataTest$cluster <- clases
+
+SQFdataTest %>% 
+    group_by(cluster) %>% 
+    summarise(Casos = n())
 ```
 
 ## 5.5 Separación de datasets de test
@@ -530,6 +528,3 @@ SQFdataTest.cl.6 %>% group_by(arstmade) %>%
     mutate(percent_class = round(Casos/sum(Casos)*100,2),
            percent_tot = round(Casos*100/dim(SQFdataTest)[1],2))
 ```
-
-
-
