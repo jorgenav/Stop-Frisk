@@ -1,0 +1,329 @@
+---
+title: "Redes neuronales"
+author: "Nathaly"
+date: "20 de junio de 2017"
+output: html_document
+---
+
+## 1. Carga de librerías
+```{r, message=FALSE}
+library(dplyr)
+library(ade4)
+library(nnet)
+library(neuralnet)
+library(caret)
+library(ROCR)
+library(pROC)
+```
+
+
+## 2. Cargar datos
+
+```{r,message=FALSE}
+# Carga del Dataset
+if (!grepl('code', getwd())) setwd('./code')
+source('OLD/Cleaning_Data.R')
+dim(SQFdata)
+```
+
+## 3 Transformación de variables
+
+### 3.1 Creación de dataset transformado
+
+```{r}
+SQFdata_modif <- SQFdata
+```
+
+### 3.2 Eliminación de variables
+
+```{r}
+# Eliminación de variables con más de ~60% de datos faltantes.
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
+                              forceuse, othfeatr, addrnum, stname, beat,
+                              post, state, zip, rescode, premtype, aptnum))
+
+# Eliminación de variables con poca o nula varianza (casos pertenecientes
+# todos a una misma clase). 7 variables eliminadas
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(adtlrept, riflshot, asltweap, machgun,
+                             pf_baton, pf_pepsp, addrtyp, year,
+                             compyear, comppct, lineCM, dob, dettypCM))
+
+# Eliminación de variables con demasiados niveles (strings). 8 variables eliminadas
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(premname, stinter, crossst, sector,
+                              pct, crimsusp, addrpct, detailCM))
+
+# Variables asociadas a series temporales o coordenadas -> No son de interés para
+# el problema que ocupa
+# 
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(datestop, timestop, xcoord, ycoord))
+
+# Número de variables final
+# 
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+### 3.3 Tratamiento de NAs
+
+```{r}
+# 
+# Eliminación de NAs en variable age
+#
+SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
+
+# Modificación de variables no eliminadas
+
+# Uso de armas
+SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
+SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
+SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
+
+# Uso de fuerza física
+SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
+SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
+SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
+SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
+SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
+SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
+SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
+
+# Circunstancias adicionales
+SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
+SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
+SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
+SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
+SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
+SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
+SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
+SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
+SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+
+# Razones para el cacheo
+SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
+SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
+SQFdata_modif$rf_attir[which(is.na(SQFdata_modif$rf_attir))] <- 'N'
+SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
+SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
+SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
+SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
+
+# Razones para la detención
+SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
+SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
+SQFdata_modif$cs_casng[which(is.na(SQFdata_modif$cs_casng))] <- 'N'
+SQFdata_modif$cs_lkout[which(is.na(SQFdata_modif$cs_lkout))] <- 'N'
+SQFdata_modif$cs_cloth[which(is.na(SQFdata_modif$cs_cloth))] <- 'N'
+SQFdata_modif$cs_drgtr[which(is.na(SQFdata_modif$cs_drgtr))] <- 'N'
+SQFdata_modif$cs_furtv[which(is.na(SQFdata_modif$cs_furtv))] <- 'N'
+SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
+SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
+SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
+
+# Motivos de búsqueda
+SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
+SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
+SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
+SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
+
+# Comprobación de NAs
+sum(is.na(SQFdata))
+sum(is.na(SQFdata_modif))
+```
+
+### 3.4 Eliminación de variables con varianza nula
+
+```{r}
+SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+### 3.5 Recodificación variables con categorías desbalanceadas o sin registros
+```{r}
+levels(SQFdata_modif$eyecolor) <- list(black="Black", blue="Blue", brown="Brown", green="Green",  
+                                       gray="Gray", hazel="Hazel", unknown="Unknown",
+                                       other=c("Two different", "Maroon","MC","Pink","Violet", "Other"))
+levels(SQFdata_modif$haircolr) <- list(bald="Bald", black="Black", blond="Blond", brown="Brown",
+                                       gray="Gray", red="Red", unknown="Unknown", 
+                                       other=c("Dyed", "Frosted","Sandy", "White", "Other"))
+```
+
+
+### 3.6 Eliminación de variables relacionadas con el registro
+
+```{r}
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-c(ser_num,repcmd, revcmd, recstat))
+
+```
+
+## 4. Redes neuronales con librería nnet
+
+### 4.1 Tratamiento previo a las variables
+
+```{r}
+SQFdata_modif.num <- SQFdata_modif[,sapply(SQFdata_modif, is.numeric)]
+```
+
+
+### 4.1.1 Variables dummies 
+
+```{r}
+SQFdata_modif.cat <- SQFdata_modif[,sapply(SQFdata_modif, is.factor)]
+
+
+# binarización factores con dos niveles
+SQFdata_modif.cat1<- SQFdata_modif.cat[, sapply(SQFdata_modif.cat, function(col) length(unique(col))) < 3]
+
+YesNoCat <- sapply(SQFdata_modif.cat1,
+                   function(x) (levels(x) == c("Y","N")) || (levels(x) == c("N","Y")))
+SQFdata_modif.cat1[YesNoCat] <- sapply(SQFdata_modif.cat1[YesNoCat], function(x) ifelse(x=="Y",1,0))
+
+SQFdata_modif.cat1$inout<- as.numeric(SQFdata_modif.cat1$inout)
+SQFdata_modif.cat1$inout[SQFdata_modif.cat1$inout==2] <- 0
+
+
+# binarización factores con más de dos niveles
+SQFdata_modif.cat2 <- SQFdata_modif.cat[, sapply(SQFdata_modif.cat, function(col) length(unique(col))) > 2]
+SQFdata_modif.cat2 <- acm.disjonctif(SQFdata_modif.cat2) 
+
+```
+
+### 4.1.1.2 Dataset completo
+```{r}
+SQFdata_modif.num.cat<- data.frame(SQFdata_modif.cat1, SQFdata_modif.cat2, SQFdata_modif.num)
+```
+
+
+
+### 4.2 División de muestra en train y test
+
+```{r}
+set.seed(4567)
+nfilas    <- nrow(SQFdata_modif.num.cat)
+muestra   <- sample(nfilas, nfilas*.70)
+train     <- SQFdata_modif.num.cat[muestra, ]
+test      <- SQFdata_modif.num.cat[-muestra, ]
+
+# Datos desbalanceados
+train %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### 4.3 Ajuste del desbalanceo: Down-sampling
+
+- Down-Sampling:
+
+```{r}
+train.yes <- train %>% filter(arstmade == 1)
+train.no <- train %>% filter(arstmade == 0)
+
+set.seed(4567)
+ind_train.no <- sample(rownames(train.no),4768)
+train.no <- train.no[ind_train.no,]
+
+SQFdataTrain_DSAMP <- rbind(train.yes, train.no)
+
+SQFdataTrain_DSAMP %>% group_by(arstmade) %>%
+    summarise(count = n()) %>%
+    mutate(percent = 100*count/sum(count))
+```
+
+### 4.4 Escalamiento variables
+```{r}
+maxs <- apply(SQFdataTrain_DSAMP , 2, max) 
+mins <- apply(SQFdataTrain_DSAMP , 2, min)
+
+SQFdataTrain_DSAMP.scaled <- as.data.frame(scale(SQFdataTrain_DSAMP , center = mins, scale = maxs - mins))
+#sum(is.na(SQFdataTrain_DSAMP.scaled))
+```
+
+
+
+
+## 5. Redes neuronales con librería caret
+### 5.1 Modelo
+
+```{r}
+library(doParallel)
+cl = makeCluster(6)
+registerDoParallel(cl)
+
+SQFdataTrain_DSAMP.scaled$arstmade<- as.factor(SQFdataTrain_DSAMP.scaled$arstmade)
+levels(SQFdataTrain_DSAMP.scaled$arstmade) <- list(Y="1", N="0")
+SQFdataTrain_DSAMP.scaled$arstmade <- factor(SQFdataTrain_DSAMP.scaled$arstmade,
+                                             levels=c("Y", "N"),
+                                             ordered=TRUE)
+set.seed(1)
+seeds <- vector(mode = "list", length = 6)
+for(i in 1:5) seeds[[i]] <- sample.int(n=1000, 60) 
+seeds[[6]] <- 1
+
+
+fitControl <- trainControl(method = "cv", 
+                           number = 5, 
+                           classProbs = TRUE, 
+                           summaryFunction = twoClassSummary,
+                           seeds = seeds,
+                           allowParallel = TRUE)
+
+
+nnetGrid <-  expand.grid(size = seq(from = 1, to = 10, by = 1),
+                         decay= c(0.5, 0.1, 0.01, 0.001, 0.0001, 0.005))
+
+
+caret.fit.mod <- train(arstmade~., 
+                       data=SQFdataTrain_DSAMP.scaled,
+                       method = "nnet", 
+                       metric = "Sens",
+                       trace = F,
+                       trControl = fitControl,
+                       tuneGrid = nnetGrid,
+                       verbose = FALSE)
+plot(caret.fit.mod)
+caret.fit.mod$bestTune
+
+```
+
+### 5.2 Predicción
+```{r}
+SQFdataTest.scaled <- as.data.frame(scale(test , center = mins, scale = maxs - mins))
+SQFdataTest.scaled$arstmade<- as.factor(SQFdataTest.scaled$arstmade)
+levels(SQFdataTest.scaled$arstmade) <- list(Y="1", N="0")
+SQFdataTest.scaled$arstmade <- factor(SQFdataTest.scaled$arstmade,
+                                             levels=c("Y", "N"),
+                                             ordered=TRUE)
+
+predict.caret <- predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="class")
+predicciones <- data.frame(predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="raw"),
+                           prediction=predict(caret.fit$finalModel, SQFdataTest.scaled[,-3],                                                 type="class"))
+```
+
+
+
+### 5.2 Validación
+
+```{r}
+confusionMatrix(factor(predict.caret),
+                reference= factor(SQFdataTest.scaled$arstmade),
+                positive='Y')
+
+predict.caret.prob <- predict(caret.fit$finalModel, SQFdataTest.scaled[,-3], type="raw")
+nnetROC <- roc(SQFdataTest.scaled$arstmade, as.vector(predict.caret.prob), auc=TRUE)
+nnetROC
+plot(nnetROC, main = "ROC curve", col = "blue", lwd = 3)
+
+
+```
+
+
+

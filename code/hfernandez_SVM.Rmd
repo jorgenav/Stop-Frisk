@@ -1,0 +1,324 @@
+---
+title: "hfernandez_SVM"
+author: "Hugo Fernandez"
+date: "3 de julio de 2017"
+output: html_document
+---
+
+```{r, message=FALSE}
+# Carga de librer�???as
+library(magrittr)
+library(dplyr)
+library(caret)
+library(cluster)
+library(useful)
+library(NbClust)
+library(e1071)
+library(dummies)
+library(parallelSVM)
+library(ROCR)
+```
+
+## Carga de datos
+
+```{r,message=FALSE}
+# Carga del Dataset
+if (!grepl('code', getwd())) setwd('./code')
+source('OLD/Cleaning_Data.R')
+dim(SQFdata)
+```
+
+## 3.3 Transformación de variables
+
+### 3.3.1 Creación de dataset transformado
+
+```{r}
+SQFdata_modif <- SQFdata
+```
+
+### 3.3.2 Eliminación de variables
+
+```{r}
+#
+# Eliminación de variables con más de ~60% de datos faltantes.
+#
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(arstoffn, sumoffen, officrid, offverb, offshld,
+                              forceuse, othfeatr, addrnum, stname, beat,
+                              post, state, zip, rescode, premtype, aptnum))
+
+
+#
+# Eliminación de variables con poca o nula varianza (casos pertenecientes
+# todos a una misma clase). 7 variables eliminadas
+#
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(adtlrept, riflshot, asltweap, machgun,
+                             pf_baton, pf_pepsp, addrtyp, year,
+                             compyear, comppct, lineCM, dob, dettypCM))
+
+
+
+# 
+# Eliminación de variables con demasiados niveles (strings). 8 variables eliminadas
+# 
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(premname, stinter, crossst, sector,
+                              pct, crimsusp, addrpct, detailCM))
+
+# 
+# Variables asociadas a series temporales o coordenadas -> No son de interés para
+# el problema que ocupa
+# 
+SQFdata_modif <- SQFdata_modif %>%
+                    select(-c(datestop, timestop, xcoord, ycoord))
+
+
+
+# 
+# Número de variables final
+# 
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+### 3.3.3 Tratamiento de NAs
+
+```{r}
+# 
+# Eliminación de NAs en variable age
+#
+SQFdata_modif <- SQFdata_modif %>% filter(!is.na(age))
+
+
+
+# 
+# Modificación de variables no eliminadas
+# 
+
+# Uso de armas
+SQFdata_modif$pistol[which(is.na(SQFdata_modif$pistol))]     <- 'N'
+SQFdata_modif$knifcuti[which(is.na(SQFdata_modif$knifcuti))] <- 'N'
+SQFdata_modif$othrweap[which(is.na(SQFdata_modif$othrweap))] <- 'N'
+
+# Uso de fuerza f�???sica
+SQFdata_modif$pf_hands[which(is.na(SQFdata_modif$pf_hands))] <- 'N'
+SQFdata_modif$pf_wall[which(is.na(SQFdata_modif$pf_wall))]   <- 'N'
+SQFdata_modif$pf_grnd[which(is.na(SQFdata_modif$pf_grnd))]   <- 'N'
+SQFdata_modif$pf_drwep[which(is.na(SQFdata_modif$pf_drwep))] <- 'N'
+SQFdata_modif$pf_ptwep[which(is.na(SQFdata_modif$pf_ptwep))] <- 'N'
+SQFdata_modif$pf_hcuff[which(is.na(SQFdata_modif$pf_hcuff))] <- 'N'
+SQFdata_modif$pf_other[which(is.na(SQFdata_modif$pf_other))] <- 'N'
+
+# Circunstancias adicionales
+SQFdata_modif$ac_rept[which(is.na(SQFdata_modif$ac_rept))]   <- 'N'
+SQFdata_modif$ac_inves[which(is.na(SQFdata_modif$ac_inves))] <- 'N'
+SQFdata_modif$ac_proxm[which(is.na(SQFdata_modif$ac_proxm))] <- 'N'
+SQFdata_modif$ac_incid[which(is.na(SQFdata_modif$ac_incid))] <- 'N'
+SQFdata_modif$ac_time[which(is.na(SQFdata_modif$ac_time))]   <- 'N'
+SQFdata_modif$ac_evasv[which(is.na(SQFdata_modif$ac_evasv))] <- 'N'
+SQFdata_modif$ac_assoc[which(is.na(SQFdata_modif$ac_assoc))] <- 'N'
+SQFdata_modif$ac_cgdir[which(is.na(SQFdata_modif$ac_cgdir))] <- 'N'
+SQFdata_modif$ac_stsnd[which(is.na(SQFdata_modif$ac_stsnd))] <- 'N'
+SQFdata_modif$ac_other[which(is.na(SQFdata_modif$ac_other))] <- 'N'
+
+# Razones para el cacheo
+SQFdata_modif$rf_vcrim[which(is.na(SQFdata_modif$rf_vcrim))] <- 'N'
+SQFdata_modif$rf_othsw[which(is.na(SQFdata_modif$rf_othsw))] <- 'N'
+SQFdata_modif$rf_attir[which(is.na(SQFdata_modif$rf_attir))] <- 'N'
+SQFdata_modif$rf_vcact[which(is.na(SQFdata_modif$rf_vcact))] <- 'N'
+SQFdata_modif$rf_rfcmp[which(is.na(SQFdata_modif$rf_rfcmp))] <- 'N'
+SQFdata_modif$rf_furt[which(is.na(SQFdata_modif$rf_furt))]   <- 'N'
+SQFdata_modif$rf_bulg[which(is.na(SQFdata_modif$rf_bulg))]   <- 'N'
+SQFdata_modif$rf_verbl[which(is.na(SQFdata_modif$rf_verbl))] <- 'N'
+SQFdata_modif$rf_knowl[which(is.na(SQFdata_modif$rf_knowl))] <- 'N'
+
+# Razones para la detención
+SQFdata_modif$cs_objcs[which(is.na(SQFdata_modif$cs_objcs))] <- 'N'
+SQFdata_modif$cs_descr[which(is.na(SQFdata_modif$cs_descr))] <- 'N'
+SQFdata_modif$cs_casng[which(is.na(SQFdata_modif$cs_casng))] <- 'N'
+SQFdata_modif$cs_lkout[which(is.na(SQFdata_modif$cs_lkout))] <- 'N'
+SQFdata_modif$cs_cloth[which(is.na(SQFdata_modif$cs_cloth))] <- 'N'
+SQFdata_modif$cs_drgtr[which(is.na(SQFdata_modif$cs_drgtr))] <- 'N'
+SQFdata_modif$cs_furtv[which(is.na(SQFdata_modif$cs_furtv))] <- 'N'
+SQFdata_modif$cs_vcrim[which(is.na(SQFdata_modif$cs_vcrim))] <- 'N'
+SQFdata_modif$cs_bulge[which(is.na(SQFdata_modif$cs_bulge))] <- 'N'
+SQFdata_modif$cs_other[which(is.na(SQFdata_modif$cs_other))] <- 'N'
+
+# Motivos de búsqueda
+SQFdata_modif$sb_hdobj[which(is.na(SQFdata_modif$sb_hdobj))] <- 'N'
+SQFdata_modif$sb_outln[which(is.na(SQFdata_modif$sb_outln))] <- 'N'
+SQFdata_modif$sb_admis[which(is.na(SQFdata_modif$sb_admis))] <- 'N'
+SQFdata_modif$sb_other[which(is.na(SQFdata_modif$sb_other))] <- 'N'
+
+# Comprobación de NAs
+sum(is.na(SQFdata))
+sum(is.na(SQFdata_modif))
+```
+
+### 3.3.4 Eliminación de variables con varianza nula
+
+```{r}
+# 
+# Con caret::nearZeroVar se elimina el resto de variables que presentan varianza
+# nula después de aplicar la imputación de NAs
+#
+SQFdata_modif <- SQFdata_modif[-nearZeroVar(SQFdata_modif)]
+
+dim(SQFdata)
+dim(SQFdata_modif)
+```
+
+### 3.3.5 Creacion de variables Dummies
+
+```{r}
+# 
+# Con caret::nearZeroVar se elimina el resto de variables que presentan varianza
+# nula después de aplicar la imputación de NAs
+#
+SQFdata_modif=dummy.data.frame(SQFdata_modif,names = c("recstat","inout","trhsloc","typeofid","othpers","offunif","frisked",
+                                                        "searched","pf_hands","pf_hcuff","radio","ac_rept","ac_inves","rf_vcrim","rf_othsw","ac_proxm","rf_attir",
+                                                        "cs_descr","cs_casng","cs_lkout","rf_vcact","cs_drgtr","ac_evasv","ac_assoc",
+                                                        "cs_furtv","rf_rfcmp","ac_cgdir","cs_vcrim","cs_bulge","cs_other","ac_incid",
+                                                        "ac_time","rf_knowl","ac_other","sb_hdobj","sb_other","rf_furt","rf_bulg","sex",
+                                                        "race","haircolr","eyecolor","build","city"))
+```
+## 3.4 Creación de conjuntos de *train* y *test* 
+
+Tras haber realizado las transformaciones necesarias a las variables, se crean los conjuntos de *train* y *test* a partir del dataset modificado. Tras crear los conjuntos se comprueba la proporción de clases que existe en la variable objetivo.
+
+```{r}
+# 
+# Creación de conjuntos train y test
+# 
+tot_obs <- dim(SQFdata_modif)[1]
+indices <- 1:tot_obs
+SQFdata_modif
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain = SQFdata_modif[indices_train, ]
+SQFdataTest = SQFdata_modif[-indices_train, ]
+dim(SQFdataTrain)
+dim(SQFdataTest)
+```
+## 5.1 SVM
+```{r}
+svm.train.radial <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "radial", gamma = 0.1, cost = 100)
+svm.test.radial <- predict(svm.train.radial, newdata=SQFdataTest,decision.values=TRUE)
+pred1=prediction(as.numeric(svm.test.radial),as.numeric(SQFdataTest$arstmade))
+pref1=performance(pred1,"tpr","fpr")
+summary(svm.train.radial)
+table(svm.test.radial)
+plot(pref1)
+```
+
+
+```{r}
+svm.train.linear <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "linear", cost = 100)
+svm.test.linear<- predict(svm.train.linear, newdata=SQFdataTest,decision.values=TRUE)
+summary(svm.train.linear)
+table(svm.test.linear)
+pred2=prediction(as.numeric(svm.test.linear),as.numeric(SQFdataTest$arstmade))
+pref2=performance(pred2,"tpr","fpr")
+plot(pref2)
+```
+
+```{r}
+svm.train.polynomial <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "polynomial", gamma = 0.1, cost = 100)
+svm.test.polynomial<- predict(svm.train.polynomial, newdata=SQFdataTest,decision.values=TRUE)
+summary(svm.train.polynomial)
+table(svm.test.polynomial)
+pred3=prediction(as.numeric(svm.test.polynomial),as.numeric(SQFdataTest$arstmade))
+pref3=performance(pred3,"tpr","fpr")
+plot(pref3)
+```
+
+```{r}
+svm.train.sigmoid <- parallelSVM(arstmade ~ . , SQFdataTrain, kernel = "sigmoid", gamma = 0.1, cost = 100)
+svm.test.sigmoid<- predict(svm.train.sigmoid, newdata=SQFdataTest,decision.values=TRUE)
+summary(svm.train.sigmoid)
+table(svm.test.sigmoid)
+pred4=prediction(as.numeric(svm.test.sigmoid),as.numeric(SQFdataTest$arstmade))
+pref4=performance(pred4,"tpr","fpr")
+plot(pref4)
+```
+
+```{r}
+# 
+# Total de casos -> 4799 (SI) + 27103 (NO) = 32050
+# Queremos que los SI correspondan a un 50% de la muestra -> Los NO deber�???an ser 4799 casos
+# 
+training.yes <- SQFdata_modif %>% filter(arstmade == 'Y')
+training.no <- SQFdata_modif %>% filter(arstmade == 'N')
+set.seed(4567)
+ind_training.no <- sample(rownames(training.no),4799)
+training.no <- training.no[ind_training.no,]
+
+SQFdata_DSAMP <- rbind(training.yes, training.no)
+
+```
+```{r}
+# 
+# Creación de conjuntos train y test
+# 
+tot_obs <- dim(SQFdata_DSAMP)[1]
+indices <- 1:tot_obs
+set.seed(1234)
+indices_train <- sample(indices, 0.7*tot_obs)
+SQFdataTrain_DSAMP = SQFdata_DSAMP[indices_train, ]
+SQFdataTest_DSAMP = SQFdata_DSAMP[-indices_train, ]
+dim(SQFdataTrain_DSAMP)
+dim(SQFdataTest_DSAMP)
+```
+
+
+
+
+
+
+```{r}
+svm.train.linear_DSAMP <- parallelSVM(arstmade ~ . , SQFdataTrain_DSAMP, kernel = "linear", cost = 100)
+svm.test.linear_DSAMP<- predict(svm.train.linear_DSAMP, newdata=SQFdataTest_DSAMP,decision.values=TRUE)
+summary(svm.train.linear_DSAMP)
+table(svm.test.linear_DSAMP)
+pred2_DSAMP=prediction(as.numeric(svm.test.linear_DSAMP),as.numeric(SQFdataTest_DSAMP$arstmade))
+pref2_DSAMP=performance(pred2_DSAMP,"tpr","fpr")
+plot(pref2_DSAMP)
+```
+```{r}
+svm.train.radial_DSAMP <- parallelSVM(arstmade ~ . , SQFdataTrain_DSAMP, kernel = "radial", gamma = 0.1, cost = 100)
+svm.test.radial_DSAMP <- predict(svm.train.radial_DSAMP, newdata=SQFdataTest_DSAMP,decision.values=TRUE)
+summary(svm.train.radial_DSAMP)
+table(svm.test.radial_DSAMP)
+pred1_DSAMP=prediction(as.numeric(svm.test.radial_DSAMP),as.numeric(SQFdataTest_DSAMP$arstmade))
+pref1_DSAMP=performance(pred1_DSAMP,"tpr","fpr")
+plot(pref1_DSAMP)
+```
+
+```{r}
+svm.train.polynomial_DSAMP <- parallelSVM(arstmade ~ . , SQFdataTrain_DSAMP, kernel = "polynomial", gamma = 0.1, cost = 100)
+svm.test.polynomial_DSAMP<- predict(svm.train.polynomial_DSAMP, newdata=SQFdataTest_DSAMP,decision.values=TRUE)
+summary(svm.train.polynomial_DSAMP)
+table(svm.test.polynomial_DSAMP)
+pred3_DSAMP=prediction(as.numeric(svm.test.polynomial_DSAMP),as.numeric(SQFdataTest_DSAMP$arstmade))
+pref3_DSAMP=performance(pred3_DSAMP,"tpr","fpr")
+plot(pref3_DSAMP)
+```
+
+```{r}
+svm.train.sigmoid_DSAMP <- parallelSVM(arstmade ~ . , SQFdataTrain_DSAMP, kernel = "sigmoid", gamma = 0.1, cost = 100)
+svm.test.sigmoid_DSAMP<- predict(svm.train.sigmoid_DSAMP, newdata=SQFdataTest_DSAMP,decision.values=TRUE)
+summary(svm.train.sigmoid_DSAMP)
+table(svm.test.sigmoid_DSAMP)
+pred4_DSAMP=prediction(as.numeric(svm.test.sigmoid_DSAMP),as.numeric(SQFdataTest_DSAMP$arstmade))
+pref4_DSAMP=performance(pred4_DSAMP,"tpr","fpr")
+plot(pref4_DSAMP)
+```
+
+```{r}
+dim(SQFdataTest_DSAMP)
+```
+
+
+
+
