@@ -4217,8 +4217,6 @@ prefSVM=performance(predSVM,"tpr","fpr")
 plot(prefSVM)
 ```
 
-\newpage
-
 ### 5.2.4 Redes neuronales
 ```{r}
 predict.caret.prob <- predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="raw")
@@ -4226,6 +4224,26 @@ nnetROC <- roc(SQFdataTest.scaled$arstmade, as.vector(predict.caret.prob), auc=T
 nnetROC
 plot(nnetROC, main = "ROC curve", col = "blue", lwd = 3)
 ```
+
+## 5.3 Comparación de modelos
+
+Para la comparación de los diferentes modelos graficamos sobre la misma figura las distintas curvas  ROC.
+```{r}
+plot(pred_tpr_fpr_glm, main = "ROC curves", col = "blue", lwd = 3)
+plot(pred_tpr_fpr_RF, add = TRUE, col = "red", lwd = 3)
+plot(prefSVM, add = TRUE, col = "green", lwd = 3)
+predict.caret.prob <- predict(caret.fit.mod$finalModel, SQFdataTest.scaled[,-3], type="raw")
+pr_test_nn <- prediction(predict.caret.prob, SQFdataTest.scaled$arstmade)
+pred_tpr_fpr_nn <- performance(pr_test_nn, measure = "tpr", x.measure = "fpr")
+plot(pred_tpr_fpr_nn,  add = TRUE, col = "black", lwd = 3)
+abline(a = 1, b = -1)
+legend(0.78, 0.8, c("LR", "RF", "SVM", "NN"), lty = c(1, 1, 1, 1), lwd = c(2, 2, 2, 2), col = c("blue", "red", "green", "black"))
+```
+En la anterior gráfica, podemos diferenciar dos tramos:
+
+Un primer tramo, hasta una tasa de falsos positivos de 0,21 donde los modelos que obtienen mejor tasa de verdaderos positivos son tanto el modelo de regresión logística como el de random forest casi por igual, siendo ligeramente mejor el de regresión logística.
+
+Un segundo tramo, a partir de una tasa de falsos positivos de 0,21 donde claramente es mejor el modelo de redes neuronales por encima de los demás.
 
 # 6. CONCLUSIONES
 
@@ -4258,3 +4276,14 @@ kable(df.comp.DS.models, format = "markdown", digits = 4)
 
 Tal y como se afirmó, tras aplicar Down-Sampling se alcanza el objetivo fijado de mejorar el *sensitivity* del modelo y por tanto, reducir al máximo los falsos negativos.
 
+## 6.2 Elección del modelo
+
+Nuestro objetivo es, recordemos, identificar por las calles de New York a delincuentes que deben ser arrestados.
+
+Por lo tanto, dependería del estado de alerta en el que nos encontremos.
+
+Basándonos en lo visto en el apartado "5.3 Comparación de modelos":
+
+Si el estado de alerta no es elevado y no queremos hacer stop&frisk masivos elegiríamos el modelo de regresión logística que obtiene los valores más altos de true positive (verdaderos delincuentes) para valores bajos de false positive (personas que luego debemos dejar en libertad).
+
+En cambio, si el estado de alerta es elevado y queremos detener a cuantos más delincuentes mejor aunque sea a costa de parar a personas que luego debemos dejar en libertad (falsos positivos), utilizaríamos el modelo de redes neuronales que es el más indicado para esto.
