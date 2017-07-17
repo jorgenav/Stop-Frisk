@@ -2941,6 +2941,164 @@ dim(SQFdata)
 dim(SQFdata_modif)
 ```
 
+### 3.3.5 Creacion de variables Dummies
+
+```{r}
+# Dummificación de variables de tipo Y|N
+YesNoCat <- sapply(SQFdata_modif,
+                   function(x) (ifelse(is.factor(x),
+                                       (levels(x) == c("Y","N") || (levels(x) == c("N","Y"))),
+                                       FALSE)))
+
+SQFdata_modif[YesNoCat] <- sapply(SQFdata_modif[YesNoCat], function(x) ifelse(x=="Y",1,0))
+
+sapply(SQFdata_modif[which(names(SQFdata_modif) %>% 
+                               is_in(names(YesNoCat[YesNoCat == FALSE])))], levels)
+
+
+# Dummificación de recstat (Ni idea de que es...)
+SQFdata_modif %>% group_by(recstat) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$recstat <- ifelse(SQFdata_modif$recstat=="1",1,0)
+
+
+# Dummificación de inout
+SQFdata_modif %>% group_by(inout) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$inout <- ifelse(SQFdata_modif$inout=="Inside",1,0)
+
+
+# Dummificación de trhsloc
+SQFdata_modif %>% group_by(trhsloc) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$trhsloc.Housing <- ifelse(SQFdata_modif$trhsloc=="Housing",1,0)
+SQFdata_modif$trhsloc.Transit <- ifelse(SQFdata_modif$trhsloc=="Transit",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-trhsloc)
+
+
+# Dummificación de typeofid
+SQFdata_modif %>% group_by(typeofid) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$typeofid.Other <- ifelse(SQFdata_modif$typeofid=="Other",1,0)
+SQFdata_modif$typeofid.Refused <- ifelse(SQFdata_modif$typeofid=="Refused",1,0)
+SQFdata_modif$typeofid.Verbal <- ifelse(SQFdata_modif$typeofid=="Verbal",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-typeofid)
+
+
+# Dummificación de sexo
+SQFdata_modif %>% group_by(sex) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$sex.Male <- ifelse(SQFdata_modif$sex=="Male",1,0)
+SQFdata_modif$sex.Female <- ifelse(SQFdata_modif$sex=="Female",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-sex)
+
+
+# Dummificación de raza
+SQFdata_modif %>% group_by(race) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count/sum(count))
+
+SQFdata_modif$race.ASIAN <- ifelse(SQFdata_modif$race=="ASIAN/PACIFIC ISLANDER",1,0)
+SQFdata_modif$race.NATIVE <- ifelse(SQFdata_modif$race=="AMERICAN INDIAN/ALASKAN NATIVE",1,0)
+SQFdata_modif$race.B_HISP <- ifelse(SQFdata_modif$race=="BLACK-HISPANIC",1,0)
+SQFdata_modif$race.W_HISP <- ifelse(SQFdata_modif$race=="WHITE-HISPANIC",1,0)
+SQFdata_modif$race.WHITE <- ifelse(SQFdata_modif$race=="WHITE",1,0)
+SQFdata_modif$race.OTHER <- ifelse(SQFdata_modif$race=="OTHER",1,0)
+SQFdata_modif$race.UNKNOWN <- ifelse(SQFdata_modif$race=="UNKNOWN",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-race)
+
+# Dummificación de haircolor
+SQFdata_modif %>% group_by(haircolr) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$haircolr.Bald <- ifelse(SQFdata_modif$haircolr=="Bald",1,0)
+SQFdata_modif$haircolr.Black <- ifelse(SQFdata_modif$haircolr=="Black",1,0)
+SQFdata_modif$haircolr.Blond <- ifelse(SQFdata_modif$haircolr=="Blond",1,0)
+SQFdata_modif$haircolr.Brown <- ifelse(SQFdata_modif$haircolr=="Brown",1,0)
+SQFdata_modif$haircolr.Dyed <- ifelse(SQFdata_modif$haircolr=="Dyed",1,0)
+SQFdata_modif$haircolr.Gray <- ifelse(SQFdata_modif$haircolr=="Gray",1,0)
+SQFdata_modif$haircolr.Red <- ifelse(SQFdata_modif$haircolr=="Red",1,0)
+SQFdata_modif$haircolr.Sandy <- ifelse(SQFdata_modif$haircolr=="Sandy",1,0)
+SQFdata_modif$haircolr.SaltPepper <- ifelse(SQFdata_modif$haircolr=="Salt and pepper",1,0)
+SQFdata_modif$haircolr.Unknown <- ifelse(SQFdata_modif$haircolr=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-haircolr)
+
+# Dummificación de eyecolor
+SQFdata_modif %>% group_by(eyecolor) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$eyecolor.Black <- ifelse(SQFdata_modif$eyecolor=="Black",1,0)
+SQFdata_modif$eyecolor.Blue <- ifelse(SQFdata_modif$eyecolor=="Blue",1,0)
+SQFdata_modif$eyecolor.Brown <- ifelse(SQFdata_modif$eyecolor=="Brown",1,0)
+SQFdata_modif$eyecolor.Two <- ifelse(SQFdata_modif$eyecolor=="Two different",1,0)
+SQFdata_modif$eyecolor.Green <- ifelse(SQFdata_modif$eyecolor=="Green",1,0)
+SQFdata_modif$eyecolor.Gray <- ifelse(SQFdata_modif$eyecolor=="Gray",1,0)
+SQFdata_modif$eyecolor.Hazel <- ifelse(SQFdata_modif$eyecolor=="Hazel",1,0)
+SQFdata_modif$eyecolor.Maroon <- ifelse(SQFdata_modif$eyecolor=="Maroon",1,0)
+SQFdata_modif$eyecolor.MC <- ifelse(SQFdata_modif$eyecolor=="MC",1,0)
+SQFdata_modif$eyecolor.Pink <- ifelse(SQFdata_modif$eyecolor=="Pink",1,0)
+SQFdata_modif$eyecolor.Violet <- ifelse(SQFdata_modif$eyecolor=="Violet",1,0)
+SQFdata_modif$eyecolor.Unknown <- ifelse(SQFdata_modif$eyecolor=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>% 
+    select(-eyecolor)
+
+
+# Dummificación de build
+SQFdata_modif %>% group_by(build) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$build.Heavy <- ifelse(SQFdata_modif$build=="Heavy",1,0)
+SQFdata_modif$build.Thin <- ifelse(SQFdata_modif$build=="Thin",1,0)
+SQFdata_modif$build.Muscular <- ifelse(SQFdata_modif$build=="Muscular",1,0)
+SQFdata_modif$build.Unknown <- ifelse(SQFdata_modif$build=="Unknown",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-build)
+
+# Dummificación de city
+SQFdata_modif %>% group_by(city) %>%
+    summarise(count = n()) %>%
+    mutate(perc = count*100/sum(count))
+
+SQFdata_modif$city.BRONX <- ifelse(SQFdata_modif$city=="BRONX",1,0)
+SQFdata_modif$city.MANHATTAN <- ifelse(SQFdata_modif$city=="MANHATTAN",1,0)
+SQFdata_modif$city.QUEENS <- ifelse(SQFdata_modif$city=="QUEENS",1,0)
+SQFdata_modif$city.S_ISLAND <- ifelse(SQFdata_modif$city=="STATEN ISLAND",1,0)
+
+SQFdata_modif <- SQFdata_modif %>%
+    select(-city)
+
+
+# Comprobacion -> Todas las variables son numeric
+dim(SQFdata_modif)
+dim(SQFdata_modif[which(sapply(SQFdata_modif,is.numeric))])
+
+```
+
 ## 3.4 Creación de conjuntos de *train* y *test*
 
 Tras haber realizado las transformaciones necesarias a las variables, se crean los conjuntos de *train* y *test* a partir del dataset modificado. Tras crear los conjuntos se comprueba la proporción de clases que existe en la variable objetivo.
